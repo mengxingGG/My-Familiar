@@ -1,0 +1,64 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: "Microsoft YaHei UI", sans-serif;
+  user-select: none;
+}
+#stage {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#tools {
+  position: absolute;
+  bottom: 7%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 7px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+body:hover #tools {
+  opacity: 1;
+}
+button {
+  border: 1px solid #dfddd2;
+  border-radius: 12px;
+  padding: 5px 11px;
+  background: #fffdf3ef;
+  color: #52603d;
+  font-size: 12px;
+  cursor: pointer;
+}
+#bubble {
+  position: absolute;
+  z-index: 2;
+  left: 6%;
+  top: 3%;
+  width: 88%;
+  padding: 10px 13px;
+  border: 1px solid #e0dfd2;
+  border-radius: 16px;
+  background: #fffcf2f5;
+  color: #555640;
+  font-size: 12px;
+  line-height: 1.65;
+  box-shadow: 0 4px 16px #2e362318;
+  overflow-wrap: anywhere;
+  max-height: 80px;
+  overflow: hidden;
+  pointer-events: none;
+}

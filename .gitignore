@@ -1,0 +1,10 @@
+node_modules/
+dist/
+release/
+.artifacts/
+.runtime/
+*.log
+*.lnk
+.env
+.env.*
+!.env.example

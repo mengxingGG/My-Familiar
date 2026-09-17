@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'none'"
+    />
+    <title>Familiar · 气泡</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="speech-window">
+    <section class="speech-card">
+      <header>
+        <span id="name">小森</span><span id="state"></span
+        ><button id="close" title="收起气泡" aria-label="收起气泡">×</button>
+      </header>
+      <div id="speech" role="status" aria-live="polite"></div>
+      <footer>
+        <button id="continue">说句话 ↵</button><button id="copy">复制</button
+        ><button id="cancel" hidden>停止回复</button>
+      </footer>
+    </section>
+    <script src="speech.js"></script>
+  </body>
+</html>

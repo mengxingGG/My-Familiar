@@ -1,0 +1,150 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font:
+    12px/1.7 "Segoe UI",
+    "Microsoft YaHei",
+    sans-serif;
+  color: #4b5942;
+}
+body {
+  padding: 8px;
+}
+.speech-card,
+.composer-card {
+  background: #fffcf2;
+  border: 1px solid #daddcb;
+  box-shadow: 0 3px 12px #283d2317;
+  border-radius: 19px;
+  height: calc(100% - 10px);
+  display: flex;
+  flex-direction: column;
+  padding: 11px 15px;
+  position: relative;
+}
+.speech-card:after {
+  content: "";
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  background: #fffcf2;
+  border-right: 1px solid #daddcb;
+  border-bottom: 1px solid #daddcb;
+  transform: rotate(45deg);
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #a0a58c;
+  flex-shrink: 0;
+}
+header #name {
+  color: #82946c;
+}
+header button {
+  margin-left: auto;
+  font-size: 18px;
+  line-height: 20px;
+  padding: 0 3px;
+}
+button {
+  border: 0;
+  background: transparent;
+  color: #849572;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+button:hover {
+  background: #edf0e3;
+}
+button:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #a0b38c;
+  outline-offset: 2px;
+}
+#speech {
+  flex: 1;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  padding: 7px 2px 8px;
+  line-height: 1.8;
+  user-select: text;
+}
+footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 10px;
+  padding-top: 4px;
+}
+footer #copy {
+  margin-left: auto;
+}
+#cancel {
+  color: #ad8264;
+}
+textarea {
+  font:
+    13px/1.7 "Microsoft YaHei",
+    sans-serif;
+  color: #4b5942;
+  background: transparent;
+  resize: none;
+  width: 100%;
+  border: 0;
+  padding: 8px 0;
+  flex: 1;
+  min-height: 35px;
+  outline: 0;
+}
+textarea::placeholder {
+  color: #b0b69e;
+}
+.composer-card footer small {
+  font-size: 8px;
+  color: #a5ac96;
+}
+.composer-card footer #send {
+  margin-left: auto;
+  background: #70855e;
+  color: #fffef1;
+  padding: 5px 11px;
+}
+.composer-card {
+  border-radius: 15px;
+  background: #fafbf2;
+}
+.speech-window #state {
+  font-size: 9px;
+}
+#error {
+  font-size: 10px;
+  color: #a77454;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d6dcc9;
+  border-radius: 4px;
+}

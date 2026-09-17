@@ -1,0 +1,46 @@
+{
+  "manifestVersion": 1,
+  "id": "luna",
+  "name": "月团",
+  "description": "用于验证角色替换的月色小伙伴。",
+  "license": "Project-original placeholder artwork",
+  "actions": [
+    "idle",
+    "greet",
+    "happy",
+    "think",
+    "sleep",
+    "drag"
+  ],
+  "representations": {
+    "sprite": {
+      "fps": 1,
+      "frames": {
+        "idle": [
+          "idle-0.svg",
+          "idle-1.svg"
+        ],
+        "greet": [
+          "greet-0.svg",
+          "greet-1.svg"
+        ],
+        "happy": [
+          "happy-0.svg",
+          "happy-1.svg"
+        ],
+        "think": [
+          "think-0.svg",
+          "think-1.svg"
+        ],
+        "sleep": [
+          "sleep-0.svg",
+          "sleep-1.svg"
+        ],
+        "drag": [
+          "drag-0.svg",
+          "drag-1.svg"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "my-familiar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Familiar · 灵伴 — 插件驱动的独立桌面伙伴",
+  "type": "module",
+  "main": "dist/runtime.cjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/*.test.ts",
+    "check": "npm run typecheck && npm test && npm run build",
+    "start": "node scripts/launch.mjs runtime",
+    "controller": "node scripts/launch.mjs controller",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:packaged": "node scripts/smoke.mjs --packaged",
+    "package:dir": "npm run build && electron-builder --dir"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "electron": "44.0.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.1",
+    "playwright": "1.61.1",
+    "prettier": "^3.8.1",
+    "typescript": "6.0.3"
+  },
+  "build": {
+    "appId": "app.familiar.desktop",
+    "productName": "Familiar",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "dir",
+      "signAndEditExecutable": false
+    }
+  }
+}

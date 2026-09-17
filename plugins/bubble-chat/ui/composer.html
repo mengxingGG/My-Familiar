@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'none'"
+    />
+    <title>Familiar · 说句话</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <form class="composer-card" id="form">
+      <header>
+        <span>说句话给它听</span
+        ><button id="close" type="button" aria-label="收起输入条">×</button>
+      </header>
+      <textarea
+        id="input"
+        rows="2"
+        maxlength="8000"
+        placeholder="今天有什么想分享的？"
+        aria-label="文字输入"
+      ></textarea>
+      <div id="error" role="alert" hidden></div>
+      <footer>
+        <small>Enter 换行 · Shift + Enter 发送 · Esc 收起</small
+        ><button id="send" type="submit">发送 ↗</button
+        ><button id="cancel" type="button" hidden>停止</button>
+      </footer>
+    </form>
+    <script src="composer.js"></script>
+  </body>
+</html>

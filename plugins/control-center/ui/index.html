@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'"
+    />
+    <title>Familiar · 控制器</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <aside>
+      <div class="brand">
+        <span class="mark">f.</span>
+        <div>Familiar<small>灵伴 · 桌面上的小日常</small></div>
+      </div>
+      <div class="nav-label">你的陪伴空间</div>
+      <nav>
+        <button class="selected" data-page="home"><span>◉</span>我的灵伴</button
+        ><button data-page="model"><span>✳</span>模型连接</button
+        ><button data-page="persona"><span>☷</span>名字与性格</button
+        ><button data-page="system"><span>▦</span>运行与插件</button>
+      </nav>
+      <div class="aside-bottom">
+        <span class="dot" id="dot"></span
+        ><span id="connection">正在连接宠物…</span
+        ><small>控制器关闭后，陪伴继续。</small>
+        <div class="version">FAMILIAR / 0.1.0</div>
+      </div>
+    </aside>
+    <main>
+      <header>
+        <div class="eyebrow">A LITTLE COMPANY, EVERY DAY</div>
+        <div class="header-row">
+          <h1 id="page-title">让桌面，多一点陪伴。</h1>
+          <button id="refresh" class="ghost">刷新状态 ↻</button>
+        </div>
+        <p id="page-description">它有自己的小日常，也随时愿意听你说说话。</p>
+      </header>
+      <div id="offline" class="notice" hidden>
+        <div>
+          <b>宠物还没有醒来</b>
+          <p>启动后即可调整设置，控制器与宠物各自独立运行。</p>
+        </div>
+        <button id="start" class="primary">启动宠物</button>
+      </div>
+      <section id="home" class="page">
+        <div class="hero">
+          <div>
+            <div class="pill">YOUR FAMILIAR</div>
+            <h2 id="pet-name">小森</h2>
+            <p>不赶时间，就在这里陪你。</p>
+            <div class="hero-actions">
+              <button id="chat" class="primary">和它聊聊 ↗</button
+              ><button id="sleep" class="ghost">睡一会儿</button>
+            </div>
+            <div class="state-label">
+              <span class="dot"></span><span id="pet-state">等待连接</span>
+            </div>
+          </div>
+          <div class="pet-preview">
+            <div class="orbit"></div>
+            <div class="preview-creature">
+              <i class="ear left"></i><i class="ear right"></i
+              ><i class="sprout"></i>
+              <div class="face"><i></i><i></i><b>⌣</b></div>
+            </div>
+            <span class="preview-ground"></span><small>桌面上，见。</small>
+          </div>
+        </div>
+        <div class="section-title">
+          <h3>舒服地待在你的桌面</h3>
+          <span>修改后点击保存，即时生效</span>
+        </div>
+        <div class="card">
+          <div class="setting">
+            <div>
+              <b>陪伴角色</b><small>角色包与渲染器分开，可以自由替换。</small>
+            </div>
+            <select id="character"></select>
+          </div>
+          <div class="setting">
+            <div><b>刚刚好的大小</b><small>给桌面留些呼吸的空间。</small></div>
+            <div class="range">
+              <input
+                id="scale"
+                type="range"
+                min="65"
+                max="160"
+                value="100"
+              /><output id="scale-value">100%</output>
+            </div>
+          </div>
+          <label class="setting"
+            ><div><b>保持在窗口上方</b><small>工作时，也能看见它。</small></div>
+            <input id="topmost" type="checkbox" role="switch" /></label
+          ><label class="setting"
+            ><div>
+              <b>安静陪伴</b
+              ><small>暂停日常短气泡，主动聊天的回复仍正常冒泡。</small>
+            </div>
+            <input id="quiet" type="checkbox" role="switch"
+          /></label>
+        </div>
+        <div class="row actions">
+          <button id="reset" class="ghost">找回屏幕中的宠物</button
+          ><button id="visibility" class="ghost">隐藏宠物</button
+          ><button class="primary save">保存设置</button>
+        </div>
+      </section>
+      <section id="model" class="page" hidden>
+        <div class="card intro">
+          <span class="mini-icon">✳</span>
+          <div>
+            <h3>给聊天接上一颗小小的脑袋</h3>
+            <p>
+              支持兼容 Chat Completions 的云端接口，或已启动的本地模型服务。
+            </p>
+          </div>
+        </div>
+        <div class="card form">
+          <label
+            >服务地址
+            <input
+              id="base-url"
+              placeholder="http://127.0.0.1:1234/v1"
+              spellcheck="false"
+            /><small
+              >填写 API 基础地址，通常以 /v1 结尾，不包含
+              /chat/completions。</small
+            ></label
+          ><label
+            >模型名称
+            <input
+              id="model-id"
+              placeholder="填写服务中的模型 ID"
+              spellcheck="false" /></label
+          ><label
+            >API Key
+            <div class="key-row">
+              <input
+                id="api-key"
+                type="password"
+                autocomplete="off"
+                placeholder="留空保留已保存的密钥"
+              /><button id="save-key" class="ghost">单独保存密钥</button>
+            </div>
+            <small id="key-status"
+              >本地服务可以不填写。密钥经系统加密，与普通配置分开保存。</small
+            ></label
+          ><label
+            >表达灵活度
+            <div class="range">
+              <input
+                id="temperature"
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value="0.7"
+              /><output id="temperature-value">0.7</output>
+            </div></label
+          >
+        </div>
+        <div class="row actions">
+          <button id="delete-key" class="ghost">删除已保存密钥</button
+          ><button id="test" class="ghost">测试已保存的连接</button
+          ><button class="primary save">保存设置</button>
+        </div>
+        <p class="footnote">
+          不会自动发送桌面信息。连接测试会发送一条简短文字请求。
+        </p>
+      </section>
+      <section id="persona" class="page" hidden>
+        <div class="card form">
+          <label
+            >它的名字
+            <input id="name" maxlength="40" placeholder="小森" /></label
+          ><label
+            >你希望它是什么性格？
+            <textarea
+              id="instruction"
+              rows="7"
+              maxlength="6000"
+              placeholder="温暖、自然，愿意倾听…"
+            ></textarea
+            ><small
+              >这是表达习惯，不会赋予它读取屏幕或操作电脑的能力。</small
+            ></label
+          >
+        </div>
+        <div class="row actions">
+          <span class="footnote">修改将在下一轮聊天生效。</span
+          ><button class="primary save">保存设置</button>
+        </div>
+      </section>
+      <section id="system" class="page" hidden>
+        <div class="card intro">
+          <span class="mini-icon">▦</span>
+          <div>
+            <h3>小核心，可替换的能力</h3>
+            <p>
+              下面每项能力由独立官方插件提供。当前版本未开放第三方可执行插件。
+            </p>
+          </div>
+        </div>
+        <div id="plugins" class="plugins"></div>
+        <div class="section-title">
+          <h3>本地数据与运行</h3>
+          <span id="memory"></span>
+        </div>
+        <div class="card">
+          <label class="setting">
+            <div>
+              <b>登录后自动醒来</b
+              ><small>只启动宠物，控制器按需打开。此开关立即生效。</small>
+            </div>
+            <input id="autostart" type="checkbox" role="switch" />
+          </label>
+          <div class="setting">
+            <div>
+              <b>清空聊天记录</b
+              ><small>停止当前回复，并删除本地会话内容。</small>
+            </div>
+            <button id="clear-chat" class="ghost danger">清空对话</button>
+          </div>
+          <div class="setting">
+            <div>
+              <b>让宠物休息</b><small>退出宠物运行时；控制器保持打开。</small>
+            </div>
+            <button id="stop" class="ghost danger">退出宠物</button>
+          </div>
+        </div>
+        <p class="footnote">
+          本版为开发预览。正式美术和长时间待机验证将继续完善。
+        </p>
+      </section>
+      <div id="toast" role="status" hidden></div>
+      <footer>
+        一点点生长，慢慢熟悉。<span>LOCAL FIRST · PLUGIN DRIVEN</span>
+      </footer>
+    </main>
+    <script src="controller.js"></script>
+  </body>
+</html>
