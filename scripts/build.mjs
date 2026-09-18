@@ -1,3 +1,4 @@
+import { buildLocation } from "./build-location.mjs";
 import { build } from "esbuild";
 import { mkdir, cp, rm } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
@@ -21,7 +22,9 @@ await build({
   sourcemap: true,
 });
 await cp("apps/shared/preload.cjs", "dist/preload.cjs");
+await cp("assets", "dist/assets", { recursive: true });
 for (const name of ["renderer-sprite", "bubble-chat", "control-center"])
   await cp(`plugins/${name}/ui`, `dist/ui/${name}`, { recursive: true });
+await buildLocation();
 await cp("characters", "dist/characters", { recursive: true });
 console.log("Familiar 已构建：独立 Runtime / Controller + 官方插件");

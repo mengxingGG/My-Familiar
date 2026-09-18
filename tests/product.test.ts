@@ -1,3 +1,4 @@
+import { conversationFixture } from "./conversation-fixture.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile } from "node:fs/promises";
@@ -238,9 +239,14 @@ test("会话生成互斥、配置快照、清空后无迟到消息，取消部�
       "settings",
       "storage.local",
       "llm.chat",
+      "llm.management",
     ]),
     start(ctx) {
       ctx.provide("settings", {
+        patchPet: async (patch) => ({
+          ...structuredClone(defaults),
+          pet: { ...defaults.pet, ...patch },
+        }),
         get: () => structuredClone(config),
         apply: async (s) => (config = s),
       });
@@ -269,8 +275,23 @@ test("会话生成互斥、配置快照、清空后无迟到消息，取消部�
           yield "迟到";
         },
       });
+      ctx.provide("llm.management", {
+        validate: (c) => c,
+        inspect: () => ({ options: {} as any, hasKey: false }),
+        models: async () => [],
+        plan: async () => ({
+          inputBudget: 30000,
+          contextWindow: 32768,
+          source: "fallback",
+        }),
+        count: async (input) => ({
+          tokens: input.messages.reduce((n, m) => n + m.content.length, 0),
+          exact: false,
+        }),
+      });
     },
   });
+  k.install(conversationFixture);
   k.install(conversation);
   await k.startAll();
   const service = k.resolve("conversation");
@@ -285,6 +306,6 @@ test("会话生成互斥、配置快照、清空后无迟到消息，取消部�
   await service.send("重新聊");
   await service.clear();
   assert.deepEqual(service.state().messages, []);
-  assert.deepEqual(persisted, []);
+  assert.deepEqual((persisted as any).messages, []);
   await k.dispose();
 });

@@ -15,9 +15,20 @@ test("气泡 UI 不创建聊天页面；输入收起，回复冒泡，关闭后�
     visible = new Map<string, boolean>(),
     sent: unknown[] = [];
   let chat: ChatState = { messages: [], busy: false };
+  let releaseComposer!: () => void, reachedComposer!: () => void;
+  const creating = new Promise<void>((resolve) => {
+    reachedComposer = resolve;
+  });
+  const createdComposer = new Promise<void>((resolve) => {
+    releaseComposer = resolve;
+  });
   const surface = {
     async create(kind: string) {
       created.push(kind);
+      if (kind === "composer") {
+        reachedComposer();
+        await createdComposer;
+      }
     },
     show(kind: string, value: boolean) {
       visible.set(kind, value);
@@ -42,6 +53,10 @@ test("气泡 UI 不创建聊天页面；输入收起，回复冒泡，关闭后�
     start(ctx) {
       ctx.provide("platform.surface", surface);
       ctx.provide("settings", {
+        patchPet: async (patch) => ({
+          ...structuredClone(defaults),
+          pet: { ...defaults.pet, ...patch },
+        }),
         get: () => structuredClone(defaults),
         apply: async (s) => s,
       });
@@ -74,10 +89,14 @@ test("气泡 UI 不创建聊天页面；输入收起，回复冒泡，关闭后�
     },
   });
   k.install(bubbleChat);
-  await k.startAll();
-  assert.deepEqual(created, ["speech", "composer"]);
+  const starting = k.startAll();
+  await creating;
   const routes = k.resolve("commands");
-  await routes.call("chat.open");
+  const earlyOpen = routes.call("chat.open");
+  releaseComposer();
+  await starting;
+  await earlyOpen;
+  assert.deepEqual(created, ["speech", "composer"]);
   assert.equal(visible.get("composer"), true);
   await routes.call("chat.send", "你好");
   assert.equal(visible.get("composer"), false);
@@ -88,6 +107,15 @@ test("气泡 UI 不创建聊天页面；输入收起，回复冒泡，关闭后�
   assert.equal(visible.get("speech"), false);
   await routes.call("speech.recall");
   assert.equal(visible.get("speech"), true);
+  await routes.call("chat.open");
+  assert.equal(visible.get("speech"), false);
+  chat.messages[0].text += "，编辑时仍在回复";
+  k.emit("conversation.changed", chat);
+  assert.equal(visible.get("speech"), false, "编辑期间不允许输出气泡覆盖输入");
+  assert.equal(visible.get("composer"), true);
+  await routes.call("chat.close");
+  assert.equal(visible.get("composer"), false);
+  assert.equal(visible.get("speech"), true, "收起输入后恢复最新回复");
   await routes.call("chat.clear");
   assert.equal(visible.get("speech"), false);
   assert.ok(sent.length > 0);

@@ -2,6 +2,7 @@ import { createServer, type Socket } from "node:net";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { definePlugin } from "../../packages/contracts/index.ts";
+import { companionCommands } from "../companion-controls/index.ts";
 import {
   endpoint,
   MAX_PACKET,
@@ -35,7 +36,7 @@ export function transportServer(directory: string) {
         }
         sockets.add(socket);
         socket.setEncoding("utf8");
-        socket.setTimeout(30000, () => socket.destroy());
+        socket.setTimeout(125000, () => socket.destroy());
         let buffer = "",
           received = false;
         socket.on("error", () => {});
@@ -66,9 +67,12 @@ export function transportServer(directory: string) {
               throw new Error("连接认证失败");
             if (
               ![
+                ...companionCommands,
                 "runtime.status",
                 "settings.apply",
                 "provider.test",
+                "provider.models",
+                "provider.inspect",
                 "secret.set",
                 "pet.reset",
                 "pet.show",

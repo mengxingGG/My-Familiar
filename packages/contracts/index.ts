@@ -1,4 +1,18 @@
 import type { Dispose, Plugin } from "../kernel/index.ts";
+import {
+  profileDefaults,
+  type ProviderSettings,
+  type ProviderProfile,
+  type ProviderRegistry,
+  type ProviderInput,
+  type ModelInfo,
+  type ParameterSupport,
+  type ContextPlan,
+  type SessionStatus,
+} from "./llm.ts";
+export * from "./llm.ts";
+export * from "./agent.ts";
+export * from "./companion.ts";
 export type PetAction = "idle" | "greet" | "drag" | "think" | "sleep" | "happy";
 export interface Character {
   id: string;
@@ -19,9 +33,10 @@ export interface Settings {
     quiet: boolean;
     character: string;
     visible: boolean;
+    bubbleSeconds: number;
   };
   persona: { name: string; instruction: string };
-  provider: { baseUrl: string; model: string; temperature: number };
+  provider: ProviderSettings;
 }
 export interface Message {
   id: string;
@@ -34,6 +49,7 @@ export interface ChatState {
   messages: Message[];
   busy: boolean;
   error?: string;
+  session?: SessionStatus;
 }
 export type Command = (params: any) => unknown | Promise<unknown>;
 export interface ConfigSection<T> {
@@ -63,11 +79,15 @@ declare module "../kernel/index.ts" {
       write(key: string, data: unknown): Promise<void>;
     };
     "secrets.local": {
-      has(): boolean;
-      get(): string;
-      set(value: string): Promise<void>;
+      has(scope: string): boolean;
+      get(scope: string): string;
+      set(scope: string, value: string): Promise<void>;
     };
-    settings: { get(): Settings; apply(input: Settings): Promise<Settings> };
+    settings: {
+      get(): Settings;
+      apply(input: Settings): Promise<Settings>;
+      patchPet(patch: Partial<Settings["pet"]>): Promise<Settings>;
+    };
     "config.pet": ConfigSection<Settings["pet"]>;
     "config.persona": ConfigSection<Settings["persona"]>;
     "config.provider": ConfigSection<Settings["provider"]>;
@@ -87,12 +107,22 @@ declare module "../kernel/index.ts" {
       state(): PetAction;
       interact(action: "click" | "drag-start" | "drag-end" | "sleep"): void;
     };
+    "llm.registry": ProviderRegistry;
+    "llm.management": {
+      validate(config: ProviderProfile): ProviderProfile;
+      models(config: ProviderProfile, refresh?: boolean): Promise<ModelInfo[]>;
+      inspect(config: ProviderProfile): {
+        options: ParameterSupport;
+        model?: ModelInfo;
+        hasKey: boolean;
+      };
+      plan(config: ProviderProfile, signal?: AbortSignal): Promise<ContextPlan>;
+      count(
+        input: Omit<ProviderInput, "key">,
+      ): Promise<{ tokens: number; exact: boolean }>;
+    };
     "llm.chat": {
-      stream(input: {
-        settings: Settings["provider"];
-        messages: { role: string; content: string }[];
-        signal: AbortSignal;
-      }): AsyncIterable<string>;
+      stream(input: Omit<ProviderInput, "key">): AsyncIterable<string>;
       test(): Promise<string>;
     };
     conversation: {
@@ -113,6 +143,7 @@ export const defaults: Settings = {
     quiet: false,
     character: "mori",
     visible: true,
+    bubbleSeconds: 15,
   },
   persona: {
     name: "小森",
@@ -120,8 +151,8 @@ export const defaults: Settings = {
       "你是住在用户桌面上的小伙伴小森。温暖、自然、简洁地用中文交流，不假装自己能看到屏幕或执行操作。",
   },
   provider: {
-    baseUrl: "http://127.0.0.1:1234/v1",
-    model: "",
+    ...profileDefaults,
     temperature: 0.7,
+    savedProfiles: {},
   },
 };

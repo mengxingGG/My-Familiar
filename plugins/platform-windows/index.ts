@@ -5,12 +5,12 @@ import {
   Menu,
   screen,
   Tray,
-  nativeImage,
   globalShortcut,
 } from "electron";
 import { join } from "node:path";
 import { definePlugin, type Settings } from "../../packages/contracts/index.ts";
 import { clampRect } from "./geometry.ts";
+import { companionCommands } from "../companion-controls/index.ts";
 export function platformWindows(options: {
   root: string;
   role: "runtime" | "controller";
@@ -73,12 +73,22 @@ export function platformWindows(options: {
             "pet.ready",
           ],
           composer: ["chat.state", "chat.send", "chat.cancel", "chat.close"],
-          speech: ["speech.state", "speech.close", "chat.open", "chat.cancel"],
+          speech: [
+            "speech.state",
+            "speech.hover",
+            "speech.close",
+            "chat.open",
+            "chat.cancel",
+            "agent.decide",
+          ],
           controller: [
+            ...companionCommands,
             "runtime.start",
             "settings.apply",
             "secret.set",
             "provider.test",
+            "provider.models",
+            "provider.inspect",
             "pet.reset",
             "pet.show",
             "pet.sleep",
@@ -124,31 +134,17 @@ export function platformWindows(options: {
         if (!pet) return;
         const p = pet.getBounds();
         const area = screen.getDisplayMatching(p).workArea;
-        const speech = windows.get("speech");
-        if (speech) {
-          const b = speech.getBounds();
-          let x = p.x + (p.width - b.width) / 2,
-            y = p.y + p.height * 0.27 - b.height;
-          if (y < area.y) {
-            y = p.y;
-            x = p.x + p.width - 20;
-            if (x + b.width > area.x + area.width) x = p.x - b.width + 20;
-          }
+        // 输入和回复共用头顶锚点，窗口高度变化时底边仍对齐宠物。
+        for (const kind of ["speech", "composer"]) {
+          const overlay = windows.get(kind);
+          if (!overlay) continue;
+          const b = overlay.getBounds();
+          // 顶部空间不足时两种气泡一起向屏幕内收，不再分别弹到宠物两侧。
+          const x = p.x + (p.width - b.width) / 2,
+            bottom = Math.max(area.y + 285, p.y + p.height * 0.27),
+            y = bottom - b.height;
           const position = clampRect({ ...b, x, y }, areas());
-          positionOverlay(speech, position.x, position.y);
-        }
-        const composer = windows.get("composer");
-        if (composer) {
-          const b = composer.getBounds();
-          let x = p.x + (p.width - b.width) / 2,
-            y = p.y + p.height - 25;
-          if (y + b.height > area.y + area.height) {
-            y = p.y + p.height - b.height;
-            x = p.x - b.width + 20;
-            if (x < area.x) x = p.x + p.width - 20;
-          }
-          const position = clampRect({ ...b, x, y }, areas());
-          positionOverlay(composer, position.x, position.y);
+          positionOverlay(overlay, position.x, position.y);
         }
       };
       const reflow = () => {
@@ -170,6 +166,7 @@ export function platformWindows(options: {
           const isPet = kind === "pet",
             isOverlay = kind !== "controller";
           const window = new BrowserWindow({
+            icon: join(options.root, "assets", "familiar.ico"),
             title:
               kind === "controller"
                 ? "Familiar · 控制器"
@@ -248,6 +245,9 @@ export function platformWindows(options: {
             if ((kind === "composer" || kind === "speech") && ctx.active) {
               event.preventDefault();
               window.hide();
+              void commands
+                .call(kind === "composer" ? "chat.close" : "speech.close")
+                .catch((e) => ctx.report(e));
             }
           });
           window.on("closed", () => {
@@ -377,16 +377,7 @@ export function platformWindows(options: {
         }),
       });
       if (options.role === "runtime") {
-        const pixels = Buffer.alloc(16 * 16 * 4);
-        for (let i = 0; i < pixels.length; i += 4) {
-          pixels[i] = 142;
-          pixels[i + 1] = 186;
-          pixels[i + 2] = 114;
-          pixels[i + 3] = 255;
-        }
-        tray = new Tray(
-          nativeImage.createFromBitmap(pixels, { width: 16, height: 16 }),
-        );
+        tray = new Tray(join(options.root, "assets", "familiar.ico"));
         tray.setToolTip("Familiar · 灵伴");
         const call = (name: string, params?: unknown) => {
           void commands.call(name, params).catch((e) => ctx.report(e));

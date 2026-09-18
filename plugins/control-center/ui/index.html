@@ -72,7 +72,7 @@
         </div>
         <div class="section-title">
           <h3>舒服地待在你的桌面</h3>
-          <span>修改后点击保存，即时生效</span>
+          <span id="pet-save-status">修改后实时生效，自动保存</span>
         </div>
         <div class="card">
           <div class="setting">
@@ -104,10 +104,26 @@
             <input id="quiet" type="checkbox" role="switch"
           /></label>
         </div>
+        <div class="card">
+          <label class="setting"
+            ><div>
+              <b>气泡自动收起</b
+              ><small
+                >秒；0 为保持显示。回复完成后开始计时，鼠标停留时暂停。</small
+              >
+            </div>
+            <input
+              id="bubble-seconds"
+              type="number"
+              min="0"
+              max="300"
+              value="15"
+              aria-label="气泡关闭秒数"
+          /></label>
+        </div>
         <div class="row actions">
           <button id="reset" class="ghost">找回屏幕中的宠物</button
-          ><button id="visibility" class="ghost">隐藏宠物</button
-          ><button class="primary save">保存设置</button>
+          ><button id="visibility" class="ghost">隐藏宠物</button>
         </div>
       </section>
       <section id="model" class="page" hidden>
@@ -116,11 +132,14 @@
           <div>
             <h3>给聊天接上一颗小小的脑袋</h3>
             <p>
-              支持兼容 Chat Completions 的云端接口，或已启动的本地模型服务。
+              选择模型服务，连接后获取模型列表。每种服务分别保存设置和密钥。
             </p>
           </div>
         </div>
         <div class="card form">
+          <label
+            >模型服务<select id="provider-kind" aria-label="模型服务"></select
+          ></label>
           <label
             >服务地址
             <input
@@ -128,10 +147,27 @@
               placeholder="http://127.0.0.1:1234/v1"
               spellcheck="false"
             /><small
-              >填写 API 基础地址，通常以 /v1 结尾，不包含
-              /chat/completions。</small
+              >默认填写官方地址。本地 llama.cpp 使用已启动的 llama-server
+              地址；更换地址后需单独保存密钥。</small
             ></label
-          ><label
+          >
+          <div class="model-picker">
+            <div class="row">
+              <b>选择模型</b
+              ><button id="load-models" class="ghost">刷新模型列表</button>
+            </div>
+            <input
+              id="model-search"
+              type="search"
+              placeholder="搜索模型名称或 ID"
+              aria-label="搜索模型"
+            />
+            <select id="model-list" size="5" aria-label="可用模型"></select>
+            <small id="models-status" role="status"
+              >打开此页后自动获取；也可直接填写模型 ID。</small
+            >
+          </div>
+          <label
             >模型名称
             <input
               id="model-id"
@@ -151,18 +187,90 @@
               >本地服务可以不填写。密钥经系统加密，与普通配置分开保存。</small
             ></label
           ><label
-            >表达灵活度
-            <div class="range">
+            >温度（Temperature）
+            <div class="parameter-row">
               <input
                 id="temperature"
-                type="range"
+                type="number"
                 min="0"
                 max="2"
                 step="0.1"
                 value="0.7"
-              /><output id="temperature-value">0.7</output>
+              /><span
+                ><input id="temperature-auto" type="checkbox" />
+                使用模型默认</span
+              >
             </div></label
           >
+          <label
+            >Top P
+            <div class="parameter-row">
+              <input
+                id="top-p"
+                type="number"
+                min="0.01"
+                max="1"
+                step="0.05"
+                value="1"
+              /><span
+                ><input id="top-p-auto" type="checkbox" checked />
+                使用模型默认</span
+              >
+            </div></label
+          >
+          <div class="parameter-grid">
+            <label
+              >单次输出上限（token）<input
+                id="max-output"
+                type="number"
+                min="128"
+                max="262144"
+                value="4096"
+                step="128"
+            /></label>
+            <label
+              >请求超时（秒）<input
+                id="request-timeout"
+                type="number"
+                min="10"
+                max="900"
+                value="180"
+            /></label>
+            <label>思考模式<select id="thinking-mode"></select></label>
+            <label id="effort-row"
+              >思考强度<select id="thinking-effort"></select
+            ></label>
+            <label id="budget-row" hidden
+              >思考预算（token）<input
+                id="thinking-budget"
+                type="number"
+                min="1"
+                max="262144"
+                value="2048"
+            /></label>
+          </div>
+          <small id="parameter-hint"></small>
+          <label
+            >上下文窗口（token）<input
+              id="context-tokens"
+              type="number"
+              min="1024"
+              max="2097152"
+              placeholder="自动使用模型提供的上限；未知时暂用 32768"
+            /><small id="context-hint"
+              >留空自动；输出预算和安全余量会预留。</small
+            ></label
+          >
+          <label class="inline-check"
+            ><input id="prompt-cache" type="checkbox" checked />
+            启用服务支持的缓存优化</label
+          >
+          <small
+            >稳定保留会话前缀，接近上下文上限时才裁剪。缓存命中取决于供应商；关闭此选项也不能禁止服务端自身的隐式缓存。</small
+          >
+        </div>
+        <div id="session-status" class="card session-card" role="status">
+          还没有会话用量。
         </div>
         <div class="row actions">
           <button id="delete-key" class="ghost">删除已保存密钥</button
@@ -221,10 +329,9 @@
           </label>
           <div class="setting">
             <div>
-              <b>清空聊天记录</b
-              ><small>停止当前回复，并删除本地会话内容。</small>
+              <b>开始新会话</b><small>停止当前回复，并删除本地会话内容。</small>
             </div>
-            <button id="clear-chat" class="ghost danger">清空对话</button>
+            <button id="clear-chat" class="ghost danger">开始新会话</button>
           </div>
           <div class="setting">
             <div>
@@ -242,6 +349,6 @@
         一点点生长，慢慢熟悉。<span>LOCAL FIRST · PLUGIN DRIVEN</span>
       </footer>
     </main>
-    <script src="controller.js"></script>
+    <script type="module" src="controller.js"></script>
   </body>
 </html>

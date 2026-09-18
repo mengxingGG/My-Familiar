@@ -14,12 +14,20 @@ export const petSchema: ConfigSection<Settings["pet"]> = {
       if (typeof v[key] !== "boolean") throw new Error("宠物开关配置无效");
     if (typeof v.character !== "string" || v.character.length > 80)
       throw new Error("角色标识无效");
+    const bubbleSeconds = v.bubbleSeconds ?? 15;
+    if (
+      !Number.isInteger(bubbleSeconds) ||
+      bubbleSeconds < 0 ||
+      bubbleSeconds > 300
+    )
+      throw new Error("气泡关闭时间需要在 0—300 秒之间，0 表示保持显示");
     return {
       scale: v.scale,
       topmost: v.topmost,
       quiet: v.quiet,
       character: v.character,
       visible: v.visible,
+      bubbleSeconds,
     };
   },
 };

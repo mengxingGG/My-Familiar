@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 64 64">
+  <title>Familiar · 灵伴</title>
+  <rect x="1" y="1" width="62" height="62" rx="18" fill="#647851"/>
+  <path d="M42 13C38 11 33 11 29 14C25 17 24 21 23 27H17L15.5 33H22L19 46C18 51 16 52 12 51L10.5 57C18 60 25 55 27 47L30 33H38L39.5 27H31.5L32.5 22C33.5 17 36 17 40.5 19Z" fill="#fcfbee"/>
+  <circle cx="46" cy="47" r="5" fill="#fcfbee"/>
+</svg>

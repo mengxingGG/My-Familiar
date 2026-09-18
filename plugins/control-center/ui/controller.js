@@ -1,3 +1,6 @@
+import { createExperienceSettings } from "./experience-settings.js";
+import { createModelSettings } from "./model-settings.js";
+import { createCompanionSettings } from "./companion-settings.js";
 const api = window.familiar,
   $ = (id) => document.getElementById(id);
 let snapshot,
@@ -5,12 +8,69 @@ let snapshot,
   editVersion = 0,
   toastTimer,
   polling = false;
+const modelSettings = createModelSettings(
+  api,
+  () => {
+    dirty = true;
+  },
+  toast,
+);
 const titles = {
+  history: [
+    "相处过的话，都在这里。",
+    "查看旧对话，也可以接着聊；在这里聊天时，宠物气泡会安静下来。",
+  ],
+  permissions: [
+    "让信任，有自己的分寸。",
+    "设置默认选择，也能随时撤销会话授权和白名单。",
+  ],
+  care: [
+    "合适的时候，问候一句。",
+    "少一点打扰，多一点惦记。时间按这台电脑的本地时区安排。",
+  ],
+  memories: [
+    "把相处，慢慢记下来。",
+    "核心记忆、每日日记与经验教训，都在你能查看和编辑的文件里。",
+  ],
+  skills: [
+    "一起学会，更多小事。",
+    "方法说明独立管理，按需读取，也可以由你自己安装。",
+  ],
+  mcp: ["需要时，搭把手。", "外部工具独立连接，具体操作由你掌握。"],
   home: ["让桌面，多一点陪伴。", "它有自己的小日常，也随时愿意听你说说话。"],
   model: ["每一句话，都有回应。", "连接你选择的模型，让陪伴从文字开始。"],
   persona: ["慢慢认识，慢慢熟悉。", "一个名字，一点性格，成为你熟悉的伙伴。"],
   system: ["安静运行，各司其职。", "宠物独立常驻，每一种能力都可单独演进。"],
 };
+const companion = createCompanionSettings(api, toast);
+const experience = createExperienceSettings(api, toast);
+let petTimer,
+  petPending = {},
+  petWriting = false;
+async function savePet() {
+  if (petWriting || !Object.keys(petPending).length) return;
+  petWriting = true;
+  const patch = petPending;
+  petPending = {};
+  try {
+    const result = await api.request("settings.pet", patch);
+    if (snapshot) snapshot.settings = result;
+    editVersion = result.version;
+    $("pet-save-status").textContent = "已自动保存";
+  } catch (e) {
+    toast(e.message, true);
+    $("pet-save-status").textContent = "保存失败，请重试";
+  } finally {
+    petWriting = false;
+    if (Object.keys(petPending).length) void savePet();
+  }
+}
+function livePet(patch) {
+  Object.assign(petPending, patch);
+  $("pet-save-status").textContent = "正在应用…";
+  clearTimeout(petTimer);
+  petTimer = setTimeout(savePet, 80);
+}
 document.querySelectorAll("nav button").forEach(
   (button) =>
     (button.onclick = () => {
@@ -23,6 +83,9 @@ document.querySelectorAll("nav button").forEach(
       [$("page-title").textContent, $("page-description").textContent] =
         titles[button.dataset.page];
       window.scrollTo(0, 0);
+      if (button.dataset.page === "model") modelSettings.activate();
+      companion.activate(button.dataset.page);
+      experience.activate(button.dataset.page);
     }),
 );
 function toast(text, error = false) {
@@ -49,27 +112,33 @@ async function action(button, method, params, success) {
 }
 function fill(config) {
   editVersion = config.version;
-  $("scale").value = Math.round(config.pet.scale * 100);
-  $("scale-value").textContent = $("scale").value + "%";
-  $("topmost").checked = config.pet.topmost;
-  $("quiet").checked = config.pet.quiet;
-  $("character").value = config.pet.character;
+  if (!petWriting && !Object.keys(petPending).length) {
+    $("scale").value = Math.round(config.pet.scale * 100);
+    $("scale-value").textContent = $("scale").value + "%";
+    $("topmost").checked = config.pet.topmost;
+    $("quiet").checked = config.pet.quiet;
+    $("character").value = config.pet.character;
+    $("bubble-seconds").value = config.pet.bubbleSeconds;
+    document.querySelector(".preview-creature").style.scale = String(
+      config.pet.scale,
+    );
+  }
   $("name").value = config.persona.name;
   $("instruction").value = config.persona.instruction;
-  $("base-url").value = config.provider.baseUrl;
-  $("model-id").value = config.provider.model;
-  $("temperature").value = config.provider.temperature;
-  $("temperature-value").textContent = config.provider.temperature;
+  modelSettings.fill(config.provider, snapshot.providers);
 }
 async function refresh(force = false) {
   if (polling) return;
   polling = true;
   try {
     const data = await api.request("runtime.status");
+    if (data.apiVersion !== 3)
+      throw new Error("宠物仍运行旧版本，请退出宠物和控制器后重新启动");
     const wasOffline = !snapshot;
     snapshot = data;
-    document.body.dataset.character = data.settings.pet.character;
-    $("autostart").checked = data.autostart;
+    if (!petWriting && !Object.keys(petPending).length)
+      document.body.dataset.character = data.settings.pet.character;
+    if (!$("autostart").disabled) $("autostart").checked = data.autostart;
     $("offline").hidden = true;
     $("dot").classList.remove("offline");
     $("connection").textContent = "宠物正在独立运行";
@@ -87,7 +156,7 @@ async function refresh(force = false) {
       : "显示宠物";
     $("memory").textContent =
       `主进程内存 ${Math.round(data.metrics.memory / 1024 / 1024)} MB`;
-    if (force || !dirty) {
+    if ((force || !dirty) && !petWriting && !Object.keys(petPending).length) {
       const select = $("character");
       select.replaceChildren(
         ...data.characters.map((c) => {
@@ -100,9 +169,7 @@ async function refresh(force = false) {
       fill(data.settings);
       dirty = false;
     }
-    $("key-status").textContent = data.hasKey
-      ? "已保存密钥（系统加密）。留空不会覆盖已有密钥。"
-      : "尚未保存密钥；本地服务可以不填写。";
+    modelSettings.usage(data.session);
     $("plugins").replaceChildren(
       ...data.plugins.map((p) => {
         const el = document.createElement("div");
@@ -122,6 +189,7 @@ async function refresh(force = false) {
   } catch (e) {
     snapshot = undefined;
     $("offline").hidden = false;
+    $("offline").querySelector("b").textContent = e.message || "宠物还没有醒来";
     $("dot").classList.add("offline");
     $("connection").textContent = "宠物未连接";
     document.body.dataset.connected = "false";
@@ -133,35 +201,52 @@ async function refresh(force = false) {
   }
 }
 for (const input of document.querySelectorAll(
-  "input:not(#api-key):not(#autostart),select,textarea",
+  "#persona input,#persona textarea,#model input:not(#api-key):not(#model-search),#model select",
 ))
   input.addEventListener("input", () => {
     dirty = true;
   });
 $("scale").oninput = () => {
   $("scale-value").textContent = $("scale").value + "%";
+  document.querySelector(".preview-creature").style.scale = String(
+    Number($("scale").value) / 100,
+  );
+  livePet({ scale: Number($("scale").value) / 100 });
 };
-$("temperature").oninput = () => {
-  $("temperature-value").textContent = $("temperature").value;
+$("character").onchange = () => {
+  document.body.dataset.character = $("character").value;
+  livePet({ character: $("character").value });
 };
+for (const key of ["topmost", "quiet"])
+  $(key).onchange = () => livePet({ [key]: $(key).checked });
+$("bubble-seconds").onchange = () =>
+  livePet({ bubbleSeconds: Number($("bubble-seconds").value) });
 function values() {
   const config = structuredClone(snapshot.settings);
   config.version = editVersion;
+  config.pet.bubbleSeconds = Number($("bubble-seconds").value);
   config.pet.scale = Number($("scale").value) / 100;
   config.pet.topmost = $("topmost").checked;
   config.pet.quiet = $("quiet").checked;
   config.pet.character = $("character").value;
   config.persona.name = $("name").value;
   config.persona.instruction = $("instruction").value;
-  config.provider.baseUrl = $("base-url").value;
-  config.provider.model = $("model-id").value;
-  config.provider.temperature = Number($("temperature").value);
+  config.provider = {
+    ...modelSettings.read(),
+    savedProfiles: config.provider.savedProfiles,
+  };
   return config;
 }
 document.querySelectorAll(".save").forEach(
   (button) =>
     (button.onclick = async () => {
       if (!snapshot) return;
+      clearTimeout(petTimer);
+      await savePet();
+      if (petWriting) {
+        toast("正在保存外观，请稍候再保存模型设置");
+        return;
+      }
       const result = await action(
         button,
         "settings.apply",
@@ -189,27 +274,14 @@ $("visibility").onclick = () =>
   action($("visibility"), "pet.show", !snapshot.settings.pet.visible);
 $("test").onclick = () =>
   action($("test"), "provider.test", undefined, (result) => result);
-$("save-key").onclick = async () => {
-  if (!$("api-key").value) {
-    toast("请输入密钥；删除密钥请使用下方按钮");
-    return;
-  }
-  await action(
-    $("save-key"),
-    "secret.set",
-    $("api-key").value,
-    "密钥已加密保存",
-  );
-  $("api-key").value = "";
-  void refresh();
-};
-$("delete-key").onclick = () => {
-  if (confirm("删除已保存的模型密钥？"))
-    void action($("delete-key"), "secret.set", "", "密钥已删除");
-};
 $("clear-chat").onclick = () => {
-  if (confirm("停止生成并永久清空本地对话记录？"))
-    void action($("clear-chat"), "chat.clear", undefined, "对话已清空");
+  if (confirm("开始新会话？当前对话会保留在历史会话中。"))
+    void action(
+      $("clear-chat"),
+      "chat.clear",
+      undefined,
+      "已开始新会话，旧对话保留在历史中",
+    );
 };
 $("stop").onclick = () =>
   action(

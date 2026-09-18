@@ -61,32 +61,57 @@ export const settings = definePlugin({
     );
     characters.get(current.pet.character);
     let queue = Promise.resolve();
+    const update = (input: Settings | (() => Settings)) => {
+      const operation = queue.then(async () => {
+        const next = validateSettings(
+          typeof input === "function" ? input() : input,
+          schemas,
+        );
+        if (next.version !== current.version)
+          throw new Error("配置已变化，请刷新后重试");
+        characters.get(next.pet.character);
+        next.version++;
+        const previous = current;
+        try {
+          surface.configurePet(next.pet);
+          await storage.write("settings", next);
+        } catch (e) {
+          surface.configurePet(previous.pet);
+          throw e;
+        }
+        current = next;
+        ctx.emit("settings.changed", structuredClone(current));
+        return structuredClone(current);
+      });
+      queue = operation.then(
+        () => {},
+        () => {},
+      );
+      return operation;
+    };
     ctx.provide("settings", {
       get: () => structuredClone(current),
-      apply(input) {
-        const operation = queue.then(async () => {
-          const next = validateSettings(input, schemas);
-          if (next.version !== current.version)
-            throw new Error("配置已变化，请刷新后重试");
-          characters.get(next.pet.character);
-          next.version++;
-          const previous = current;
-          try {
-            surface.configurePet(next.pet);
-            await storage.write("settings", next);
-          } catch (e) {
-            surface.configurePet(previous.pet);
-            throw e;
-          }
-          current = next;
-          ctx.emit("settings.changed", structuredClone(current));
-          return structuredClone(current);
-        });
-        queue = operation.then(
-          () => {},
-          () => {},
-        );
-        return operation;
+      apply: update,
+      patchPet(patch) {
+        if (
+          !patch ||
+          Object.keys(patch).some(
+            (k) =>
+              ![
+                "scale",
+                "character",
+                "topmost",
+                "quiet",
+                "visible",
+                "bubbleSeconds",
+              ].includes(k),
+          )
+        )
+          throw new Error("宠物设置字段无效");
+        return update(() => ({
+          ...current,
+          pet: { ...current.pet, ...patch },
+        }));
       },
     });
     ctx.effect(() => queue);

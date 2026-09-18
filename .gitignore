@@ -3,6 +3,7 @@ dist/
 release/
 .artifacts/
 .runtime/
+.familiar/
 *.log
 *.lnk
 .env

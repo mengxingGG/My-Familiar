@@ -43,7 +43,15 @@ export async function rpc(
     };
     const timer = setTimeout(
       () => finish(new Error("宠物响应超时")),
-      method === "provider.test" ? 25000 : 10000,
+      /^(memory.write|skills.install|mcp.install|mcp.connect|care.preview|care.location)$/.test(
+        method,
+      )
+        ? 120000
+        : method === "provider.test"
+          ? 65000
+          : method === "provider.models"
+            ? 25000
+            : 10000,
     );
     socket.setEncoding("utf8");
     socket.on("connect", () =>

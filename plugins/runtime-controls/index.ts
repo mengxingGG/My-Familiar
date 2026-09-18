@@ -1,4 +1,5 @@
 import { definePlugin } from "../../packages/contracts/index.ts";
+import { credentialScope, validateProfile } from "../llm-shared/config.ts";
 export const runtimeControls = definePlugin({
   manifest: {
     manifestVersion: 1,
@@ -14,6 +15,8 @@ export const runtimeControls = definePlugin({
       "behavior.pet",
       "conversation",
       "llm.chat",
+      "llm.registry",
+      "llm.management",
       "platform.autostart",
     ],
   },
@@ -25,8 +28,11 @@ export const runtimeControls = definePlugin({
     const routes = {
       "runtime.status": () => ({
         connected: true,
+        apiVersion: 3,
         settings: settings.get(),
-        hasKey: secrets.has(),
+        hasKey: secrets.has(credentialScope(settings.get().provider)),
+        providers: ctx.use("llm.registry").list(),
+        session: ctx.use("conversation").state().session,
         autostart: ctx.use("platform.autostart").get(),
         characters: ctx
           .use("character.catalog")
@@ -37,8 +43,40 @@ export const runtimeControls = definePlugin({
         behavior: ctx.use("behavior.pet").state(),
         metrics: surface.metrics(),
       }),
-      "settings.apply": (input: unknown) => settings.apply(input as any),
-      "secret.set": (key: unknown) => secrets.set(key as string),
+      "settings.pet": (patch: any) => settings.patchPet(patch),
+      "settings.apply": (input: any) => {
+        const profile = ctx.use("llm.management").validate(input?.provider);
+        const previous = settings.get().provider;
+        return settings.apply({
+          ...input,
+          provider: {
+            ...profile,
+            savedProfiles: {
+              ...previous.savedProfiles,
+              [previous.kind]: validateProfile(previous),
+              [profile.kind]: profile,
+            },
+          },
+        });
+      },
+      "secret.set": (input: any) => {
+        const config = validateProfile(
+          typeof input === "string" ? settings.get().provider : input?.config,
+        );
+        ctx.use("llm.registry").get(config.kind);
+        return secrets.set(
+          credentialScope(config),
+          typeof input === "string" ? input : input.key,
+        );
+      },
+      "provider.models": (input: any) =>
+        ctx
+          .use("llm.management")
+          .models(input?.config ?? settings.get().provider, !!input?.refresh),
+      "provider.inspect": (input: any) =>
+        ctx
+          .use("llm.management")
+          .inspect(input?.config ?? settings.get().provider),
       "provider.test": () => ctx.use("llm.chat").test(),
       "pet.reset": () => surface.resetPosition(),
       "pet.show": async (visible: unknown) => {

@@ -2,11 +2,17 @@
   "name": "my-familiar",
   "version": "0.1.0",
   "private": true,
+  "author": "mengxingGG",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mengxingGG/My-Familiar.git"
+  },
   "description": "Familiar · 灵伴 — 插件驱动的独立桌面伙伴",
   "type": "module",
   "main": "dist/runtime.cjs",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "icons": "electron scripts/build-icons.cjs",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/*.test.ts",
     "check": "npm run typecheck && npm test && npm run build",
@@ -14,7 +20,12 @@
     "controller": "node scripts/launch.mjs controller",
     "smoke": "node scripts/smoke.mjs",
     "smoke:packaged": "node scripts/smoke.mjs --packaged",
-    "package:dir": "npm run build && electron-builder --dir"
+    "package:dir": "npm run build && electron-builder --dir",
+    "package:release": "npm run build && electron-builder --win nsis zip --x64 --publish never",
+    "smoke:agent": "node scripts/agent-smoke.mjs",
+    "smoke:experience": "node scripts/experience-smoke.mjs",
+    "smoke:agent:packaged": "node scripts/agent-smoke.mjs --packaged",
+    "smoke:experience:packaged": "node scripts/experience-smoke.mjs --packaged"
   },
   "devDependencies": {
     "@types/node": "24.13.3",
@@ -28,6 +39,7 @@
   "build": {
     "appId": "app.familiar.desktop",
     "productName": "Familiar",
+    "artifactName": "Familiar-${version}-win-${arch}.${ext}",
     "directories": {
       "output": "release"
     },
@@ -36,8 +48,32 @@
       "package.json"
     ],
     "win": {
+      "icon": "assets/familiar.ico",
       "target": "dir",
-      "signAndEditExecutable": false
-    }
+      "signExecutable": false
+    },
+    "nsis": {
+      "artifactName": "Familiar-${version}-Setup-${arch}.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "runAfterFinish": false,
+      "deleteAppDataOnUninstall": false,
+      "packElevateHelper": false,
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ],
+      "include": "scripts/installer.nsh"
+    },
+    "asarUnpack": [
+      "dist/native/**"
+    ]
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "ajv": "8.18.0",
+    "yaml": "2.9.1"
   }
 }

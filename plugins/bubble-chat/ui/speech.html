@@ -17,6 +17,17 @@
         ><button id="close" title="收起气泡" aria-label="收起气泡">×</button>
       </header>
       <div id="speech" role="status" aria-live="polite"></div>
+      <div id="approval" hidden>
+        <b id="approval-title"></b>
+        <pre id="approval-detail"></pre>
+        <div>
+          <select id="allow-scope" aria-label="允许范围">
+            <option value="once">仅本次</option>
+            <option value="session">本会话同工具</option>
+            <option value="whitelist">此操作加入白名单</option></select
+          ><button id="allow">允许</button><button id="deny">拒绝</button>
+        </div>
+      </div>
       <footer>
         <button id="continue">说句话 ↵</button><button id="copy">复制</button
         ><button id="cancel" hidden>停止回复</button>

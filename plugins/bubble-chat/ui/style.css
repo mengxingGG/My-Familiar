@@ -29,7 +29,8 @@ body {
   padding: 11px 15px;
   position: relative;
 }
-.speech-card:after {
+.speech-card:after,
+.composer-card:after {
   content: "";
   position: absolute;
   bottom: -9px;
@@ -127,8 +128,8 @@ textarea::placeholder {
   padding: 5px 11px;
 }
 .composer-card {
-  border-radius: 15px;
-  background: #fafbf2;
+  border-radius: 19px;
+  background: #fffcf2;
 }
 .speech-window #state {
   font-size: 9px;
@@ -147,4 +148,36 @@ button:disabled {
 ::-webkit-scrollbar-thumb {
   background: #d6dcc9;
   border-radius: 4px;
+}
+
+#approval {
+  font-size: 12px;
+  min-height: 0;
+}
+#approval-detail {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 126px;
+  overflow: auto;
+  background: #f0f2eb;
+  padding: 8px;
+  border-radius: 8px;
+}
+#approval button {
+  margin-right: 8px;
+}
+#state {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#allow-scope {
+  max-width: 175px;
+  font: inherit;
+  border-radius: 6px;
+  padding: 4px;
+  background: #f4f5ed;
+  color: #374034;
 }

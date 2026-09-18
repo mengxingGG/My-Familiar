@@ -1,6 +1,66 @@
 * {
   box-sizing: border-box;
 }
+[hidden] {
+  display: none !important;
+}
+.model-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.model-picker .row {
+  justify-content: space-between;
+}
+#model-list {
+  width: 100%;
+  min-height: 140px;
+}
+#model-list option {
+  padding: 6px 9px;
+}
+.parameter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.parameter-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.parameter-row > input {
+  width: 145px;
+}
+.parameter-row span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+.parameter-row input[type="checkbox"],
+.inline-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: #70855e;
+}
+.inline-check {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 10px;
+}
+.session-card {
+  margin-top: 16px;
+  padding: 20px;
+  font-size: 12px;
+  line-height: 1.9;
+  white-space: pre-line;
+}
+input:disabled,
+select:disabled {
+  opacity: 0.5;
+}
 body {
   margin: 0;
   background: #f7f5f0;
@@ -394,7 +454,7 @@ select {
   width: 36px;
   text-align: right;
 }
-input[type="checkbox"] {
+input[type="checkbox"][role="switch"] {
   appearance: none;
   width: 33px;
   height: 19px;
@@ -404,7 +464,7 @@ input[type="checkbox"] {
   cursor: pointer;
   transition: 0.2s;
 }
-input[type="checkbox"]:before {
+input[type="checkbox"][role="switch"]:before {
   content: "";
   position: absolute;
   left: 3px;
@@ -415,10 +475,10 @@ input[type="checkbox"]:before {
   border-radius: 50%;
   transition: 0.2s;
 }
-input[type="checkbox"]:checked {
+input[type="checkbox"][role="switch"]:checked {
   background: #82966d;
 }
-input[type="checkbox"]:checked:before {
+input[type="checkbox"][role="switch"]:checked:before {
   transform: translateX(14px);
 }
 .row {
@@ -466,12 +526,31 @@ input[type="checkbox"]:checked:before {
 .form label:last-child {
   margin-bottom: 0;
 }
-.form input:not([type="range"]),
+.form input:not([type="range"]):not([type="checkbox"]),
 .form textarea {
   display: block;
   width: 100%;
   margin-top: 8px;
   font-size: 12px;
+}
+.form .parameter-row > input {
+  width: 145px;
+  flex: 0 1 145px;
+}
+.parameter-row span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.form .inline-check input {
+  flex: 0 0 16px;
+}
+.form select:not([size]) {
+  display: block;
+  margin-top: 8px;
+  max-width: 100%;
+}
+.model-picker {
+  margin-bottom: 20px;
 }
 .form textarea {
   resize: vertical;
@@ -563,4 +642,174 @@ footer {
 }
 footer span {
   letter-spacing: 1.5px;
+}
+
+.memory-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 16px;
+}
+.memory-layout select {
+  width: 100%;
+  font-size: 12px;
+}
+#memory-editor {
+  width: 100%;
+  font-family: inherit;
+  line-height: 1.65;
+}
+.extension-row {
+  padding: 16px 0;
+  border-bottom: 1px solid #e6e7df;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+.extension-row small {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 480px;
+}
+.extension-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#memory-results .extension-row {
+  align-items: flex-start;
+}
+#skill-preview,
+#confirm-detail {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 300px;
+  overflow: auto;
+  background: #f0f2eb;
+  padding: 12px;
+  border-radius: 10px;
+}
+#home-path {
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+#skills .card,
+#mcp .card,
+#memories > .card {
+  margin-bottom: 16px;
+}
+@media (max-width: 1000px) {
+  .memory-layout {
+    grid-template-columns: 1fr;
+  }
+  .memory-layout select {
+    max-height: 180px;
+  }
+  .extension-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+#memory-search {
+  min-width: 0;
+  flex: 1;
+}
+#memories .row > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.history-toolbar {
+  margin-bottom: 16px;
+  gap: 10px;
+}
+.history-toolbar input {
+  flex: 1;
+  min-width: 0;
+}
+.history-layout {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 16px;
+}
+.history-layout select {
+  width: 100%;
+}
+.history-detail {
+  min-width: 0;
+}
+#history-messages {
+  max-height: 420px;
+  min-height: 180px;
+  overflow: auto;
+}
+.history-message {
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 12px;
+  background: #f1f3ed;
+}
+.history-message.user {
+  background: #e9eeda;
+  margin-left: 24px;
+}
+.history-message div,
+#care-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  line-height: 1.7;
+}
+.history-message small {
+  display: block;
+  margin-bottom: 8px;
+}
+#history-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+#history-title {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+#permissions .card,
+#care .card {
+  margin-bottom: 16px;
+}
+#policy-rules small {
+  max-width: 70%;
+}
+#bubble-seconds {
+  width: 95px;
+}
+aside nav {
+  overflow: auto;
+  max-height: calc(100vh - 260px);
+}
+@media (max-width: 1000px) {
+  .history-layout {
+    grid-template-columns: 1fr;
+  }
+  #history-list {
+    max-height: 130px;
+  }
+}
+
+nav {
+  gap: 3px;
+}
+nav button {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  min-height: 39px;
+}
+.nav-label {
+  margin-top: 24px;
+}
+#history-new-title {
+  flex: 1;
+  min-width: 0;
 }
