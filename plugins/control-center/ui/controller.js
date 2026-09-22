@@ -1,4 +1,5 @@
 import { createExperienceSettings } from "./experience-settings.js";
+import { createIntegrationSettings } from "./integration-settings.js";
 import { createModelSettings } from "./model-settings.js";
 import { createCompanionSettings } from "./companion-settings.js";
 const api = window.familiar,
@@ -16,6 +17,10 @@ const modelSettings = createModelSettings(
   toast,
 );
 const titles = {
+  integrations: [
+    "把陪伴，带到更多地方。",
+    "登录飞书或 GitHub，让宠物在你常用的工具里帮忙。",
+  ],
   history: [
     "相处过的话，都在这里。",
     "查看旧对话，也可以接着聊；在这里聊天时，宠物气泡会安静下来。",
@@ -44,6 +49,7 @@ const titles = {
 };
 const companion = createCompanionSettings(api, toast);
 const experience = createExperienceSettings(api, toast);
+const integrations = createIntegrationSettings(api, toast);
 let petTimer,
   petPending = {},
   petWriting = false;
@@ -86,6 +92,7 @@ document.querySelectorAll("nav button").forEach(
       if (button.dataset.page === "model") modelSettings.activate();
       companion.activate(button.dataset.page);
       experience.activate(button.dataset.page);
+      integrations.activate(button.dataset.page);
     }),
 );
 function toast(text, error = false) {
@@ -119,12 +126,19 @@ function fill(config) {
     $("quiet").checked = config.pet.quiet;
     $("character").value = config.pet.character;
     $("bubble-seconds").value = config.pet.bubbleSeconds;
-    document.querySelector(".preview-creature").style.scale = String(
-      config.pet.scale,
-    );
+    $("character-preview").style.scale = String(config.pet.scale);
   }
   $("name").value = config.persona.name;
   $("instruction").value = config.persona.instruction;
+  $("persona-style").replaceChildren(
+    ...[
+      { id: "character", name: "跟随形象的推荐性格" },
+      ...snapshot.personas,
+      { id: "custom", name: "完全自定义" },
+    ].map((p) => new Option(p.name, p.id)),
+  );
+  $("persona-style").value = config.persona.style ?? "custom";
+  previewCharacter();
   modelSettings.fill(config.provider, snapshot.providers);
 }
 async function refresh(force = false) {
@@ -132,7 +146,7 @@ async function refresh(force = false) {
   polling = true;
   try {
     const data = await api.request("runtime.status");
-    if (data.apiVersion !== 3)
+    if (data.apiVersion !== 4)
       throw new Error("宠物仍运行旧版本，请退出宠物和控制器后重新启动");
     const wasOffline = !snapshot;
     snapshot = data;
@@ -201,20 +215,19 @@ async function refresh(force = false) {
   }
 }
 for (const input of document.querySelectorAll(
-  "#persona input,#persona textarea,#model input:not(#api-key):not(#model-search),#model select",
+  "#persona input,#persona textarea,#persona select,#model input:not(#api-key):not(#model-search),#model select",
 ))
   input.addEventListener("input", () => {
     dirty = true;
   });
 $("scale").oninput = () => {
   $("scale-value").textContent = $("scale").value + "%";
-  document.querySelector(".preview-creature").style.scale = String(
-    Number($("scale").value) / 100,
-  );
+  $("character-preview").style.scale = String(Number($("scale").value) / 100);
   livePet({ scale: Number($("scale").value) / 100 });
 };
 $("character").onchange = () => {
   document.body.dataset.character = $("character").value;
+  previewCharacter();
   livePet({ character: $("character").value });
 };
 for (const key of ["topmost", "quiet"])
@@ -231,12 +244,29 @@ function values() {
   config.pet.character = $("character").value;
   config.persona.name = $("name").value;
   config.persona.instruction = $("instruction").value;
+  config.persona.style = $("persona-style").value;
   config.provider = {
     ...modelSettings.read(),
     savedProfiles: config.provider.savedProfiles,
   };
   return config;
 }
+function previewCharacter() {
+  const character = snapshot?.characters.find(
+    (c) => c.id === $("character").value,
+  );
+  if (character?.preview) $("character-preview").src = character.preview;
+  const chosen = $("persona-style").value;
+  const style = chosen === "character" ? character?.recommendedPersona : chosen;
+  const preset = snapshot?.personas.find((p) => p.id === style);
+  $("persona-description").textContent = preset
+    ? `${preset.name} · ${preset.description}`
+    : "按你填写的表达习惯相处。";
+  $("persona-example").textContent = preset
+    ? `例如：${preset.example}`
+    : "原有的自定义设定会完整保留。";
+}
+$("persona-style").onchange = previewCharacter;
 document.querySelectorAll(".save").forEach(
   (button) =>
     (button.onclick = async () => {

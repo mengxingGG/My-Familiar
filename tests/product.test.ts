@@ -1,4 +1,6 @@
 import { conversationFixture } from "./conversation-fixture.ts";
+import { contextCompaction } from "../plugins/context-compaction/index.ts";
+import { sse, jsonRequest } from "../plugins/llm-shared/http.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile } from "node:fs/promises";
@@ -150,13 +152,13 @@ test("多屏坐标包含负值，拔屏后宠物回到有效工作区", () => {
     1140,
   );
 });
-test("两个角色包可以通过相同清单加载，不修改内核", async () => {
+test("七个角色包可以通过相同清单加载，不修改内核", async () => {
   const k = new Kernel({
     grants: { "familiar.character-pack": ["assets.read"] },
   });
   k.install(characterPack(join(process.cwd(), "characters")));
   await k.startAll();
-  assert.equal(k.resolve("character.catalog").list().length, 2);
+  assert.equal(k.resolve("character.catalog").list().length, 7);
   assert.ok(k.resolve("character.catalog").get("luna").representations.sprite);
   await k.dispose();
 });
@@ -226,6 +228,55 @@ test("LLM 等待期间支持取消和超时", async () =>
     await assert.rejects(collect(url, abort.signal), /abort/i);
     await assert.rejects(collect(url, undefined, 40), /timeout/i);
   }));
+test("响应头返回后 SSE 和 JSON 读取仍响应取消并关闭底层流", async () => {
+  const originalFetch = globalThis.fetch;
+  let cancelled = 0;
+  try {
+    for (const kind of ["sse", "json"] as const) {
+      globalThis.fetch = async () =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(
+                new TextEncoder().encode(
+                  kind === "sse" ? ": heartbeat\n\n" : "{",
+                ),
+              );
+            },
+            cancel() {
+              cancelled++;
+            },
+          }),
+          {
+            headers: {
+              "Content-Type":
+                kind === "sse" ? "text/event-stream" : "application/json",
+            },
+          },
+        );
+      const controller = new AbortController();
+      const operation =
+        kind === "sse"
+          ? (async () => {
+              for await (const _ of sse(
+                "http://fixture",
+                {},
+                {},
+                controller.signal,
+              )) {
+              }
+            })()
+          : jsonRequest("http://fixture", {}, controller.signal);
+      const rejected = assert.rejects(operation, /manual-stop/);
+      await new Promise((r) => setTimeout(r, 5));
+      controller.abort(new Error("manual-stop"));
+      await rejected;
+    }
+    assert.equal(cancelled, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 test("会话生成互斥、配置快照、清空后无迟到消息，取消部分回复不作为下轮完整上下文", async () => {
   const k = new Kernel();
   let config: Settings = {
@@ -292,6 +343,7 @@ test("会话生成互斥、配置快照、清空后无迟到消息，取消部�
     },
   });
   k.install(conversationFixture);
+  k.install(contextCompaction);
   k.install(conversation);
   await k.startAll();
   const service = k.resolve("conversation");

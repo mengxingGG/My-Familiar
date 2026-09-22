@@ -2,7 +2,15 @@ import { locationWindows } from "../../plugins/location-windows/index.ts";
 import { amapCare } from "../../plugins/amap-care/index.ts";
 import { companionCare } from "../../plugins/companion-care/index.ts";
 import { experienceControls } from "../../plugins/experience-controls/index.ts";
-import { app, dialog } from "electron";
+import { app, dialog, shell } from "electron";
+import { feishuCli } from "../../plugins/feishu-cli/index.ts";
+import { githubIntegration } from "../../plugins/github-integration/index.ts";
+import { channelChat } from "../../plugins/channel-chat/index.ts";
+import {
+  contextCompaction,
+  contextTools,
+} from "../../plugins/context-compaction/index.ts";
+import { integrationControls } from "../../plugins/integration-controls/index.ts";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -79,6 +87,8 @@ export async function bootstrap(role: "runtime" | "controller") {
       "familiar.tools-basic": ["process.shell"],
       "familiar.location-windows": ["device.location"],
       "familiar.amap-care": ["network.amap"],
+      "familiar.feishu": ["process.feishu", "network.dependencies"],
+      "familiar.github": ["process.github", "network.dependencies"],
     },
     log: ({ plugin, message }) => console.error(`[${plugin}] ${message}`),
   });
@@ -153,6 +163,7 @@ export async function bootstrap(role: "runtime" | "controller") {
           rendererSprite,
           behaviorBasic,
           llmRouter,
+          contextCompaction,
           homeFiles(
             process.env.FAMILIAR_HOME ??
               (process.env.FAMILIAR_DATA_DIR ||
@@ -170,9 +181,14 @@ export async function bootstrap(role: "runtime" | "controller") {
           memoryFiles,
           skillsLocal,
           agentTools,
+          contextTools,
           mcpClient,
           toolsBasic,
           agentRunner,
+          channelChat,
+          feishuCli((url) => shell.openExternal(url)),
+          githubIntegration((url) => shell.openExternal(url)),
+          integrationControls,
           companionControls,
           conversation,
           bubbleChat,

@@ -25,7 +25,8 @@ export const agentRunner = definePlugin({
         const toolOverhead = Buffer.byteLength(JSON.stringify(specs));
         const denied = new Set<string>();
         let total = 0;
-        for (let round = 0; round < 8; round++) {
+        // 由模型完成回复或用户取消结束，不按工具轮数截断正常任务。
+        for (let round = 0; ; round++) {
           signal.throwIfAborted();
           const plan = await management.plan(input.settings, signal),
             count = await management.count({ ...input, messages, signal });
@@ -36,7 +37,8 @@ export const agentRunner = definePlugin({
           let calls: ToolCall[] = [],
             native: NativeTurn | undefined,
             text = "";
-          ctx.emit("agent.activity", round ? "正在整理结果…" : "正在回复…");
+          if (!input.silent)
+            ctx.emit("agent.activity", round ? "正在整理结果…" : "正在回复…");
           for await (const delta of llm.stream({
             ...input,
             messages,
@@ -67,7 +69,6 @@ export const agentRunner = definePlugin({
             if (native) input.onNative?.(native);
             return;
           }
-          if (calls.length > 16) throw new Error("单轮工具请求过多");
           if (text) yield "\n";
           for (const call of calls) {
             signal.throwIfAborted();
@@ -75,7 +76,10 @@ export const agentRunner = definePlugin({
             try {
               if (denied.has(call.name))
                 throw new Error("此工具本轮已被拒绝，不再请求确认");
-              result = await tools.run(call, signal);
+              result = await tools.run(call, signal, {
+                silent: input.silent,
+                session: input.permissionSession,
+              });
             } catch (e) {
               if (signal.aborted) throw e;
               const message = e instanceof Error ? e.message : "工具失败";
@@ -94,7 +98,6 @@ export const agentRunner = definePlugin({
             input.onTrace?.(trace);
           }
         }
-        throw new Error("本轮已达到 8 次工具往返上限，已停止；可以继续发消息");
       },
     });
   },

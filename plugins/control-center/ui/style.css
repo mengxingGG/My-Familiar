@@ -813,3 +813,60 @@ nav button {
   flex: 1;
   min-width: 0;
 }
+/* 直接预览角色包，避免设置页与桌面显示不同的形象。 */
+.character-preview {
+  position: absolute;
+  width: 200px;
+  height: 187px;
+  object-fit: contain;
+  z-index: 2;
+  transform-origin: center;
+}
+.persona-sample {
+  padding: 18px;
+  border-radius: 14px;
+  background: #f2f7f1;
+  line-height: 1.7;
+}
+.persona-sample p {
+  margin-bottom: 0;
+  color: #486954;
+}
+.integration-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.integration-heading h3 {
+  margin: 0;
+}
+.integration-log {
+  max-height: 230px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 14px;
+  background: #f5f6f2;
+  border-radius: 12px;
+  font-size: 12px;
+}
+#integrations details {
+  border-top: 1px solid #e4e8de;
+  padding-top: 12px;
+}
+#integrations summary {
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+#integrations .row {
+  flex-wrap: wrap;
+}
+#integrations .pill {
+  white-space: nowrap;
+}
+#integrations label.setting {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}

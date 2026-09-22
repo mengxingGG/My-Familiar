@@ -27,7 +27,7 @@
         <span class="dot" id="dot"></span
         ><span id="connection">正在连接宠物…</span
         ><small>控制器关闭后，陪伴继续。</small>
-        <div class="version">FAMILIAR / 0.1.0</div>
+        <div class="version">FAMILIAR / 0.2.0</div>
       </div>
     </aside>
     <main>
@@ -62,11 +62,11 @@
           </div>
           <div class="pet-preview">
             <div class="orbit"></div>
-            <div class="preview-creature">
-              <i class="ear left"></i><i class="ear right"></i
-              ><i class="sprout"></i>
-              <div class="face"><i></i><i></i><b>⌣</b></div>
-            </div>
+            <img
+              class="character-preview"
+              id="character-preview"
+              alt="当前角色预览"
+            />
             <span class="preview-ground"></span><small>桌面上，见。</small>
           </div>
         </div>
@@ -256,9 +256,21 @@
               type="number"
               min="1024"
               max="2097152"
-              placeholder="自动使用模型提供的上限；未知时暂用 32768"
+              placeholder="默认 256000（256K），不超过模型实际窗口"
             /><small id="context-hint"
-              >留空自动；输出预算和安全余量会预留。</small
+              >留空使用默认上限；输出预算和安全余量会预留。</small
+            ></label
+          >
+          <label
+            >自动压缩阈值（%）<input
+              id="compact-percent"
+              type="number"
+              min="10"
+              max="95"
+              value="80"
+            /><small
+              >默认
+              80%。按有效窗口计算，整理旧历史并保留近期原文；完整会话仍可查看。</small
             ></label
           >
           <label class="inline-check"
@@ -266,7 +278,7 @@
             启用服务支持的缓存优化</label
           >
           <small
-            >稳定保留会话前缀，接近上下文上限时才裁剪。缓存命中取决于供应商；关闭此选项也不能禁止服务端自身的隐式缓存。</small
+            >同一段上下文保持稳定前缀；达到阈值才压缩并开始下一段。压缩本身会调用模型并产生用量。缓存命中取决于供应商；关闭此选项也不能禁止服务端自身的隐式缓存。</small
           >
         </div>
         <div id="session-status" class="card session-card" role="status">
@@ -287,7 +299,21 @@
             >它的名字
             <input id="name" maxlength="40" placeholder="小森" /></label
           ><label
-            >你希望它是什么性格？
+            >相处的性格
+            <select id="persona-style">
+              <option value="character">跟随形象的推荐性格</option>
+              <option value="custom">完全自定义</option>
+            </select>
+            <small
+              >固定选择性格后，换形象不会改变它；名字也由你决定。</small
+            ></label
+          >
+          <div class="persona-sample">
+            <b id="persona-description"></b>
+            <p id="persona-example"></p>
+          </div>
+          <label
+            >补充你喜欢的表达习惯
             <textarea
               id="instruction"
               rows="7"

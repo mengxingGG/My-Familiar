@@ -12,6 +12,7 @@ export const runtimeControls = definePlugin({
       "platform.surface",
       "secrets.local",
       "character.catalog",
+      "persona.catalog",
       "behavior.pet",
       "conversation",
       "llm.chat",
@@ -28,7 +29,8 @@ export const runtimeControls = definePlugin({
     const routes = {
       "runtime.status": () => ({
         connected: true,
-        apiVersion: 3,
+        apiVersion: 4,
+        personas: ctx.use("persona.catalog").list(),
         settings: settings.get(),
         hasKey: secrets.has(credentialScope(settings.get().provider)),
         providers: ctx.use("llm.registry").list(),
@@ -37,7 +39,23 @@ export const runtimeControls = definePlugin({
         characters: ctx
           .use("character.catalog")
           .list()
-          .map(({ id, name, description }) => ({ id, name, description })),
+          .map(
+            ({
+              id,
+              name,
+              description,
+              recommendedPersona,
+              representations,
+            }) => ({
+              id,
+              name,
+              description,
+              recommendedPersona,
+              preview: (
+                representations.sprite as { frames: Record<string, string[]> }
+              ).frames.idle[0],
+            }),
+          ),
         plugins: ctx.kernel.snapshot(),
         diagnostics: ctx.kernel.diagnostics,
         behavior: ctx.use("behavior.pet").state(),

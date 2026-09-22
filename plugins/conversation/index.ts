@@ -7,8 +7,8 @@ import {
   type SessionStatus,
   type PromptMessage,
   type ConversationSummary,
+  type ContextCheckpoint,
 } from "../../packages/contracts/index.ts";
-import { fitContext } from "./context.ts";
 type StoredMessage = Message & {
   native?: NativeTurn;
   trace?: PromptMessage[];
@@ -21,6 +21,8 @@ type Session = {
   start?: string;
   trimmed: number;
   status?: SessionStatus;
+  checkpoint?: ContextCheckpoint;
+  compactions?: number;
 };
 export const conversation = definePlugin({
   manifest: {
@@ -34,7 +36,9 @@ export const conversation = definePlugin({
       "memory.files",
       "skills.catalog",
       "llm.management",
+      "context.compaction",
       "settings",
+      "persona.catalog",
       "storage.local",
     ],
   },
@@ -148,7 +152,7 @@ export const conversation = definePlugin({
             abort.signal.throwIfAborted();
             const system = {
               role: "system",
-              content: `你的名字是${config.persona.name}。\n${config.persona.instruction}\n你可以调用当前提供的工具。只有实际工具结果才能证明完成操作；没有执行过就不能声称做过。普通陪伴不必调用工具。用户提及过去时先检索记忆，明确要求记住的长期信息写入核心记忆；可复用的错误和经验写入教训。不要展示思考过程。\n${await ctx.use("memory.files").context()}\n${await ctx.use("skills.catalog").prompt()}`,
+              content: `${ctx.use("persona.catalog").prompt(config)}\n你可以调用当前提供的工具。只有实际工具结果才能证明完成操作；没有执行过就不能声称做过。普通陪伴不必调用工具。用户提及过去时先检索记忆，明确要求记住的长期信息写入核心记忆；可复用的错误和经验写入教训。不要展示思考过程。\n${await ctx.use("memory.files").context()}\n${await ctx.use("skills.catalog").prompt()}`,
             };
             const fingerprint = createHash("sha256")
               .update(
@@ -170,12 +174,13 @@ export const conversation = definePlugin({
             session.fingerprint = fingerprint;
             const plan = await management.plan(config.provider, abort.signal);
             abort.signal.throwIfAborted();
-            const start = session.start
-              ? Math.max(
-                  0,
-                  messages.findIndex((m) => m.id === session.start),
-                )
-              : 0;
+            const start =
+              session.checkpoint && session.start
+                ? Math.max(
+                    0,
+                    messages.findIndex((m) => m.id === session.start),
+                  )
+                : 0;
             const history: (PromptMessage & { id: string })[] = [];
             for (let i = start; i < messages.length; i++) {
               const m = messages[i];
@@ -214,28 +219,29 @@ export const conversation = definePlugin({
                   });
               }
             }
-            const fitted = await fitContext(
+            const fitted = await ctx.use("context.compaction").prepare({
+              sessionId: session.id,
               system,
               history,
-              plan.inputBudget -
-                (ctx.use("agent.tools").list().length
-                  ? Buffer.byteLength(
-                      JSON.stringify(ctx.use("agent.tools").list()),
-                      "utf8",
-                    ) + 1024
-                  : 0),
-              (prompt) =>
-                management.count({
-                  settings: config.provider,
-                  messages: prompt,
-                  signal: abort.signal,
-                }),
-            );
+              checkpoint: session.checkpoint,
+              settings: config.provider,
+              plan,
+              toolTokens: ctx.use("agent.tools").list().length
+                ? Buffer.byteLength(
+                    JSON.stringify(ctx.use("agent.tools").list()),
+                    "utf8",
+                  ) + 1024
+                : 0,
+              signal: abort.signal,
+            });
             abort.signal.throwIfAborted();
             if (fitted.dropped) {
               session.epoch++;
-              session.trimmed += fitted.dropped;
-              session.start = fitted.messages[0].id;
+              session.trimmed =
+                (session.checkpoint ? session.trimmed : 0) + fitted.dropped;
+              session.start = history[fitted.dropped].id;
+              session.checkpoint = fitted.checkpoint;
+              session.compactions = (session.compactions ?? 0) + 1;
               // 只移动模型上下文起点，完整会话始终留给历史管理器。
             }
             session.status = {
@@ -247,6 +253,9 @@ export const conversation = definePlugin({
               inputBudget: plan.inputBudget,
               limitSource: plan.source,
               trimmedMessages: session.trimmed,
+              compactions: session.compactions ?? 0,
+              compactThreshold: fitted.threshold,
+              checkpoint: session.checkpoint?.id,
             };
             await persist();
             publish();
@@ -281,18 +290,6 @@ export const conversation = definePlugin({
             assistant.status = abort.signal.aborted ? "cancelled" : "complete";
             if (!assistant.text && assistant.status === "complete")
               throw new Error("模型没有返回文字，请检查输出/思考预算");
-            if (assistant.status === "complete") {
-              try {
-                await ctx.use("memory.files").record({
-                  id: user.id,
-                  user: user.text,
-                  assistant: assistant.text,
-                  time: user.time,
-                });
-              } catch (e) {
-                ctx.report(e);
-              }
-            }
           } catch (e) {
             assistant.status = abort.signal.aborted ? "cancelled" : "error";
             delete assistant.native;
@@ -368,15 +365,6 @@ export const conversation = definePlugin({
         messages.push(message);
         await persist();
         publish();
-        await ctx
-          .use("memory.files")
-          .record({
-            id: message.id,
-            user: "[主动关怀]",
-            assistant: text,
-            time: message.time,
-          })
-          .catch((e) => ctx.report(e));
       },
       async list(query = "") {
         if (typeof query !== "string" || query.length > 200)
@@ -419,6 +407,12 @@ export const conversation = definePlugin({
           messages: page,
           next: next < data.messages.length ? next : null,
           active: id === session.id,
+          context: data.session.checkpoint
+            ? {
+                checkpoint: data.session.checkpoint,
+                compactions: data.session.compactions ?? 0,
+              }
+            : undefined,
         });
       },
       create: () =>
@@ -450,6 +444,7 @@ export const conversation = definePlugin({
       remove: (id: string) =>
         change(async () => {
           await find(id);
+          await ctx.use("context.compaction").forget(id);
           if (id === session.id) await activate(fresh());
           const entries = [...index.values()].filter((v) => v.id !== id);
           await storage.write("conversation-index", entries);

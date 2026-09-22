@@ -10,6 +10,7 @@ export interface ProviderProfile {
   topP: number | null;
   maxOutputTokens: number;
   contextTokens: number | null;
+  autoCompactPercent?: number;
   timeoutSeconds: number;
   thinking: { mode: ThinkingMode; effort: string; budgetTokens: number };
   cache: boolean;
@@ -105,6 +106,9 @@ export interface SessionStatus {
   inputBudget: number;
   limitSource: ContextPlan["source"];
   trimmedMessages: number;
+  compactions?: number;
+  compactThreshold?: number;
+  checkpoint?: string;
   usage?: Usage;
 }
 export const profileDefaults: ProviderProfile = {
@@ -115,6 +119,7 @@ export const profileDefaults: ProviderProfile = {
   topP: null,
   maxOutputTokens: 4096,
   contextTokens: null,
+  autoCompactPercent: 80,
   timeoutSeconds: 180,
   thinking: { mode: "auto", effort: "medium", budgetTokens: 2048 },
   cache: true,

@@ -11,13 +11,16 @@ import {
   type SessionStatus,
 } from "./llm.ts";
 export * from "./llm.ts";
+export * from "./context.ts";
 export * from "./agent.ts";
 export * from "./companion.ts";
+export * from "./integrations.ts";
 export type PetAction = "idle" | "greet" | "drag" | "think" | "sleep" | "happy";
 export interface Character {
   id: string;
   name: string;
   description: string;
+  recommendedPersona?: string;
   actions: string[];
   representations: Record<string, unknown>;
 }
@@ -35,7 +38,7 @@ export interface Settings {
     visible: boolean;
     bubbleSeconds: number;
   };
-  persona: { name: string; instruction: string };
+  persona: { name: string; instruction: string; style?: string };
   provider: ProviderSettings;
 }
 export interface Message {
@@ -90,6 +93,15 @@ declare module "../kernel/index.ts" {
     };
     "config.pet": ConfigSection<Settings["pet"]>;
     "config.persona": ConfigSection<Settings["persona"]>;
+    "persona.catalog": {
+      list(): {
+        id: string;
+        name: string;
+        description: string;
+        example: string;
+      }[];
+      prompt(config: Settings): string;
+    };
     "config.provider": ConfigSection<Settings["provider"]>;
     "platform.autostart": { get(): boolean; set(enabled: boolean): boolean };
     commands: {
@@ -147,8 +159,8 @@ export const defaults: Settings = {
   },
   persona: {
     name: "小森",
-    instruction:
-      "你是住在用户桌面上的小伙伴小森。温暖、自然、简洁地用中文交流，不假装自己能看到屏幕或执行操作。",
+    style: "character",
+    instruction: "",
   },
   provider: {
     ...profileDefaults,

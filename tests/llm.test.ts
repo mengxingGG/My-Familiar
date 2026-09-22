@@ -1,4 +1,5 @@
 import { conversationFixture } from "./conversation-fixture.ts";
+import { contextCompaction } from "../plugins/context-compaction/index.ts";
 import type { ToolCall, PromptMessage } from "../packages/contracts/index.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -587,6 +588,19 @@ function harness(
         ctx.use("llm.registry").register({
           ...provider,
           stream: async function* (input) {
+            if (input.messages[0]?.content.startsWith("你是会话交接整理器")) {
+              yield JSON.stringify({
+                goals: ["继续用户任务"],
+                constraints: [],
+                facts: ["旧对话已归档，可回查"],
+                decisions: [],
+                progress: [],
+                pending: [],
+                uncertainties: [],
+                artifacts: [],
+              });
+              return;
+            }
             captured.push(input);
             yield "回复";
             input.onNative?.({
@@ -605,6 +619,7 @@ function harness(
   });
   k.install(llmRouter);
   k.install(conversationFixture);
+  k.install(contextCompaction);
   k.install(conversation);
   return { k, store, captured, current, keys };
 }
@@ -661,17 +676,21 @@ test("长会话追加保持相同前缀与缓存键，重启保持会话，私�
   assert.notEqual(restart.captured[1].sessionKey, key);
   await restart.k.dispose();
 });
-test("靠近上限才移动整轮前缀，取消轮次不重放，手动上限不能超模型上限", async () => {
+test("达到阈值后模型压缩整轮前缀，原文保留，手动上限不能超模型上限", async () => {
   const c = config(fake);
-  c.contextTokens = 2048;
+  c.contextTokens = 8192;
   c.maxOutputTokens = 128;
   const h = harness(undefined, c, fake);
   await h.k.startAll();
   for (let i = 0; i < 5; i++) {
-    await h.k.resolve("conversation").send(String(i) + "a".repeat(600));
+    await h.k.resolve("conversation").send(String(i) + "a".repeat(2600));
     await idle(h.k);
   }
   const state = h.k.resolve("conversation").state();
+  assert.equal(state.error, undefined);
+  assert.ok(state.session!.compactions! > 0);
+  assert.ok(state.session!.checkpoint);
+  assert.equal((h.store.get("conversation") as any).messages.length, 10);
   assert.ok(state.session!.trimmedMessages > 0);
   assert.equal(state.session!.trimmedMessages % 2, 0);
   assert.notEqual(h.captured[0].sessionKey, h.captured.at(-1)!.sessionKey);
@@ -681,6 +700,41 @@ test("靠近上限才移动整轮前缀，取消轮次不重放，手动上限�
     .plan({ ...c, contextTokens: 1000000 });
   assert.equal(p.contextWindow, 200000);
   await h.k.dispose();
+});
+test("默认上限 256K，已知较小窗口和手动上限共同约束实际预算", async () => {
+  const provider = {
+    ...fake,
+    models: async () => [
+      { id: "fixture", name: "fixture", contextWindow: 1000000 },
+    ],
+  };
+  const c = { ...config(provider), contextTokens: null };
+  const h = harness(undefined, c, provider);
+  await h.k.startAll();
+  try {
+    assert.equal(
+      (await h.k.resolve("llm.management").plan(c)).contextWindow,
+      256000,
+    );
+    assert.equal(
+      (
+        await h.k
+          .resolve("llm.management")
+          .plan({ ...c, contextTokens: 128000 })
+      ).contextWindow,
+      128000,
+    );
+    assert.equal(
+      (
+        await h.k
+          .resolve("llm.management")
+          .plan({ ...c, contextTokens: 2000000 })
+      ).contextWindow,
+      1000000,
+    );
+  } finally {
+    await h.k.dispose();
+  }
 });
 test("目录能力验证、密钥地址隔离和旧配置兼容", async () => {
   const p = {

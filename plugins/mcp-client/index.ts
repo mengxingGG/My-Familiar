@@ -12,6 +12,12 @@ import {
 } from "../../packages/contracts/index.ts";
 import { FileStore } from "../home-files/store.ts";
 import { runProcess } from "../agent-tools/process.ts";
+import {
+  githubToolAccess,
+  isOfficialGithub,
+  githubBusinessSchema,
+  guardGithubBusinessArgs,
+} from "../github-integration/policy.ts";
 const digest = (v: unknown) =>
   createHash("sha256").update(JSON.stringify(v)).digest("hex");
 export const mcpCredentialScope = (c: McpConfig) =>
@@ -202,10 +208,14 @@ export const mcpClient = definePlugin({
             c.transport === "http"
               ? new StreamableHTTPClientTransport(endpoint!, {
                   requestInit: {
-                    headers:
-                      key && c.auth?.kind === "header"
+                    headers: {
+                      ...(isOfficialGithub(c)
+                        ? { "X-MCP-Toolsets": "all" }
+                        : {}),
+                      ...(key && c.auth?.kind === "header"
                         ? { [c.auth.name]: (c.auth.prefix ?? "") + key }
-                        : {},
+                        : {}),
+                    },
                     redirect: "error",
                   },
                 })
@@ -236,7 +246,8 @@ export const mcpClient = definePlugin({
               signal: ctx.abort.signal,
             });
             for (const t of page.tools) {
-              if (names.length >= 100) break;
+              const githubAccess = githubToolAccess(c, t.name);
+              if (githubAccess === false) continue;
               const name = `mcp_${c.id}_${digest([scope(c), t.name]).slice(0, 12)}`;
               registeredNames.set(t.name, name);
               const readonlyExa =
@@ -246,17 +257,35 @@ export const mcpClient = definePlugin({
                 tools.register({
                   name,
                   description: `${c.name} · ${t.name}: ${(t.description ?? "").slice(0, 450)}`,
-                  parameters: t.inputSchema as Record<string, unknown>,
+                  parameters: githubAccess
+                    ? githubBusinessSchema(
+                        t.name,
+                        t.inputSchema as Record<string, unknown>,
+                      )
+                    : (t.inputSchema as Record<string, unknown>),
+                  ...(githubAccess
+                    ? {
+                        permission: async (args: Record<string, unknown>) => {
+                          guardGithubBusinessArgs(t.name, args);
+                          return {
+                            category: githubAccess,
+                            scope: JSON.stringify(args),
+                          };
+                        },
+                      }
+                    : {}),
                   category:
-                    readonlyExa && t.name === "web_search_exa"
+                    githubAccess ??
+                    (readonlyExa && t.name === "web_search_exa"
                       ? "search"
                       : readonlyExa ||
                           (c.url === "https://mcp.amap.com/mcp" &&
                             amapReadTools.includes(t.name)) ||
                           t.annotations?.readOnlyHint === true
                         ? "read"
-                        : "mcp",
+                        : "mcp"),
                   async execute(args, { signal }) {
+                    if (githubAccess) guardGithubBusinessArgs(t.name, args);
                     try {
                       const result = await client.callTool(
                         { name: t.name, arguments: args },
@@ -281,7 +310,7 @@ export const mcpClient = definePlugin({
             cursor = page.nextCursor;
             if (cursor && seen.has(cursor)) throw new Error("分页循环");
             if (cursor) seen.add(cursor);
-          } while (cursor && names.length < 100);
+          } while (cursor);
           if (
             !ctx.active ||
             digest(get(id)) !== digest(c) ||

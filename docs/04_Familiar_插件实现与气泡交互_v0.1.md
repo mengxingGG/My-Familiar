@@ -48,7 +48,8 @@
 | `plugins/behavior-basic` | 本地互动、睡眠、等待状态；不实现模型网络请求 |
 | `plugins/llm-registry`、`plugins/llm-router` | 供应商注册、模型目录缓存、能力校验、凭据路由、上下文预算与计数 |
 | `plugins/provider-*`、`plugins/llm-shared` | 七种供应商的原生协议、参数、SSE、用量、原生状态与公共 HTTP 代码 |
-| `plugins/conversation` | 单轮互斥、配置快照、稳定会话前缀、整轮裁剪、历史、停止和清空 |
+| `plugins/conversation` | 单轮互斥、配置快照、稳定会话前缀、交接起点、完整历史、停止和清空 |
+| `plugins/context-compaction` | 模型整理结构化摘要、分块预算、按会话归档、原文查询工具 |
 | `plugins/bubble-chat` | 头顶气泡与临时输入条；无 Electron 导入、无模型供应商逻辑 |
 | `plugins/runtime-controls` | 为控制器提供受限的产品命令与状态快照 |
 | `plugins/transport-local` | 本地命名管道、随机会话令牌、包大小限制、请求去重 |
@@ -79,7 +80,7 @@
 
 角色包中的 `representations.sprite` 独立拥有帧和帧率；公共动作协议只传 `idle/greet/happy/think/sleep/drag` 等意图。未来可增加其他 Renderer 与 `representations.vrm` 等资源字段，无需让聊天插件认识骨骼或模型路径。
 
-当前自绘 SVG 帧是用于验证架构的原创占位美术；`mori` 与 `luna` 两个包验证替换能力。它们不是已经确定的正式角色风格。3D 渲染器和模型资产尚未实现。
+当前提供 `mori`、`luna` 和羊、猫头鹰、机器人、狐狸、企鹅共七个原创 SVG 角色包。每个形象包含推荐性格，用户也可独立选择性格；元信息不与 Sprite 渲染器绑定。3D 渲染器和模型资产尚未实现。新增插件、登录及通道契约见 [文档 10](10_Familiar_飞书GitHub与角色性格.md)。
 
 ## 验证边界
 

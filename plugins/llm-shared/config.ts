@@ -72,6 +72,12 @@ export function validateProfile(value: unknown): ProviderProfile {
         ? null
         : integer(v.contextTokens, 1024, 2097152, "上下文窗口"),
     timeoutSeconds: integer(v.timeoutSeconds, 10, 900, "请求超时"),
+    autoCompactPercent: integer(
+      v.autoCompactPercent ?? 80,
+      10,
+      95,
+      "自动压缩百分比",
+    ),
     thinking: {
       mode: v.thinking.mode,
       effort: v.thinking.effort,

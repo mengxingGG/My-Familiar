@@ -130,12 +130,17 @@ export const llmRouter = definePlugin({
     const makeInput = (
       input: Omit<ProviderInput, "key">,
       timeout?: number,
-    ): ProviderInput => {
+    ): ProviderInput & { release(): void } => {
       const c = validate(input.settings),
         provider = registry.get(c.kind),
         key = secrets.get(credentialScope(c));
       if (provider.requiresKey && !key)
         throw new Error("请先为当前供应商和地址保存 API Key");
+      const deadline = new AbortController();
+      const timer = setTimeout(
+        () => deadline.abort(new DOMException("模型请求超时", "TimeoutError")),
+        timeout ?? c.timeoutSeconds * 1000,
+      );
       return {
         ...input,
         settings: c,
@@ -145,8 +150,9 @@ export const llmRouter = definePlugin({
         signal: AbortSignal.any([
           ctx.abort.signal,
           input.signal,
-          AbortSignal.timeout(timeout ?? c.timeoutSeconds * 1000),
+          deadline.signal,
         ]),
+        release: () => clearTimeout(timer),
       };
     };
     const models = async (
@@ -226,7 +232,7 @@ export const llmRouter = definePlugin({
       const contextWindow =
         c.contextTokens !== null
           ? Math.min(c.contextTokens, discovered ?? Infinity)
-          : (discovered ?? 32768);
+          : Math.min(256000, discovered ?? 32768);
       const source =
         c.contextTokens !== null
           ? ("manual" as const)
@@ -260,26 +266,33 @@ export const llmRouter = definePlugin({
             ),
           );
         if (!provider.countTokens) return { tokens: estimate, exact: false };
+        const request = makeInput(input, 15000);
         try {
-          const value = await provider.countTokens(makeInput(input, 15000));
+          const value = await provider.countTokens(request);
           return { tokens: value, exact: true };
         } catch (e) {
           if (input.signal.aborted || ctx.abort.signal.aborted) throw e;
           return { tokens: estimate, exact: false };
+        } finally {
+          request.release();
         }
       },
     });
     ctx.provide("llm.chat", {
       async *stream(input) {
         const request = makeInput(input);
-        if (!request.settings.model) throw new Error("请先选择模型");
-        let total = 0;
-        for await (const text of registry
-          .get(request.settings.kind)
-          .stream(request)) {
-          total += text.length;
-          if (total > 256000) throw new Error("回复超过应用长度上限");
-          yield text;
+        try {
+          if (!request.settings.model) throw new Error("请先选择模型");
+          let total = 0;
+          for await (const text of registry
+            .get(request.settings.kind)
+            .stream(request)) {
+            total += text.length;
+            if (total > 256000) throw new Error("回复超过应用长度上限");
+            yield text;
+          }
+        } finally {
+          request.release();
         }
       },
       async test() {
@@ -293,12 +306,16 @@ export const llmRouter = definePlugin({
           },
           Math.min(c.timeoutSeconds * 1000, 60000),
         );
-        for await (const chunk of registry.get(c.kind).stream(input)) {
-          text += chunk;
-          if (text.length > 256000) throw new Error("测试回复过长");
+        try {
+          for await (const chunk of registry.get(c.kind).stream(input)) {
+            text += chunk;
+            if (text.length > 256000) throw new Error("测试回复过长");
+          }
+          if (!text.trim()) throw new Error("连接成功，但模型没有返回文字");
+          return "连接成功，模型已返回文字";
+        } finally {
+          input.release();
         }
-        if (!text.trim()) throw new Error("连接成功，但模型没有返回文字");
-        return "连接成功，模型已返回文字";
       },
     });
   },

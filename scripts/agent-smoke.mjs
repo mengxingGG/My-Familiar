@@ -277,15 +277,11 @@ try {
   const diaries = (await request("memory.list")).filter((p) =>
     p.startsWith("daily/"),
   );
-  assert.equal(diaries.length, 1);
-  assert.match(
-    (await request("memory.read", { path: diaries[0] })).text,
-    /remember/,
-  );
+  assert.equal(diaries.length, 0);
   await request("chat.clear");
   assert.equal(
     (await request("memory.list")).filter((p) => p.startsWith("daily/")).length,
-    1,
+    0,
   );
   const status = await request("companion.status");
   assert.ok(status.home.startsWith(output));
@@ -314,7 +310,7 @@ try {
           "mcp-stdio-credentials-tools",
           "pet-shell-approval-allow-deny",
           "mcp-tool-roundtrip",
-          "daily-persistence",
+          "no-automatic-chat-diary",
         ],
         errors,
       },

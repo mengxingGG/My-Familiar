@@ -2,7 +2,7 @@
 
 ## 当前边界
 
-Windows 本地开发预览；独立宠物 Runtime、独立 Controller、2D 占位角色、七种文字 LLM 接口。宠物以气泡说话；按用户最新要求，控制器增加可继续聊天的历史会话管理。文字输入与回复共用头顶位置，Enter 换行，Shift+Enter 或按钮发送。语音未来是并列输入方式，不替代文字。
+Windows 本地开发预览；独立宠物 Runtime、独立 Controller、七个原创 2D 角色、七种文字 LLM 接口。宠物以气泡说话；控制器提供可继续聊天的历史会话管理。文字输入与回复共用头顶位置，Enter 换行，Shift+Enter 或按钮发送。语音未来是并列输入方式，不替代文字。
 
 当前已增加基础 Agent 往返、文件记忆、独立 Skill/MCP 管理和工具确认，保持宠物陪伴定位。已增加受限的主动问候和用户自定义提醒；尚未增加语音、视觉或自主执行任务的后台循环。未来 3D 通过渲染器和角色表示扩展，不把骨骼、镜头或具体模型格式塞入内核。v0.1.0 开始提供 Windows x64 安装程序与免安装 ZIP，发布流程见 [首版说明](releases/v0.1.0.md)。
 
@@ -41,6 +41,8 @@ Windows 本地开发预览；独立宠物 Runtime、独立 Controller、2D 占�
 
 构建输出、测试数据、运行数据与本机快捷方式均由 `.gitignore` 排除。`package-lock.json` 随源码管理。`npm run package:release` 只生成本地 EXE 与 ZIP；GitHub 发布是显式单独步骤，须有用户授权。
 
+当前发行版为 [v0.2.0](releases/v0.2.0.md)。发布时顺序运行五组 `smoke:*:packaged` 窗口检查；`node scripts/upgrade-smoke.mjs <v0.1.0 的 Familiar.exe>` 可使用独立演示目录验证旧数据升级，不操作正常使用的数据。
+
 ## 数据和调试
 
 默认数据目录 `%APPDATA%/Familiar`，用 `FAMILIAR_DATA_DIR` 可以隔离开发或测试数据。Runtime 和 Controller 使用不同 Electron userData。Runtime 是配置与会话唯一写入者。
@@ -58,7 +60,11 @@ Windows 本地开发预览；独立宠物 Runtime、独立 Controller、2D 占�
 
 新增模块与数据契约见 [文档 09](09_Familiar_日常陪伴与权限会话.md)。Windows 构建需要 Windows 10/11 SDK 与系统 .NET Framework。
 
+飞书 CLI、GitHub 登录/MCP、通道独立会话、七个角色与独立性格见 [文档 10](10_Familiar_飞书GitHub与角色性格.md)。修改相关插件需运行 `npm run smoke:integrations`；修改 CLI 版本和参数需运行 `npm run check:cli`，不要把下载检查当作真实账号登录验收。不能覆盖用户已经保存的自定义性格或 CLI 配置。
+
 ## 下一步顺序
+
+记忆和上下文的当前实现见 [重要日记与会话压缩](11_Familiar_重要日记与会话压缩.md)：日记由模型工具主动选择，压缩由独立插件在发送前触发，归档与日记分开。修改后运行 `npm run smoke:context`。不要恢复旧的逐轮抄写日记或只丢弃旧轮次的行为；连续压缩质量和轮中超大工具结果仍需继续完善。
 
 1. 按文档 07 的供应商矩阵，用真实服务验证模型列表、参数、流式回复、取消、长会话及缓存用量。夹具测试不能替代真实接口验收。
 2. 手工验证中文输入法、多显示器、混合 DPI、透明区命中与全屏使用。

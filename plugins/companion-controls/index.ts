@@ -1,6 +1,8 @@
 import { experienceCommands } from "../experience-controls/index.ts";
+import { integrationCommands } from "../integration-controls/index.ts";
 import { definePlugin } from "../../packages/contracts/index.ts";
 export const companionCommands = [
+  ...integrationCommands,
   ...experienceCommands,
   "companion.status",
   "settings.pet",

@@ -12,6 +12,7 @@ export const companionCare = definePlugin({
     requires: [
       "storage.local",
       "settings",
+      "persona.catalog",
       "llm.chat",
       "memory.files",
       "conversation",
@@ -100,7 +101,7 @@ export const companionCare = definePlugin({
         const messages = [
           {
             role: "system",
-            content: `你的名字是${current.persona.name}。${current.persona.instruction}\n用自然的中文说一两句话，不超过100字。不要展示思考，不要说自己看到了用户屏幕或活动。不要猜测城市、天气、餐馆、价格或用户是否已经吃饭。没有工具就不声称执行了操作。\n${await ctx.use("memory.files").context()}`,
+            content: `${ctx.use("persona.catalog").prompt(current)}\n用自然的中文说一两句话，不超过100字。不要展示思考，不要说自己看到了用户屏幕或活动。不要猜测城市、天气、餐馆、价格或用户是否已经吃饭。没有工具就不声称执行了操作。\n${await ctx.use("memory.files").context()}`,
           },
           {
             role: "user",
@@ -108,16 +109,14 @@ export const companionCare = definePlugin({
           },
         ];
         let text = "";
-        for await (const delta of ctx
-          .use("llm.chat")
-          .stream({
-            settings: {
-              ...current.provider,
-              timeoutSeconds: Math.min(60, current.provider.timeoutSeconds),
-            },
-            messages,
-            signal,
-          })) {
+        for await (const delta of ctx.use("llm.chat").stream({
+          settings: {
+            ...current.provider,
+            timeoutSeconds: Math.min(60, current.provider.timeoutSeconds),
+          },
+          messages,
+          signal,
+        })) {
           text += delta;
           if (text.length > 1000) break;
         }

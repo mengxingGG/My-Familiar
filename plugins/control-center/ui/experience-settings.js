@@ -21,6 +21,7 @@ export function createExperienceSettings(api, toast) {
     <div id="history-rename-form" class="row" hidden><input id="history-new-title" maxlength="100" aria-label="会话新名称"><button id="history-rename-save" class="primary">保存名称</button></div>
     <div class="row"><button id="history-previous" class="ghost">更早的消息</button><span id="history-range"></span><button id="history-next" class="ghost">更晚的消息</button></div>
     <div id="history-messages" aria-live="polite"></div><small id="history-state"></small>
+    <details id="history-context" hidden><summary id="history-context-title">会话交接摘要</summary><div id="history-context-body" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;padding:12px 0"></div></details>
     <button id="history-continue" class="ghost">继续此会话</button>
     <textarea id="history-input" rows="3" placeholder="Enter 换行 · Shift+Enter 发送" aria-label="历史会话文字输入"></textarea>
     <div class="row"><small>在此页对话时，宠物不冒泡。</small><button id="history-stop" class="ghost">停止回复</button><button id="history-send" class="primary">发送</button></div>
@@ -154,6 +155,27 @@ export function createExperienceSettings(api, toast) {
     displayed = data.messages;
     $("history-title").textContent = data.session.title;
     $("history-list").value = id;
+    $("history-context").hidden = !data.context;
+    $("history-context-title").textContent =
+      `会话交接摘要 · 已压缩 ${data.context?.compactions ?? 0} 次`;
+    const titles = {
+      goals: "当前目标",
+      constraints: "约束和更正",
+      facts: "确认的事实",
+      decisions: "已定事项",
+      progress: "已完成",
+      pending: "待办",
+      uncertainties: "待确认",
+      artifacts: "文件和来源",
+    };
+    $("history-context-body").textContent = data.context
+      ? Object.entries(titles)
+          .map(
+            ([key, title]) =>
+              `${title}\n${data.context.checkpoint.summary[key].map((s) => "• " + s).join("\n") || "暂无"}`,
+          )
+          .join("\n\n")
+      : "";
     renderMessages();
     $("history-messages").scrollTop = $("history-messages").scrollHeight;
   }

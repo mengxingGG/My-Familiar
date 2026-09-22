@@ -1,0 +1,47 @@
+{
+  "manifestVersion": 1,
+  "id": "youzi",
+  "name": "柚子",
+  "description": "蓬松尾巴的小狐狸，带着橙子味的好心情。",
+  "recommendedPersona": "enthusiastic",
+  "license": "Project-original artwork",
+  "actions": [
+    "idle",
+    "greet",
+    "happy",
+    "think",
+    "sleep",
+    "drag"
+  ],
+  "representations": {
+    "sprite": {
+      "fps": 1,
+      "frames": {
+        "idle": [
+          "idle-0.svg",
+          "idle-1.svg"
+        ],
+        "greet": [
+          "greet-0.svg",
+          "greet-1.svg"
+        ],
+        "happy": [
+          "happy-0.svg",
+          "happy-1.svg"
+        ],
+        "think": [
+          "think-0.svg",
+          "think-1.svg"
+        ],
+        "sleep": [
+          "sleep-0.svg",
+          "sleep-1.svg"
+        ],
+        "drag": [
+          "drag-0.svg",
+          "drag-1.svg"
+        ]
+      }
+    }
+  }
+}

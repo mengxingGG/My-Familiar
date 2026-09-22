@@ -1,6 +1,6 @@
 {
   "name": "my-familiar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "author": "mengxingGG",
   "repository": {
@@ -24,6 +24,11 @@
     "package:release": "npm run build && electron-builder --win nsis zip --x64 --publish never",
     "smoke:agent": "node scripts/agent-smoke.mjs",
     "smoke:experience": "node scripts/experience-smoke.mjs",
+    "smoke:integrations": "node scripts/integrations-smoke.mjs",
+    "smoke:context": "node scripts/context-smoke.mjs",
+    "smoke:integrations:packaged": "node scripts/integrations-smoke.mjs --packaged",
+    "smoke:context:packaged": "node scripts/context-smoke.mjs --packaged",
+    "check:cli": "node --experimental-transform-types --disable-warning=ExperimentalWarning scripts/check-cli-dependencies.mjs",
     "smoke:agent:packaged": "node scripts/agent-smoke.mjs --packaged",
     "smoke:experience:packaged": "node scripts/experience-smoke.mjs --packaged"
   },

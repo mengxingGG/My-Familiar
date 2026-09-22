@@ -27,9 +27,14 @@ import { storageLocal } from "../plugins/storage-local/index.ts";
 import { agentTools } from "../plugins/agent-tools/index.ts";
 import { toolsBasic } from "../plugins/tools-basic/index.ts";
 import { agentRunner } from "../plugins/agent-runner/index.ts";
+import {
+  contextCompaction,
+  contextTools,
+} from "../plugins/context-compaction/index.ts";
 import { mcpClient, validateMcp } from "../plugins/mcp-client/index.ts";
 import { conversation } from "../plugins/conversation/index.ts";
 import { runProcess } from "../plugins/agent-tools/process.ts";
+import { personaPrompt, personas } from "../plugins/conversation/config.ts";
 const temporary = async () => {
   await mkdir(".artifacts", { recursive: true });
   return mkdtemp(resolve(".artifacts/agent-tests-"));
@@ -39,31 +44,27 @@ test("权限按次、会话、精确白名单和全自动生效，重启保存�
   const root = await temporary();
   let k = await harness(root);
   const register = () =>
-    k
-      .resolve("agent.tools")
-      .register({
-        name: "permission_fixture",
-        description: "权限测试",
-        category: "shell",
-        parameters: {
-          type: "object",
-          properties: { command: { type: "string" } },
-          required: ["command"],
-        },
-        execute: async (args) => args.command,
-      });
+    k.resolve("agent.tools").register({
+      name: "permission_fixture",
+      description: "权限测试",
+      category: "shell",
+      parameters: {
+        type: "object",
+        properties: { command: { type: "string" } },
+        required: ["command"],
+      },
+      execute: async (args) => args.command,
+    });
   register();
   const call = (command: string) =>
-    k
-      .resolve("agent.tools")
-      .run(
-        {
-          id: "call",
-          name: "permission_fixture",
-          arguments: JSON.stringify({ command }),
-        },
-        new AbortController().signal,
-      );
+    k.resolve("agent.tools").run(
+      {
+        id: "call",
+        name: "permission_fixture",
+        arguments: JSON.stringify({ command }),
+      },
+      new AbortController().signal,
+    );
   const decide = async (choice: "once" | "session" | "whitelist") => {
     const a = k.resolve("agent.approvals");
     await waitFor(() => a.list().length > 0);
@@ -137,7 +138,20 @@ test("文件工具默认允许读写工作目录，可读取外部路径，外�
 
 test("历史会话保留超出上下文的原文，可搜索、切换续聊、重命名与删除，重启不遗失", async () => {
   const root = await temporary();
-  let k = await harness(root, async function* () {
+  let k = await harness(root, async function* (input) {
+    if (input.messages[0]?.content.startsWith("你是会话交接整理器")) {
+      yield JSON.stringify({
+        goals: ["保留的故事"],
+        constraints: [],
+        facts: [],
+        decisions: [],
+        progress: [],
+        pending: [],
+        uncertainties: [],
+        artifacts: [],
+      });
+      return;
+    }
     yield "回答";
   });
   try {
@@ -147,8 +161,8 @@ test("历史会话保留超出上下文的原文，可搜索、切换续聊、�
       exact: true,
     });
     k.resolve("llm.management").plan = async () => ({
-      inputBudget: 500,
-      contextWindow: 1000,
+      inputBudget: 800,
+      contextWindow: 1500,
       source: "model",
     });
     const c = k.resolve("conversation"),
@@ -218,7 +232,13 @@ async function harness(
         manifestVersion: 1,
         id: "test.dependencies",
         version: "1",
-        provides: ["settings", "llm.chat", "llm.management", "secrets.local"],
+        provides: [
+          "settings",
+          "llm.chat",
+          "llm.management",
+          "secrets.local",
+          "persona.catalog",
+        ],
         requires: [],
       },
       start(ctx) {
@@ -232,6 +252,10 @@ async function harness(
           }),
           get: () => structuredClone(config),
           apply: async (v) => Object.assign(config, v),
+        });
+        ctx.provide("persona.catalog", {
+          list: () => personas.map((p) => ({ ...p })),
+          prompt: (c) => personaPrompt(c.persona),
         });
         ctx.provide("llm.chat", {
           test: async () => "ok",
@@ -267,8 +291,10 @@ async function harness(
   );
   for (const p of [
     memoryFiles,
+    contextCompaction,
     skillsLocal,
     agentTools,
+    contextTools,
     mcpClient,
     toolsBasic,
     agentRunner,
@@ -311,25 +337,16 @@ test("核心记忆自动精炼 3000 字符边界，日记同日追加、去重�
     await m.write("core.md", "旧资料".repeat(1500));
     assert.equal(characters((await m.read("CORE.md")).text), 3000);
     assert.ok((await m.list()).some((p) => p.includes("core-overflow")));
-    const time = new Date(2026, 8, 18, 14).getTime();
-    await m.record({
-      id: "one",
-      user: "今天去了森林",
-      assistant: "听起来很舒服。",
-      time,
-    });
-    await m.record({
-      id: "two",
-      user: "带上绿茶",
-      assistant: "记住了。",
-      time,
-    });
-    await m.record({ id: "one", user: "不能重复", assistant: "", time });
+    const time = Date.now();
+    await m.diary("今天一起去了森林。");
+    await m.diary("这次带上了绿茶。");
+    await m.diary("今天一起去了森林。");
     const diary = (await m.read(datePath(time))).text;
     assert.match(diary, /森林/);
     assert.match(diary, /绿茶/);
-    assert.doesNotMatch(diary, /不能重复/);
-    assert.ok((await m.search("2026-09-18")).length);
+    assert.equal(diary.split("今天一起去了森林。").length, 2);
+    assert.doesNotMatch(diary, /你说：|我的回应：/);
+    assert.ok((await m.search(datePath(time))).length);
     await m.lesson("路径错误", "先检查路径，再改文件。", "lesson");
     assert.ok((await m.search("路径错误"))[0].path.startsWith("lessons/"));
     await k.dispose();
@@ -503,7 +520,7 @@ test("MCP stdio 握手、工具列出、环境密钥、确认及停用撤销", a
     await k.dispose();
   }
 });
-test("对话执行记忆工具并保留隐藏轨迹，日记持续保存且新会话不清记忆", async () => {
+test("模型选择重要日记，普通对话和主动问候不写日记，新会话不清记忆", async () => {
   const seen: any[] = [];
   const root = await temporary();
   const k = await harness(root, async function* (input) {
@@ -520,6 +537,16 @@ test("对话执行记忆工具并保留隐藏轨迹，日记持续保存且新�
         },
       ]);
       input.onNative?.({ scope: "test", items: [{ private: "隐藏思考" }] });
+    } else if (input.messages.at(-1)?.content === "记下今天的森林旅行") {
+      input.onTools?.([
+        {
+          id: "diary1",
+          name: "memory_diary",
+          arguments: JSON.stringify({
+            text: "今天一起回顾森林旅行，这是值得记住的一天。",
+          }),
+        },
+      ]);
     } else yield "好，我记住你喜欢绿茶了。";
   });
   try {
@@ -540,12 +567,132 @@ test("对话执行记忆工具并保留隐藏轨迹，日记持续保存且新�
     await c.send("继续");
     await waitFor(() => !c.state().busy);
     assert.ok(seen.at(-1).some((m: any) => m.calls?.[0]?.id === "remember1"));
+    await k.resolve("conversation.history").note("晚上记得休息");
+    assert.equal(
+      (await k.resolve("memory.files").list()).filter((p) =>
+        p.startsWith("daily/"),
+      ).length,
+      0,
+    );
+    await c.send("记下今天的森林旅行");
+    await waitFor(() => !c.state().busy);
+    assert.equal(c.state().error, undefined);
+    const diary = (await k.resolve("memory.files").read(datePath(Date.now())))
+      .text;
+    assert.match(diary, /森林旅行/);
+    assert.doesNotMatch(diary, /请记住绿茶|继续|晚上记得休息|我的回应/);
     await c.clear();
     assert.match(
       (await k.resolve("memory.files").read("CORE.md")).text,
       /绿茶/,
     );
-    assert.ok((await k.resolve("memory.files").search("请记住绿茶")).length);
+    assert.ok((await k.resolve("memory.files").search("森林旅行")).length);
+  } finally {
+    await k.dispose();
+  }
+});
+
+test("工具连续超过 8 轮且单批超过 16 个仍正常完成，完整轨迹可续接", async () => {
+  const executed: number[] = [];
+  let rounds = 0;
+  const k = await harness(await temporary(), async function* (input) {
+    if (++rounds > 12) {
+      yield "所有步骤已完成。";
+      return;
+    }
+    const count = rounds === 9 ? 20 : 1;
+    input.onTools?.(
+      Array.from({ length: count }, (_, i) => ({
+        id: `step-${rounds}-${i}`,
+        name: "step_fixture",
+        arguments: JSON.stringify({ step: rounds * 100 + i }),
+      })),
+    );
+  });
+  k.resolve("agent.tools").register({
+    name: "step_fixture",
+    description: "读取分步测试资料",
+    category: "read",
+    parameters: {
+      type: "object",
+      properties: { step: { type: "integer" } },
+      required: ["step"],
+    },
+    execute: async ({ step }) => {
+      executed.push(step);
+      return { step, completed: true };
+    },
+  });
+  try {
+    const chat = k.resolve("conversation");
+    await chat.send("完成全部分步读取");
+    await waitFor(() => !chat.state().busy);
+    assert.equal(chat.state().error, undefined);
+    assert.equal(chat.state().messages.at(-1)?.status, "complete");
+    assert.equal(chat.state().messages.at(-1)?.text, "所有步骤已完成。");
+    assert.equal(rounds, 13);
+    assert.equal(executed.length, 31);
+    const saved = await k
+      .resolve("storage.local")
+      .read<any>("conversation", null);
+    const trace = saved.messages.at(-1).trace;
+    assert.equal(trace.filter((m: any) => m.role === "tool").length, 31);
+    for (const m of trace.filter((m: any) => m.calls))
+      for (const call of m.calls)
+        assert.equal(
+          trace.filter((m: any) => m.toolCallId === call.id).length,
+          1,
+        );
+  } finally {
+    await k.dispose();
+  }
+});
+
+test("超过原工具轮数后仍可立即取消，不执行剩余工具并可继续新消息", async () => {
+  let rounds = 0,
+    executed = 0,
+    waiting = false;
+  const k = await harness(await temporary(), async function* (input) {
+    if (input.messages.at(-1)?.content === "取消后重新对话") {
+      yield "可以继续。";
+      return;
+    }
+    rounds++;
+    input.onTools?.([
+      { id: `wait-${rounds}`, name: "wait_fixture", arguments: "{}" },
+    ]);
+  });
+  k.resolve("agent.tools").register({
+    name: "wait_fixture",
+    description: "等待测试资料",
+    category: "read",
+    parameters: { type: "object", properties: {} },
+    execute: async (_, { signal }) => {
+      if (++executed === 10) {
+        waiting = true;
+        await new Promise((_, reject) => {
+          if (signal.aborted) return reject(signal.reason);
+          signal.addEventListener("abort", () => reject(signal.reason), {
+            once: true,
+          });
+        });
+      }
+      return "完成";
+    },
+  });
+  try {
+    const chat = k.resolve("conversation");
+    await chat.send("持续获取资料");
+    await waitFor(() => waiting);
+    await chat.cancel();
+    assert.equal(chat.state().busy, false);
+    assert.equal(chat.state().messages.at(-1)?.status, "cancelled");
+    assert.equal(executed, 10);
+    assert.equal(rounds, 10);
+    await chat.send("取消后重新对话");
+    await waitFor(() => !chat.state().busy);
+    assert.equal(chat.state().error, undefined);
+    assert.equal(chat.state().messages.at(-1)?.text, "可以继续。");
   } finally {
     await k.dispose();
   }
@@ -577,13 +724,10 @@ test("取消核心精炼不会在后台继续改写记忆，长日记保留末�
     await rejected;
     assert.equal((await m.read("CORE.md")).text, before);
     const time = Date.now();
-    await m.record({
-      id: "long",
-      user: "开始",
-      assistant: "长".repeat(30000) + "完整末尾",
-      time,
-    });
     const path = datePath(time);
+    // 旧版长日记继续可读，不自动重写用户资料；新条目只追加摘要。
+    await m.write(path, "旧资料".repeat(10000));
+    await m.diary("今天的复盘已经完成，完整末尾");
     assert.match((await m.read(path)).text, /完整末尾/);
     const page = JSON.parse(
       await k.resolve("agent.tools").run(

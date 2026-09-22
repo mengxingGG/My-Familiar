@@ -139,6 +139,14 @@ export const toolsBasic = definePlugin({
         },
       },
       {
+        name: "memory_diary",
+        category: "write",
+        description:
+          "主动记下值得回想的重要经历、进展或用户希望记录的事，简洁日记正文，同日追加；不要抄录整段对话，不记录寒暄或重复提醒",
+        parameters: schema({ text: str }),
+        execute: async ({ text }, { signal }) => memory.diary(text, signal),
+      },
+      {
         name: "memory_remember",
         category: "write",
         description: "记住用户明确确认的长期偏好或约定",

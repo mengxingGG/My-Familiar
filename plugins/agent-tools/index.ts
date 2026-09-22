@@ -91,7 +91,7 @@ export const agentTools = definePlugin({
         .update(JSON.stringify([intent.tool, intent.category, intent.scope]))
         .digest("hex");
     const sessionKey = (intent: PermissionIntent) =>
-      intent.tool + ":" + intent.category;
+      (intent.session ?? "desktop") + ":" + intent.tool + ":" + intent.category;
     const publish = () =>
       ctx.active &&
       ctx.emit(
@@ -212,7 +212,7 @@ export const agentTools = definePlugin({
           description,
           parameters,
         })),
-      async run(call, signal) {
+      async run(call, signal, options) {
         signal.throwIfAborted();
         const tool = tools.get(call.name);
         if (!tool) throw new Error("工具未启用或不存在");
@@ -222,6 +222,7 @@ export const agentTools = definePlugin({
           throw new Error("工具参数不符合规范");
         const intent = {
           tool: tool.name,
+          session: options?.session,
           ...(tool.permission
             ? await tool.permission(args)
             : {
@@ -236,11 +237,15 @@ export const agentTools = definePlugin({
           intent,
         );
         signal.throwIfAborted();
-        ctx.emit(
-          "agent.activity",
-          "正在" + tool.description.slice(0, 60) + "…",
-        );
-        const value = await tool.execute(args, { signal });
+        if (!options?.silent)
+          ctx.emit(
+            "agent.activity",
+            "正在" + tool.description.slice(0, 60) + "…",
+          );
+        const value = await tool.execute(args, {
+          signal,
+          session: options?.session,
+        });
         const text =
           typeof value === "string" ? value : (JSON.stringify(value) ?? "null");
         return text.length > 32000

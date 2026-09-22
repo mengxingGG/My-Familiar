@@ -32,18 +32,24 @@ export const compatibleDefinition = {
 };
 export const providerCompatible = providerPlugin(compatibleDefinition);
 // 保持旧测试与兼容适配器入口；产品调用由 llm-router 统一管理。
-export function streamChat(
+export async function* streamChat(
   input: Omit<ProviderInput, "settings"> & {
     settings: ProviderInput["settings"];
     timeoutMs?: number;
   },
 ) {
-  return compatibleDefinition.stream({
-    ...input,
-    settings: { ...profileDefaults, ...input.settings },
-    signal: AbortSignal.any([
-      input.signal,
-      AbortSignal.timeout(input.timeoutMs ?? 180000),
-    ]),
-  });
+  const deadline = new AbortController();
+  const timer = setTimeout(
+    () => deadline.abort(new DOMException("模型请求超时", "TimeoutError")),
+    input.timeoutMs ?? 180000,
+  );
+  try {
+    yield* compatibleDefinition.stream({
+      ...input,
+      settings: { ...profileDefaults, ...input.settings },
+      signal: AbortSignal.any([input.signal, deadline.signal]),
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 }

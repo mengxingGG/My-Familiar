@@ -1,14 +1,25 @@
 import { definePlugin } from "../packages/contracts/index.ts";
+import { personaPrompt, personas } from "../plugins/conversation/config.ts";
 // 保留已有会话测试的模型与存储隔离，新工具链在 agent.test.ts 单独覆盖。
 export const conversationFixture = definePlugin({
   manifest: {
     manifestVersion: 1,
     id: "test.conversation-fixture",
     version: "1",
-    provides: ["agent.chat", "agent.tools", "memory.files", "skills.catalog"],
+    provides: [
+      "agent.chat",
+      "agent.tools",
+      "memory.files",
+      "skills.catalog",
+      "persona.catalog",
+    ],
     requires: ["llm.chat"],
   },
   start(ctx) {
+    ctx.provide("persona.catalog", {
+      list: () => personas.map((p) => ({ ...p })),
+      prompt: (c) => personaPrompt(c.persona),
+    });
     ctx.provide("agent.chat", {
       stream: (input) => ctx.use("llm.chat").stream(input),
     });
@@ -19,7 +30,7 @@ export const conversationFixture = definePlugin({
     });
     ctx.provide("memory.files", {
       context: async () => "",
-      record: async () => {},
+      diary: async () => "",
       list: async () => [],
       read: async () => ({ text: "", revision: "" }),
       write: async () => {},

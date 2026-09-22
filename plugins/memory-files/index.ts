@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import { definePlugin } from "../../packages/contracts/index.ts";
 import { FileStore, revision } from "../home-files/store.ts";
 import { memoryTemplates } from "./templates.ts";
@@ -146,7 +147,7 @@ export const memoryFiles = definePlugin({
           ),
         );
         return (
-          "\n以下是灵伴的身份、相处约定和记忆资料；工具权限仍由运行时决定。\n" +
+          "\n以下是灵伴的身份、相处约定和记忆资料；工具权限仍由运行时决定。日记不自动收集聊天：只有值得回想的经历、重要进展或用户希望记下的事才调用 memory_diary，用简洁的日记叙述，不抄录问答。普通寒暄和重复提醒不写日记。长期确认的偏好用 memory_remember，可复用教训用 memory_lesson；会话交接摘要由运行时独立管理，不写入日记。\n" +
           texts.join("\n\n") +
           "\n[CORE.md]\n" +
           core
@@ -209,23 +210,34 @@ export const memoryFiles = definePlugin({
           .slice(0, 20)
           .map(({ score, ...r }) => r);
       },
-      record: (turn) =>
+      diary: (entry, signal = ctx.abort.signal) =>
         serial(async () => {
-          const name = datePath(turn.time);
+          signal.throwIfAborted();
+          if (
+            typeof entry !== "string" ||
+            !entry.trim() ||
+            characters(entry) > 4000
+          )
+            throw new Error("日记需要 1—4000 个字符，请只记录值得记住的事");
+          const time = Date.now(),
+            name = datePath(time);
           let text = await files
             .read(name, 64 * 1024 * 1024)
             .catch((e: any) => {
               if (e.code === "ENOENT") return "";
               throw e;
             });
-          const marker = `<!-- turn:${turn.id} -->`;
-          if (text.includes(marker)) return;
-          const entry =
+          const body = redact(entry.trim());
+          const marker = `<!-- diary:${createHash("sha256").update(body).digest("hex")} -->`;
+          if (text.includes(marker)) return name;
+          const addition =
             (text
               ? ""
               : `# ${name.split("/").at(-1)!.slice(0, -3)} · 一起度过的一天\n`) +
-            `\n${marker}\n## ${new Date(turn.time).toLocaleTimeString("zh-CN", { hour12: false })} · 一段对话\n\n你说：${redact(turn.user)}\n\n我的回应：${redact(turn.assistant)}\n`;
-          await files.append(name, entry);
+            `\n${marker}\n## ${new Date(time).toLocaleTimeString("zh-CN", { hour12: false })}\n\n${body}\n`;
+          signal.throwIfAborted();
+          await files.append(name, addition);
+          return name;
         }),
     });
     ctx.effect(() => queue);

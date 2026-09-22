@@ -58,6 +58,34 @@ export async function request(
   }
   return response;
 }
+function readChunk(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  signal: AbortSignal,
+) {
+  signal.throwIfAborted();
+  return new Promise<ReadableStreamReadResult<Uint8Array>>(
+    (resolve, reject) => {
+      const cleanup = () => signal.removeEventListener("abort", abort);
+      const abort = () => {
+        cleanup();
+        reject(signal.reason);
+        void reader.cancel().catch(() => {});
+      };
+      // 响应头返回后仍主动监听取消，不只依赖 fetch 内部中止响应流。
+      signal.addEventListener("abort", abort, { once: true });
+      reader.read().then(
+        (chunk) => {
+          cleanup();
+          signal.aborted ? reject(signal.reason) : resolve(chunk);
+        },
+        (error) => {
+          cleanup();
+          reject(signal.aborted ? signal.reason : error);
+        },
+      );
+    },
+  );
+}
 export async function jsonRequest(
   url: string,
   init: RequestInit,
@@ -70,7 +98,7 @@ export async function jsonRequest(
   const chunks: Uint8Array[] = [];
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const { done, value } = await readChunk(reader, signal);
       if (done) break;
       size += value.length;
       if (size > 8 * 1024 * 1024) throw new Error("模型服务响应过大");
@@ -109,7 +137,7 @@ export async function* sse(
   let buffer = "";
   try {
     while (true) {
-      const chunk = await reader.read();
+      const chunk = await readChunk(reader, signal);
       if (chunk.done) break;
       buffer += decoder.decode(chunk.value, { stream: true });
       if (buffer.length > 2 * 1024 * 1024) throw new Error("模型事件过大");
@@ -158,7 +186,10 @@ export function finishReason(reason: unknown, allowTools = false) {
     ].includes(String(reason))
   )
     throw new Error("模型服务拦截了本次回复");
-  if (!allowTools && ["tool_calls", "function_call", "tool_use"].includes(String(reason)))
+  if (
+    !allowTools &&
+    ["tool_calls", "function_call", "tool_use"].includes(String(reason))
+  )
     throw new Error("模型返回了工具请求，当前仅支持文字回复");
 }
 export async function chatModels(

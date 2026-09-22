@@ -1,4 +1,5 @@
 import type { Message } from "./index.ts";
+import type { ContextCheckpoint } from "./context.ts";
 export interface ConversationSummary {
   id: string;
   title: string;
@@ -37,6 +38,7 @@ declare module "../kernel/index.ts" {
         messages: Message[];
         next: number | null;
         active: boolean;
+        context?: { checkpoint: ContextCheckpoint; compactions: number };
       }>;
       create(): Promise<string>;
       select(id: string): Promise<void>;

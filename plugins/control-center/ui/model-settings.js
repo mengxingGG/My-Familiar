@@ -30,6 +30,7 @@ export function createModelSettings(api, markDirty, toast) {
       ? Number($("context-tokens").value)
       : null,
     timeoutSeconds: Number($("request-timeout").value),
+    autoCompactPercent: Number($("compact-percent").value),
     thinking: {
       mode: $("thinking-mode").value || "auto",
       effort: $("thinking-effort").value || "medium",
@@ -59,6 +60,7 @@ export function createModelSettings(api, markDirty, toast) {
     $("top-p").value = c.topP ?? 1;
     $("max-output").value = c.maxOutputTokens;
     $("context-tokens").value = c.contextTokens ?? "";
+    $("compact-percent").value = c.autoCompactPercent ?? 80;
     $("request-timeout").value = c.timeoutSeconds;
     $("thinking-budget").value = c.thinking.budgetTokens;
     $("prompt-cache").checked = c.cache;
@@ -113,7 +115,7 @@ export function createModelSettings(api, markDirty, toast) {
       ? `模型报告上下文窗口 ${m.contextWindow.toLocaleString()} token；输出上限 ${m.outputLimit?.toLocaleString() ?? "未报告"}。`
       : m?.inputLimit
         ? `模型报告输入上限 ${m.inputLimit.toLocaleString()} token；输出上限 ${m.outputLimit?.toLocaleString() ?? "未报告"}。`
-        : "模型列表未提供上限时暂用 32768；可按官方模型说明手动填写，暂用值不是官方最大值。";
+        : "默认上限 256K；模型未报告窗口时保守暂用 32768。确认实际窗口后可手动填写，暂用值不是官方最大值。";
     localControls();
   }
   async function inspect() {
@@ -282,13 +284,13 @@ export function createModelSettings(api, markDirty, toast) {
     usage(s) {
       if (!s) {
         $("session-status").textContent =
-          "会话尚未开始。历史只在接近上下文上限时裁剪。";
+          "会话尚未开始。默认窗口上限 256K，达到有效窗口的 80% 时整理交接摘要。";
         return;
       }
       const u = s.usage;
       const fmt = (v) => (v === undefined ? "未报告" : v.toLocaleString());
       $("session-status").textContent =
-        `会话 ${s.id.slice(0, 8)} · 前缀版本 ${s.epoch} · 保留 ${s.retainedMessages} 条消息\n输入${s.exact ? "计数" : "保守估算"} ${fmt(s.inputTokens)} / ${fmt(s.inputBudget)} token · 上限来源：${{ model: "模型目录", manual: "手动设置", fallback: "暂用值" }[s.limitSource]}\n服务端用量：输入 ${fmt(u?.inputTokens)} · 输出 ${fmt(u?.outputTokens)} · 缓存命中 ${fmt(u?.cachedInputTokens)} · 缓存写入 ${fmt(u?.cacheWriteTokens)}\n已移出最旧消息 ${s.trimmedMessages} 条；实际节省金额由供应商计费决定。`;
+        `会话 ${s.id.slice(0, 8)} · 前缀版本 ${s.epoch} · 保留 ${s.retainedMessages} 条消息\n输入${s.exact ? "计数" : "保守估算"} ${fmt(s.inputTokens)} / ${fmt(s.inputBudget)} token · 上限来源：${{ model: "模型目录 / 默认上限", manual: "手动设置", fallback: "暂用值" }[s.limitSource]}\n自动压缩触发量（扣除工具预留） ${fmt(s.compactThreshold)} · 已压缩 ${s.compactions ?? 0} 次\n服务端用量：输入 ${fmt(u?.inputTokens)} · 输出 ${fmt(u?.outputTokens)} · 缓存命中 ${fmt(u?.cachedInputTokens)} · 缓存写入 ${fmt(u?.cacheWriteTokens)}\n已整理旧消息 ${s.trimmedMessages} 条；完整原文仍保存在历史会话中。实际节省金额由供应商计费决定。`;
     },
   };
 }

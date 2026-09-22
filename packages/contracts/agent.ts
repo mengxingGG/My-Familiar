@@ -12,6 +12,7 @@ export interface ToolCall {
 }
 export interface ToolContext {
   signal: AbortSignal;
+  session?: string;
 }
 export interface ToolEntry extends ToolSpec {
   approval?: boolean;
@@ -47,6 +48,7 @@ export interface PermissionIntent {
   tool: string;
   category: ToolCategory;
   scope: string;
+  session?: string;
 }
 export interface SkillInfo {
   id: string;
@@ -79,12 +81,7 @@ declare module "../kernel/index.ts" {
       ): Promise<{ refined: boolean }>;
       lesson(title: string, text: string, category?: string): Promise<string>;
       search(query: string): Promise<{ path: string; excerpt: string }[]>;
-      record(turn: {
-        id: string;
-        user: string;
-        assistant: string;
-        time: number;
-      }): Promise<void>;
+      diary(text: string, signal?: AbortSignal): Promise<string>;
       status(): { root: string; lastError?: string; refining: boolean };
     };
     "skills.catalog": {
@@ -102,7 +99,11 @@ declare module "../kernel/index.ts" {
     "agent.tools": {
       register(tool: ToolEntry): Dispose;
       list(): ToolSpec[];
-      run(call: ToolCall, signal: AbortSignal): Promise<string>;
+      run(
+        call: ToolCall,
+        signal: AbortSignal,
+        options?: { silent?: boolean; session?: string },
+      ): Promise<string>;
     };
     "agent.approvals": {
       list(): Approval[];
@@ -127,6 +128,8 @@ declare module "../kernel/index.ts" {
       stream(
         input: Omit<ProviderInput, "key"> & {
           onTrace?: (messages: PromptMessage[]) => void;
+          silent?: boolean;
+          permissionSession?: string;
         },
       ): AsyncIterable<string>;
     };

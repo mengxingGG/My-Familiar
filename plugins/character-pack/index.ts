@@ -70,6 +70,10 @@ export function characterPack(directory: string) {
             id: pack.id,
             name: pack.name,
             description: pack.description,
+            recommendedPersona:
+              typeof pack.recommendedPersona === "string"
+                ? pack.recommendedPersona
+                : "gentle",
             actions: pack.actions,
             representations: { sprite: { fps: sprite.fps, frames } },
           });
