@@ -1,0 +1,74 @@
+{
+  "source": "Qwen3-TTS VoiceDesign · Qwen 官方公开演示",
+  "sourceUrl": "https://huggingface.co/spaces/Qwen/Qwen3-TTS",
+  "modelLicense": "Apache-2.0",
+  "originalSyntheticVoice": true,
+  "generatedAt": "2026-09-22T03:02:50.575Z",
+  "samples": [
+    {
+      "id": "gentle",
+      "name": "温柔陪伴",
+      "file": "gentle.wav",
+      "text": "在的在的，今天也陪着你。别着急，我们慢慢来，好不好？",
+      "design": "原创中文桌面小精灵的声音，清亮柔软、轻盈可爱，略偏高但不尖，带自然的笑意和好奇感，咬字清楚，温暖亲近，尾音短而轻，不是播音腔，不模仿任何真人。",
+      "sha256": "69b3af5957c734e771504122c486d6e9b2290a23fe02d75add13424d7c85390a",
+      "bytes": 217814
+    },
+    {
+      "id": "thorough",
+      "name": "细致周到",
+      "file": "thorough.wav",
+      "text": "我来陪你一起看看。先确认目标，再一步一步来，最后我们再检查一下。",
+      "design": "原创中文桌面小动物伙伴，圆润清透的年轻中性声线，轻柔可爱，耐心细致，语速略慢，词句之间有自然小停顿，音高稍高，亲近而不夸张，不使用新闻播音腔，不模仿真人。",
+      "sha256": "63c25896edfeb3f3256d351ece93191f4cc9be25a0837693bb28b61e47f28d2a",
+      "bytes": 361004
+    }
+  ],
+  "previews": [
+    {
+      "id": "gentle",
+      "file": "gentle.mp3",
+      "text": "在的在的，今天也陪着你。别着急，我们慢慢来，好不好？",
+      "model": "fish-audio/s2.1-pro",
+      "reference": "gentle.wav",
+      "sha256": "ae16564bde5bac6e96f977fdd4800c6cee2de475b63e9429a84f63debaae2e0b",
+      "bytes": 68544
+    },
+    {
+      "id": "thorough",
+      "file": "thorough.mp3",
+      "text": "我来陪你一起看看。先确认目标，再一步一步来，最后我们再检查一下。",
+      "model": "fish-audio/s2.1-pro",
+      "reference": "thorough.wav",
+      "sha256": "b13bbb038d2906c609b4585067d275b0771c33050ec8f6a64314720713997938",
+      "bytes": 109504
+    },
+    {
+      "id": "direct",
+      "file": "direct.mp3",
+      "text": "收到。先处理眼前这一项，完成后再继续。我会在这里陪着你。",
+      "model": "fish-audio/s2.1-pro",
+      "reference": "thorough.wav",
+      "sha256": "003ac4a90034ff298637c44d5c8b6ab92beb2f35ff19ad1ed465a9d52217feab",
+      "bytes": 111176
+    },
+    {
+      "id": "enthusiastic",
+      "file": "enthusiastic.mp3",
+      "text": "来啦来啦！今天想先做什么呀？叫上我，一起把它搞定吧！",
+      "model": "fish-audio/s2.1-pro",
+      "reference": "gentle.wav",
+      "sha256": "e39d488f1c0d71d2e3427ef074c751349a779df6f8084fdb06ce4bf631306e50",
+      "bytes": 71052
+    },
+    {
+      "id": "concise",
+      "file": "concise.mp3",
+      "text": "在呢。告诉我目标，我来帮忙。需要就叫我哦。",
+      "model": "fish-audio/s2.1-pro",
+      "reference": "gentle.wav",
+      "sha256": "0f1d2245a9bc8fffaeb94b6f56473ba39d5f542f629fee4dbb4c0b12b2a06335",
+      "bytes": 70216
+    }
+  ]
+}

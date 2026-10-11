@@ -1,5 +1,6 @@
 import type { Dispose } from "../kernel/index.ts";
 import type { ToolSpec, ToolCall } from "./agent.ts";
+import type { Attachment, PromptImage } from "./media.ts";
 
 export type ThinkingMode = "auto" | "off" | "effort" | "budget" | "adaptive";
 export interface ProviderProfile {
@@ -25,6 +26,7 @@ export interface ModelInfo {
   inputLimit?: number;
   outputLimit?: number;
   supportedParameters?: string[];
+  inputModalities?: string[];
   thinking?: { modes: ThinkingMode[]; efforts?: string[]; mandatory?: boolean };
 }
 export interface ParameterSupport {
@@ -51,6 +53,9 @@ export interface NativeTurn {
 export interface PromptMessage {
   role: string;
   content: string;
+  attachments?: Attachment[];
+  // 仅在提供方请求中解析，原始图片不写进消息 JSON。
+  images?: PromptImage[];
   native?: NativeTurn;
   calls?: ToolCall[];
   toolCallId?: string;

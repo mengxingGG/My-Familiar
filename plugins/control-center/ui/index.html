@@ -10,370 +10,458 @@
     <title>Familiar · 控制器</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <aside>
-      <div class="brand">
-        <span class="mark">f.</span>
-        <div>Familiar<small>灵伴 · 桌面上的小日常</small></div>
+  <body data-connected="pending" data-pet-state="idle">
+    <aside class="rail">
+      <div class="stage" aria-hidden="true">
+        <span class="brand-badge">f.</span>
+        <span class="orbit"></span>
+        <span class="sparkle s1"></span><span class="sparkle s2"></span
+        ><span class="sparkle s3"></span><span class="sparkle s4"></span>
+        <span class="halo"></span>
+        <span class="stage-ground"></span>
+        <img class="stage-pet" id="character-preview" alt="" />
+        <span class="zzz">z<i>z</i></span>
+        <span class="thinking"><i></i><i></i><i></i></span>
       </div>
-      <div class="nav-label">你的陪伴空间</div>
-      <nav>
-        <button class="selected" data-page="home"><span>◉</span>我的灵伴</button
-        ><button data-page="model"><span>✳</span>模型连接</button
-        ><button data-page="persona"><span>☷</span>名字与性格</button
-        ><button data-page="system"><span>▦</span>运行与插件</button>
+      <div class="identity">
+        <h1 id="pet-name">小森</h1>
+        <p class="pet-state">
+          <span class="dot" id="dot"></span><span id="pet-state">正在连接…</span
+          ><span id="connection" class="sr-only">正在连接宠物…</span>
+        </p>
+        <div class="identity-actions">
+          <button id="chat" class="primary">说句话</button
+          ><button id="sleep" class="quiet">让它睡会儿</button>
+        </div>
+      </div>
+      <nav aria-label="设置分区">
+        <div class="nav-group">
+          <span class="nav-heading">陪伴</span>
+          <button class="selected" data-page="home">形象与桌面</button
+          ><button data-page="persona">名字与性格</button
+          ><button data-page="voice">图片与语音</button
+          ><button data-page="care">主动关怀</button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-heading">对话</span>
+          <button data-page="history">历史会话</button
+          ><button data-page="memories">记忆与日记</button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-heading">能力</span>
+          <button data-page="model">模型连接</button
+          ><button data-page="permissions">工具权限</button
+          ><button data-page="skills">Skills</button
+          ><button data-page="mcp">MCP 工具</button
+          ><button data-page="integrations">飞书与 GitHub</button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-heading">系统</span>
+          <button data-page="system">运行与插件</button>
+        </div>
       </nav>
-      <div class="aside-bottom">
-        <span class="dot" id="dot"></span
-        ><span id="connection">正在连接宠物…</span
-        ><small>控制器关闭后，陪伴继续。</small>
-        <div class="version">FAMILIAR / 0.2.0</div>
-      </div>
     </aside>
     <main>
-      <header>
-        <div class="eyebrow">A LITTLE COMPANY, EVERY DAY</div>
-        <div class="header-row">
-          <h1 id="page-title">让桌面，多一点陪伴。</h1>
-          <button id="refresh" class="ghost">刷新状态 ↻</button>
-        </div>
-        <p id="page-description">它有自己的小日常，也随时愿意听你说说话。</p>
-      </header>
-      <div id="offline" class="notice" hidden>
+      <div id="offline" class="banner banner-warn" hidden>
         <div>
           <b>宠物还没有醒来</b>
-          <p>启动后即可调整设置，控制器与宠物各自独立运行。</p>
+          <p>启动宠物后才能修改设置。控制器和宠物各自独立运行。</p>
         </div>
         <button id="start" class="primary">启动宠物</button>
       </div>
-      <section id="home" class="page">
-        <div class="hero">
-          <div>
-            <div class="pill">YOUR FAMILIAR</div>
-            <h2 id="pet-name">小森</h2>
-            <p>不赶时间，就在这里陪你。</p>
-            <div class="hero-actions">
-              <button id="chat" class="primary">和它聊聊 ↗</button
-              ><button id="sleep" class="ghost">睡一会儿</button>
-            </div>
-            <div class="state-label">
-              <span class="dot"></span><span id="pet-state">等待连接</span>
-            </div>
-          </div>
-          <div class="pet-preview">
-            <div class="orbit"></div>
-            <img
-              class="character-preview"
-              id="character-preview"
-              alt="当前角色预览"
-            />
-            <span class="preview-ground"></span><small>桌面上，见。</small>
-          </div>
+      <div
+        id="agent-confirmations"
+        class="banner banner-approval"
+        role="alertdialog"
+        aria-labelledby="confirm-title"
+        hidden
+      >
+        <div class="approval-body">
+          <span class="approval-label">宠物在等你确认</span>
+          <b id="confirm-title"></b>
+          <pre id="confirm-detail"></pre>
         </div>
-        <div class="section-title">
-          <h3>舒服地待在你的桌面</h3>
-          <span id="pet-save-status">修改后实时生效，自动保存</span>
+        <div class="approval-actions">
+          <select id="confirm-scope" aria-label="允许范围">
+            <option value="once">只允许这一次</option>
+            <option value="session">本会话内同一工具都允许</option>
+            <option value="whitelist">加入白名单</option></select
+          ><button id="confirm-deny" class="quiet">拒绝</button
+          ><button id="confirm-allow" class="primary">允许</button>
         </div>
-        <div class="card">
-          <div class="setting">
-            <div>
-              <b>陪伴角色</b><small>角色包与渲染器分开，可以自由替换。</small>
-            </div>
-            <select id="character"></select>
-          </div>
-          <div class="setting">
-            <div><b>刚刚好的大小</b><small>给桌面留些呼吸的空间。</small></div>
-            <div class="range">
-              <input
-                id="scale"
-                type="range"
-                min="65"
-                max="160"
-                value="100"
-              /><output id="scale-value">100%</output>
-            </div>
-          </div>
-          <label class="setting"
-            ><div><b>保持在窗口上方</b><small>工作时，也能看见它。</small></div>
-            <input id="topmost" type="checkbox" role="switch" /></label
-          ><label class="setting"
-            ><div>
-              <b>安静陪伴</b
-              ><small>暂停日常短气泡，主动聊天的回复仍正常冒泡。</small>
-            </div>
-            <input id="quiet" type="checkbox" role="switch"
-          /></label>
+      </div>
+      <header class="page-head">
+        <div>
+          <h2 id="page-title">形象与桌面</h2>
+          <p id="page-description">
+            选择角色和大小，调整它在桌面上的样子。修改立即生效。
+          </p>
         </div>
-        <div class="card">
-          <label class="setting"
-            ><div>
-              <b>气泡自动收起</b
-              ><small
-                >秒；0 为保持显示。回复完成后开始计时，鼠标停留时暂停。</small
+        <button id="refresh" class="quiet">刷新状态</button>
+      </header>
+      <div class="pages">
+        <section id="home" class="page">
+          <div class="group">
+            <div class="group-head">
+              <h3>角色</h3>
+              <span id="pet-save-status" class="save-state"
+                >修改后自动保存</span
               >
             </div>
-            <input
-              id="bubble-seconds"
-              type="number"
-              min="0"
-              max="300"
-              value="15"
-              aria-label="气泡关闭秒数"
-          /></label>
-        </div>
-        <div class="row actions">
-          <button id="reset" class="ghost">找回屏幕中的宠物</button
-          ><button id="visibility" class="ghost">隐藏宠物</button>
-        </div>
-      </section>
-      <section id="model" class="page" hidden>
-        <div class="card intro">
-          <span class="mini-icon">✳</span>
-          <div>
-            <h3>给聊天接上一颗小小的脑袋</h3>
-            <p>
-              选择模型服务，连接后获取模型列表。每种服务分别保存设置和密钥。
+            <div
+              id="character"
+              class="character-grid"
+              role="radiogroup"
+              aria-label="陪伴角色"
+            ></div>
+          </div>
+          <div class="group">
+            <h3>在桌面上</h3>
+            <div class="panel">
+              <div class="row-setting">
+                <div class="row-text">
+                  <b>大小</b><small>按屏幕空间调整，不影响清晰度。</small>
+                </div>
+                <div class="range">
+                  <input
+                    id="scale"
+                    type="range"
+                    min="65"
+                    max="160"
+                    value="100"
+                    aria-label="宠物大小"
+                  /><output id="scale-value">100%</output>
+                </div>
+              </div>
+              <label class="row-setting"
+                ><div class="row-text">
+                  <b>保持在其他窗口上方</b
+                  ><small>工作时也能看见它。</small>
+                </div>
+                <input id="topmost" type="checkbox" role="switch"
+              /></label>
+              <label class="row-setting"
+                ><div class="row-text">
+                  <b>安静模式</b
+                  ><small>暂停日常短气泡；你主动聊天时仍会回复。</small>
+                </div>
+                <input id="quiet" type="checkbox" role="switch"
+              /></label>
+              <label class="row-setting"
+                ><div class="row-text">
+                  <b>气泡自动收起</b
+                  ><small
+                    >回复完成后开始计时，鼠标停在气泡上时暂停。0
+                    表示不自动收起。</small
+                  >
+                </div>
+                <span class="unit-field"
+                  ><input
+                    id="bubble-seconds"
+                    type="number"
+                    min="0"
+                    max="300"
+                    value="15"
+                    aria-label="气泡自动收起秒数"
+                  /><span>秒</span></span
+                ></label
+              >
+            </div>
+          </div>
+          <div class="group">
+            <h3>找不到它时</h3>
+            <div class="button-row">
+              <button id="reset" class="quiet">把宠物移回屏幕内</button
+              ><button id="visibility" class="quiet">隐藏宠物</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="persona" class="page" hidden>
+          <div class="group">
+            <h3>称呼</h3>
+            <div class="panel panel-form">
+              <label class="field"
+                >它的名字
+                <input id="name" maxlength="40" placeholder="小森"
+              /></label>
+            </div>
+          </div>
+          <div class="group">
+            <h3>性格</h3>
+            <div class="panel panel-form">
+              <label class="field"
+                >说话的方式
+                <select id="persona-style">
+                  <option value="character">跟随角色推荐</option>
+                  <option value="custom">完全自定义</option>
+                </select>
+                <small
+                  >选定一种性格后，换角色也不会改变它。</small
+                ></label
+              >
+              <div class="persona-sample" aria-live="polite">
+                <b id="persona-description"></b>
+                <p id="persona-example"></p>
+              </div>
+              <label class="field"
+                >补充表达习惯
+                <textarea
+                  id="instruction"
+                  rows="7"
+                  maxlength="6000"
+                  placeholder="例如：说话简短一点，偶尔开个小玩笑。"
+                ></textarea
+                ><small
+                  >只影响说话方式，不会让它获得读取屏幕或操作电脑的能力。</small
+                ></label
+              >
+            </div>
+          </div>
+          <div class="page-actions">
+            <span class="hint">从下一轮对话开始生效。</span
+            ><button class="primary save">保存设置</button>
+          </div>
+        </section>
+
+        <section id="model" class="page" hidden>
+          <div class="group">
+            <h3>服务与密钥</h3>
+            <div class="panel panel-form">
+              <div class="field-grid">
+                <label class="field"
+                  >模型服务<select id="provider-kind"></select
+                ></label>
+                <label class="field"
+                  >服务地址
+                  <input
+                    id="base-url"
+                    placeholder="http://127.0.0.1:1234/v1"
+                    spellcheck="false"
+                /></label>
+              </div>
+              <small
+                >默认填写官方地址。本地 llama.cpp 填写已启动的 llama-server
+                地址。换地址后需要单独保存这个地址的密钥。</small
+              >
+              <label class="field"
+                >API Key
+                <span class="inline-field"
+                  ><input
+                    id="api-key"
+                    type="password"
+                    autocomplete="off"
+                    placeholder="留空则保留已保存的密钥" /><button
+                    id="save-key"
+                    class="quiet"
+                  >
+                    保存密钥
+                  </button></span
+                ><small id="key-status"
+                  >本地服务可以不填。密钥经系统加密，与普通设置分开保存。</small
+                ></label
+              >
+            </div>
+          </div>
+          <div class="group">
+            <h3>模型</h3>
+            <div class="panel panel-form">
+              <div class="model-picker">
+                <div class="inline-field">
+                  <input
+                    id="model-search"
+                    type="search"
+                    placeholder="搜索模型名称或 ID"
+                    aria-label="搜索模型"
+                  /><button id="load-models" class="quiet">刷新列表</button>
+                </div>
+                <select id="model-list" size="6" aria-label="可用模型"></select>
+                <small id="models-status" role="status"
+                  >打开此页后自动获取；也可以直接填写模型 ID。</small
+                >
+              </div>
+              <label class="field"
+                >模型 ID
+                <input
+                  id="model-id"
+                  placeholder="填写服务中的模型 ID"
+                  spellcheck="false"
+              /></label>
+            </div>
+          </div>
+          <div class="group">
+            <h3>回复参数</h3>
+            <div class="panel panel-form">
+              <div class="field-grid">
+                <label class="field"
+                  >温度
+                  <span class="inline-field"
+                    ><input
+                      id="temperature"
+                      type="number"
+                      min="0"
+                      max="2"
+                      step="0.1"
+                      value="0.7" /><span class="check"
+                      ><input id="temperature-auto" type="checkbox" />用模型默认值</span
+                    ></span
+                  ></label
+                >
+                <label class="field"
+                  >Top P
+                  <span class="inline-field"
+                    ><input
+                      id="top-p"
+                      type="number"
+                      min="0.01"
+                      max="1"
+                      step="0.05"
+                      value="1" /><span class="check"
+                      ><input id="top-p-auto" type="checkbox" checked />用模型默认值</span
+                    ></span
+                  ></label
+                >
+                <label class="field"
+                  >单次输出上限（token）<input
+                    id="max-output"
+                    type="number"
+                    min="128"
+                    max="262144"
+                    value="4096"
+                    step="128"
+                /></label>
+                <label class="field"
+                  >请求超时（秒）<input
+                    id="request-timeout"
+                    type="number"
+                    min="10"
+                    max="900"
+                    value="180"
+                /></label>
+                <label class="field"
+                  >思考模式<select id="thinking-mode"></select
+                ></label>
+                <label class="field" id="effort-row"
+                  >思考强度<select id="thinking-effort"></select
+                ></label>
+                <label class="field" id="budget-row" hidden
+                  >思考预算（token）<input
+                    id="thinking-budget"
+                    type="number"
+                    min="1"
+                    max="262144"
+                    value="2048"
+                /></label>
+              </div>
+              <small id="parameter-hint"></small>
+            </div>
+          </div>
+          <div class="group">
+            <h3>上下文与缓存</h3>
+            <div class="panel panel-form">
+              <div class="field-grid">
+                <label class="field"
+                  >上下文窗口（token）<input
+                    id="context-tokens"
+                    type="number"
+                    min="1024"
+                    max="2097152"
+                    placeholder="默认 256000"
+                  /><small id="context-hint"
+                    >留空使用默认上限；会预留输出和安全余量。</small
+                  ></label
+                >
+                <label class="field"
+                  >自动压缩阈值（%）<input
+                    id="compact-percent"
+                    type="number"
+                    min="10"
+                    max="95"
+                    value="80"
+                  /><small
+                    >达到有效窗口的这个比例时整理旧对话，保留最近原文。</small
+                  ></label
+                >
+              </div>
+              <label class="check"
+                ><input id="prompt-cache" type="checkbox" checked />
+                启用服务支持的缓存优化</label
+              >
+              <small
+                >压缩本身会调用一次模型。缓存是否命中由服务商决定，关闭此项也不能禁止服务端的隐式缓存。</small
+              >
+            </div>
+          </div>
+          <div class="group">
+            <h3>本次会话用量</h3>
+            <div id="session-status" class="usage" role="status">
+              还没有会话用量。
+            </div>
+          </div>
+          <div class="page-actions">
+            <button id="delete-key" class="quiet danger">删除已保存的密钥</button
+            ><button id="test" class="quiet">测试已保存的连接</button
+            ><button class="primary save">保存设置</button>
+          </div>
+          <p class="footnote">
+            不会自动发送桌面信息。测试连接会发送一条简短的文字请求。
+          </p>
+        </section>
+
+        <section id="system" class="page" hidden>
+          <div class="group">
+            <div class="group-head">
+              <h3>启动与运行</h3>
+              <span class="metric">Familiar 0.3.0</span>
+            </div>
+            <div class="panel">
+              <label class="row-setting">
+                <div class="row-text">
+                  <b>登录 Windows 后自动启动宠物</b
+                  ><small id="autostart-note"
+                    >只启动宠物，控制器需要时再打开。立即生效。</small
+                  >
+                </div>
+                <input id="autostart" type="checkbox" role="switch" disabled />
+              </label>
+              <div class="row-setting">
+                <div class="row-text">
+                  <b>开始新会话</b
+                  ><small>停止当前回复。旧对话保留在历史会话中。</small>
+                </div>
+                <button id="clear-chat" class="quiet">开始新会话</button>
+              </div>
+              <div class="row-setting">
+                <div class="row-text">
+                  <b>退出宠物</b
+                  ><small>关闭宠物和它的后台。控制器保持打开，可以再次启动。</small>
+                </div>
+                <button id="stop" class="quiet danger">退出宠物</button>
+              </div>
+            </div>
+          </div>
+          <div class="group">
+            <div class="group-head">
+              <h3>插件</h3>
+              <span id="memory" class="metric"></span>
+            </div>
+            <p class="group-note">
+              每项能力由一个独立的官方插件提供。当前版本不开放第三方可执行插件。
             </p>
+            <div id="plugins" class="plugins"></div>
           </div>
-        </div>
-        <div class="card form">
-          <label
-            >模型服务<select id="provider-kind" aria-label="模型服务"></select
-          ></label>
-          <label
-            >服务地址
-            <input
-              id="base-url"
-              placeholder="http://127.0.0.1:1234/v1"
-              spellcheck="false"
-            /><small
-              >默认填写官方地址。本地 llama.cpp 使用已启动的 llama-server
-              地址；更换地址后需单独保存密钥。</small
-            ></label
-          >
-          <div class="model-picker">
-            <div class="row">
-              <b>选择模型</b
-              ><button id="load-models" class="ghost">刷新模型列表</button>
-            </div>
-            <input
-              id="model-search"
-              type="search"
-              placeholder="搜索模型名称或 ID"
-              aria-label="搜索模型"
-            />
-            <select id="model-list" size="5" aria-label="可用模型"></select>
-            <small id="models-status" role="status"
-              >打开此页后自动获取；也可直接填写模型 ID。</small
-            >
-          </div>
-          <label
-            >模型名称
-            <input
-              id="model-id"
-              placeholder="填写服务中的模型 ID"
-              spellcheck="false" /></label
-          ><label
-            >API Key
-            <div class="key-row">
-              <input
-                id="api-key"
-                type="password"
-                autocomplete="off"
-                placeholder="留空保留已保存的密钥"
-              /><button id="save-key" class="ghost">单独保存密钥</button>
-            </div>
-            <small id="key-status"
-              >本地服务可以不填写。密钥经系统加密，与普通配置分开保存。</small
-            ></label
-          ><label
-            >温度（Temperature）
-            <div class="parameter-row">
-              <input
-                id="temperature"
-                type="number"
-                min="0"
-                max="2"
-                step="0.1"
-                value="0.7"
-              /><span
-                ><input id="temperature-auto" type="checkbox" />
-                使用模型默认</span
-              >
-            </div></label
-          >
-          <label
-            >Top P
-            <div class="parameter-row">
-              <input
-                id="top-p"
-                type="number"
-                min="0.01"
-                max="1"
-                step="0.05"
-                value="1"
-              /><span
-                ><input id="top-p-auto" type="checkbox" checked />
-                使用模型默认</span
-              >
-            </div></label
-          >
-          <div class="parameter-grid">
-            <label
-              >单次输出上限（token）<input
-                id="max-output"
-                type="number"
-                min="128"
-                max="262144"
-                value="4096"
-                step="128"
-            /></label>
-            <label
-              >请求超时（秒）<input
-                id="request-timeout"
-                type="number"
-                min="10"
-                max="900"
-                value="180"
-            /></label>
-            <label>思考模式<select id="thinking-mode"></select></label>
-            <label id="effort-row"
-              >思考强度<select id="thinking-effort"></select
-            ></label>
-            <label id="budget-row" hidden
-              >思考预算（token）<input
-                id="thinking-budget"
-                type="number"
-                min="1"
-                max="262144"
-                value="2048"
-            /></label>
-          </div>
-          <small id="parameter-hint"></small>
-          <label
-            >上下文窗口（token）<input
-              id="context-tokens"
-              type="number"
-              min="1024"
-              max="2097152"
-              placeholder="默认 256000（256K），不超过模型实际窗口"
-            /><small id="context-hint"
-              >留空使用默认上限；输出预算和安全余量会预留。</small
-            ></label
-          >
-          <label
-            >自动压缩阈值（%）<input
-              id="compact-percent"
-              type="number"
-              min="10"
-              max="95"
-              value="80"
-            /><small
-              >默认
-              80%。按有效窗口计算，整理旧历史并保留近期原文；完整会话仍可查看。</small
-            ></label
-          >
-          <label class="inline-check"
-            ><input id="prompt-cache" type="checkbox" checked />
-            启用服务支持的缓存优化</label
-          >
-          <small
-            >同一段上下文保持稳定前缀；达到阈值才压缩并开始下一段。压缩本身会调用模型并产生用量。缓存命中取决于供应商；关闭此选项也不能禁止服务端自身的隐式缓存。</small
-          >
-        </div>
-        <div id="session-status" class="card session-card" role="status">
-          还没有会话用量。
-        </div>
-        <div class="row actions">
-          <button id="delete-key" class="ghost">删除已保存密钥</button
-          ><button id="test" class="ghost">测试已保存的连接</button
-          ><button class="primary save">保存设置</button>
-        </div>
-        <p class="footnote">
-          不会自动发送桌面信息。连接测试会发送一条简短文字请求。
-        </p>
-      </section>
-      <section id="persona" class="page" hidden>
-        <div class="card form">
-          <label
-            >它的名字
-            <input id="name" maxlength="40" placeholder="小森" /></label
-          ><label
-            >相处的性格
-            <select id="persona-style">
-              <option value="character">跟随形象的推荐性格</option>
-              <option value="custom">完全自定义</option>
-            </select>
-            <small
-              >固定选择性格后，换形象不会改变它；名字也由你决定。</small
-            ></label
-          >
-          <div class="persona-sample">
-            <b id="persona-description"></b>
-            <p id="persona-example"></p>
-          </div>
-          <label
-            >补充你喜欢的表达习惯
-            <textarea
-              id="instruction"
-              rows="7"
-              maxlength="6000"
-              placeholder="温暖、自然，愿意倾听…"
-            ></textarea
-            ><small
-              >这是表达习惯，不会赋予它读取屏幕或操作电脑的能力。</small
-            ></label
-          >
-        </div>
-        <div class="row actions">
-          <span class="footnote">修改将在下一轮聊天生效。</span
-          ><button class="primary save">保存设置</button>
-        </div>
-      </section>
-      <section id="system" class="page" hidden>
-        <div class="card intro">
-          <span class="mini-icon">▦</span>
-          <div>
-            <h3>小核心，可替换的能力</h3>
-            <p>
-              下面每项能力由独立官方插件提供。当前版本未开放第三方可执行插件。
-            </p>
-          </div>
-        </div>
-        <div id="plugins" class="plugins"></div>
-        <div class="section-title">
-          <h3>本地数据与运行</h3>
-          <span id="memory"></span>
-        </div>
-        <div class="card">
-          <label class="setting">
-            <div>
-              <b>登录后自动醒来</b
-              ><small>只启动宠物，控制器按需打开。此开关立即生效。</small>
-            </div>
-            <input id="autostart" type="checkbox" role="switch" />
-          </label>
-          <div class="setting">
-            <div>
-              <b>开始新会话</b><small>停止当前回复，并删除本地会话内容。</small>
-            </div>
-            <button id="clear-chat" class="ghost danger">开始新会话</button>
-          </div>
-          <div class="setting">
-            <div>
-              <b>让宠物休息</b><small>退出宠物运行时；控制器保持打开。</small>
-            </div>
-            <button id="stop" class="ghost danger">退出宠物</button>
-          </div>
-        </div>
-        <p class="footnote">
-          本版为开发预览。正式美术和长时间待机验证将继续完善。
-        </p>
-      </section>
+        </section>
+
+        <section id="voice" class="page" hidden></section>
+        <section id="care" class="page" hidden></section>
+        <section id="history" class="page" hidden></section>
+        <section id="memories" class="page" hidden></section>
+        <section id="permissions" class="page" hidden></section>
+        <section id="skills" class="page" hidden></section>
+        <section id="mcp" class="page" hidden></section>
+        <section id="integrations" class="page" hidden></section>
+      </div>
       <div id="toast" role="status" hidden></div>
-      <footer>
-        一点点生长，慢慢熟悉。<span>LOCAL FIRST · PLUGIN DRIVEN</span>
-      </footer>
     </main>
     <script type="module" src="controller.js"></script>
   </body>

@@ -73,13 +73,21 @@ export const agentRunner = definePlugin({
           for (const call of calls) {
             signal.throwIfAborted();
             let result: string;
+            let attachments:
+              | import("../../packages/contracts/media.ts").Attachment[]
+              | undefined;
             try {
               if (denied.has(call.name))
                 throw new Error("此工具本轮已被拒绝，不再请求确认");
-              result = await tools.run(call, signal, {
+              const options = {
                 silent: input.silent,
                 session: input.permissionSession,
-              });
+              };
+              if (tools.runRich) {
+                const rich = await tools.runRich(call, signal, options);
+                result = rich.text;
+                attachments = rich.attachments;
+              } else result = await tools.run(call, signal, options);
             } catch (e) {
               if (signal.aborted) throw e;
               const message = e instanceof Error ? e.message : "工具失败";
@@ -92,6 +100,7 @@ export const agentRunner = definePlugin({
               toolCallId: call.id,
               toolName: call.name,
               content: result,
+              ...(attachments?.length ? { attachments } : {}),
             };
             messages.push(response);
             trace.push(response);

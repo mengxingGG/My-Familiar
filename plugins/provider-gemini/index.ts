@@ -4,6 +4,7 @@ import type {
   ModelInfo,
 } from "../../packages/contracts/index.ts";
 import { providerPlugin } from "../llm-shared/plugin.ts";
+import { geminiImages } from "../llm-shared/images.ts";
 import { baseOptions } from "../llm-shared/chat-completions.ts";
 import {
   headers,
@@ -42,11 +43,13 @@ function prompt(input: ProviderInput) {
                       : {}),
                   },
                 },
+                ...geminiImages(m),
               ]
             : m.native && m.native.scope === input.nativeScope
               ? m.native.items
               : [
                   ...(m.content ? [{ text: m.content }] : []),
+                  ...geminiImages(m),
                   ...(m.calls ?? []).map((c) => ({
                     functionCall: {
                       name: c.name,

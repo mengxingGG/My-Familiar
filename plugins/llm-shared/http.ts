@@ -212,6 +212,9 @@ export async function chatModels(
       supportedParameters: Array.isArray(m.supported_parameters)
         ? m.supported_parameters
         : undefined,
+      inputModalities: Array.isArray(m.architecture?.input_modalities)
+        ? m.architecture.input_modalities
+        : undefined,
       ...(m.reasoning
         ? {
             thinking: {

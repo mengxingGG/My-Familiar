@@ -118,6 +118,18 @@ test("气泡 UI 不创建聊天页面；输入收起，回复冒泡，关闭后�
   assert.equal(visible.get("speech"), true, "收起输入后恢复最新回复");
   await routes.call("chat.clear");
   assert.equal(visible.get("speech"), false);
+  k.emit("pet.speech", "起床啦，今天也在这里。");
+  assert.equal(visible.get("speech"), true);
+  await routes.call("speech.close");
+  await routes.call("speech.hover", false);
+  k.emit("settings.changed", defaults);
+  assert.equal(
+    visible.get("speech"),
+    false,
+    "主动气泡手动关闭后不能被悬停或设置更新重新打开",
+  );
+  k.emit("pet.speech", "这是新的问候。");
+  assert.equal(visible.get("speech"), true);
   assert.ok(sent.length > 0);
   await k.dispose();
 });

@@ -35,6 +35,7 @@ export const bubbleChat = definePlugin({
     };
     let dismiss: (() => void | Promise<void>) | undefined;
     let dismissedTurn: string | undefined;
+    let manuallyHidden = false;
     let composing = false,
       controllerUntil = 0,
       hovering = false;
@@ -78,6 +79,7 @@ export const bubbleChat = definePlugin({
         !inController() &&
         !composing &&
         settings.get().pet.visible &&
+        !manuallyHidden &&
         (!dismissedTurn || kind === "ambient")
       )
         surface.show("speech", !!text || busy || !!approvals.length);
@@ -89,13 +91,17 @@ export const bubbleChat = definePlugin({
       )
         dismiss = ctx.timeout(() => {
           dismissedTurn = conversation.state().messages.at(-1)?.id;
+          manuallyHidden = true;
           surface.show("speech", false);
         }, settings.get().pet.bubbleSeconds * 1000);
     };
     const sync = (state: ChatState) => {
       surface.send("composer", "familiar:chat", { busy: state.busy });
       const last = state.messages.at(-1);
-      if (last?.id !== dismissedTurn) dismissedTurn = undefined;
+      if (last?.id !== dismissedTurn) {
+        dismissedTurn = undefined;
+        manuallyHidden = false;
+      }
       if (inController()) {
         surface.show("speech", false);
         if (!state.busy) dismissedTurn = last?.id;
@@ -157,10 +163,13 @@ export const bubbleChat = definePlugin({
         else display(view.text, view.busy, view.kind);
       },
       "speech.close": () => {
+        dismiss?.();
+        manuallyHidden = true;
         dismissedTurn = conversation.state().messages.at(-1)?.id;
         surface.show("speech", false);
       },
       "speech.recall": () => {
+        manuallyHidden = false;
         composing = false;
         surface.show("composer", false);
         dismissedTurn = undefined;
@@ -172,6 +181,7 @@ export const bubbleChat = definePlugin({
       ctx.effect(commands.register(name, command));
     ctx.on<ChatState>("conversation.changed", sync);
     ctx.on("conversation.session", () => {
+      manuallyHidden = true;
       dismiss?.();
       dismissedTurn = undefined;
       view.text = "";
@@ -195,8 +205,10 @@ export const bubbleChat = definePlugin({
         !conversation.state().busy &&
         !inController() &&
         !settings.get().pet.quiet
-      )
+      ) {
+        manuallyHidden = false;
         display(text, false, "ambient");
+      }
     });
     ctx.effect(() => {
       surface.close("composer");

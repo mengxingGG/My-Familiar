@@ -13,10 +13,12 @@ Kernel 只管理插件依赖、服务、权限和生命周期。文件之家、�
 ```
 .familiar/
   memory/
-    CORE.md                 # 核心记忆，最多 3000 Unicode 字符
+    CORE.md                 # 核心规则，最多 2000 Unicode 字符
     IDENTITY.md SOUL.md USER.md AGENTS.md
     BOOTSTRAP.md HEARTBEAT.md TOOLS.md
-    lessons/YYYY-MM-DD-分类-名称-时间.md
+    lessons/主题.md          # 教训：头部“何时读”，每条“规则 — 原因”
+    topics/主题.md           # 扩展记忆：只适用于某个项目或某类任务
+    lessons/YYYY-MM-DD-分类-名称-时间.md   # v0.2 旧格式，原样保留
     daily/YYYY/MM/YYYY-MM-DD.md
     .history/               # 编辑前的原文备份
   skills/名称/SKILL.md       # 可包含 scripts、references、assets
@@ -33,9 +35,21 @@ Kernel 只管理插件依赖、服务、权限和生命周期。文件之家、�
 
 首次启动只创建缺失的模板，不覆盖已有内容。身份和相处方式体现温暖、诚实、尊重边界，不虚构经历、不制造情感依赖。HEARTBEAT 保留为扩展约定文件；现有主动问候由独立 companion-care 插件调度，见文档 09。
 
-核心记忆、身份和 Skill 目录以稳定顺序进入系统前缀；模型通过 memory_diary 主动挑选重要经历，按当地日期追加简洁日记，不自动复制问答，不逐轮注入整个日记。用户问过去的事时通过 memory_search / memory_read 检索。memory_remember 保存明确确认的长期信息，memory_lesson 单独记录教训或经验。会话交接摘要与日记分开保存，详见 [重要日记与会话压缩](11_Familiar_重要日记与会话压缩.md)。可复用的内容可整理为 Skill，再由用户确认安装。
+2026-10-11 起记忆按 [记忆系统改造方案](17_Familiar_记忆系统改造方案.md) 分层，以下为当前实现。
 
-核心记忆超出 3000 字符时使用已配置模型自动精炼，会产生一次模型调用；保留精炼前资料。失败时采用确定性的保守收纳并提示管理器，原文仍可找回。保存使用 revision 检查，避免覆盖外部编辑。日记与核心不保存匹配到的常见凭据格式；自动过滤不能保证识别所有秘密，工具密钥必须在专用设置项填写。
+身份文件、核心规则、程序生成的记忆索引和 Skill 目录以稳定顺序进入系统前缀。核心规则只放用户要求必须遵守的规则和长期偏好，上限 2000 字符；索引由 lessons/、topics/ 各文件头部的“何时读”生成，上限 1000 字符，放不下时注明未列出的数量。日记、教训和扩展记忆不整体注入，由模型按索引用 memory_read / memory_search 取用。会话第一次请求时冻结记忆快照，模型在会话中写入不改变前缀；新建会话、压缩、程序重启或在管理器中编辑记忆时刷新。
+
+| 工具 | 用途 |
+| --- | --- |
+| memory_remember | 核心规则：`add` / `replace` / `remove`，后两者用 `old_text` 唯一定位原条目 |
+| memory_lesson | 按主题写入 lessons/，每条“规则 — 原因”；新主题须填写 `when` |
+| memory_topic | 按主题写入 topics/，只适用于某个项目或某类任务的约定与资料 |
+| memory_diary | 主动挑选重要经历，按当地日期追加简洁日记，不复制问答 |
+| memory_search / memory_read | 检索与分段读取 |
+
+核心规则超出 2000 字符时拒绝写入，管理器保存同样拒绝；缩小体积的修改总是允许，v0.2 留下的超限核心会完整注入并在管理器提示整理。不再调用模型自动精炼。新增条目前先做完全相同的去重，文件已有条目时再由 `memory.judge` 判断是否重复或取代某条；判断为是则不写入并返回原条目，由模型改用 replace 或以 force 确认。判断使用当前配置的模型，失败时照常写入并提示，连续失败后冷却。写入结果由代码重读文件确认。会话交接摘要与日记分开保存，详见 [重要日记与会话压缩](11_Familiar_重要日记与会话压缩.md)。可复用的内容可整理为 Skill，再由用户确认安装。
+
+保存使用 revision 检查，避免覆盖外部编辑。日记与核心不保存匹配到的常见凭据格式；自动过滤不能保证识别所有秘密，工具密钥必须在专用设置项填写。判断记录、检索记录和注入量写入数据目录的 `memory-trace-日期.json`（保留 30 天），是诊断数据而不是记忆，删除记忆不会自动删除它们。
 
 ## Skill 与 MCP 分开管理
 
@@ -53,6 +67,6 @@ MCP 使用 [官方 TypeScript SDK](https://github.com/modelcontextprotocol/types
 
 ## 开发与验收
 
-运行 `npm run check` 和 `npm run smoke`。测试应覆盖记忆限额与重启、每日追加、文件越界、Skill 导入、审批拒绝与取消、MCP 生命周期、原生工具协议、输入气泡锚点、模型列表以及独立控制器。真实服务验证需单独记录；模拟协议通过不代表所有官方账号均已实测。
+运行 `npm run check` 和 `npm run smoke`。测试应覆盖记忆限额与重启、条目改写与查重、快照冻结与刷新、每日追加、文件越界、Skill 导入、审批拒绝与取消、MCP 生命周期、原生工具协议、输入气泡锚点、模型列表以及独立控制器。真实服务验证需单独记录；模拟协议通过不代表所有官方账号均已实测。
 
-`npm run smoke:agent` 验证三类管理页面、记忆精炼、Shell 同意/拒绝和本地 MCP 往返。`node scripts/agent-smoke.mjs --exa-live` 额外访问 Exa 官方工具目录。基础文件读写默认从 workspace 开始并支持外部绝对路径；`skill_read` 可读取已启用 Skill 中的文本资源，`memory_read` 支持 offset 分段。超过 10 万字符的日记在管理器中只读预览，保留完整文件供外部编辑，防止把截断预览误存为全文。
+`npm run smoke:agent` 验证三类管理页面、核心规则超限拒绝保存、Shell 同意/拒绝和本地 MCP 往返；记忆分层的逻辑测试在 `tests/memory.test.ts`。`node scripts/agent-smoke.mjs --exa-live` 额外访问 Exa 官方工具目录。基础文件读写默认从 workspace 开始并支持外部绝对路径；`skill_read` 可读取已启用 Skill 中的文本资源，`memory_read` 支持 offset 分段。超过 10 万字符的日记在管理器中只读预览，保留完整文件供外部编辑，防止把截断预览误存为全文。

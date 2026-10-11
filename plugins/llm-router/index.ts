@@ -21,7 +21,11 @@ export const estimateTokens = (messages: ProviderInput["messages"]) =>
             }),
         "utf8",
       ) +
-      16,
+      16 +
+      (m.images?.length ??
+        m.attachments?.filter((a) => a.kind === "image").length ??
+        0) *
+        8192,
     32,
   );
 export const nativeScope = (c: ProviderProfile, key = "") =>
@@ -48,7 +52,13 @@ export const llmRouter = definePlugin({
     id: "familiar.llm-router",
     version: "0.1.0",
     provides: ["llm.chat", "llm.management"],
-    requires: ["llm.registry", "settings", "secrets.local", "storage.local"],
+    requires: [
+      "llm.registry",
+      "settings",
+      "secrets.local",
+      "storage.local",
+      "media.assets",
+    ],
   },
   async start(ctx) {
     const registry = ctx.use("llm.registry"),
@@ -255,6 +265,10 @@ export const llmRouter = definePlugin({
       validate,
       async count(input) {
         input.signal.throwIfAborted();
+        input = {
+          ...input,
+          messages: await ctx.use("media.assets").resolve(input.messages),
+        };
         const provider = registry.get(input.settings.kind),
           scope = nativeScope(
             input.settings,
@@ -265,7 +279,13 @@ export const llmRouter = definePlugin({
               m.native?.scope === scope ? m : { ...m, native: undefined },
             ),
           );
-        if (!provider.countTokens) return { tokens: estimate, exact: false };
+        // llama.cpp 的文本 tokenize 接口不计视觉编码，图片请求使用保守估计。
+        if (
+          !provider.countTokens ||
+          (input.settings.kind === "llamacpp" &&
+            input.messages.some((m) => m.images?.length))
+        )
+          return { tokens: estimate, exact: false };
         const request = makeInput(input, 15000);
         try {
           const value = await provider.countTokens(request);
@@ -280,9 +300,22 @@ export const llmRouter = definePlugin({
     });
     ctx.provide("llm.chat", {
       async *stream(input) {
+        input = {
+          ...input,
+          messages: await ctx.use("media.assets").resolve(input.messages),
+        };
         const request = makeInput(input);
         try {
           if (!request.settings.model) throw new Error("请先选择模型");
+          const modalities = request.modelInfo?.inputModalities;
+          if (
+            request.messages.some((m) => m.images?.length) &&
+            modalities?.length &&
+            !modalities.includes("image")
+          )
+            throw new Error(
+              "当前主模型不支持图片，请在模型连接中选择支持图片的模型",
+            );
           let total = 0;
           for await (const text of registry
             .get(request.settings.kind)

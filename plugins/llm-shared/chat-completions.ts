@@ -11,6 +11,7 @@ import {
   usage,
 } from "./http.ts";
 import { visibleText } from "./visible-text.ts";
+import { completionMessages } from "./images.ts";
 export const baseOptions: ParameterSupport = {
   modes: ["auto"],
   efforts: [],
@@ -28,25 +29,7 @@ export async function* chatStream(
   const c = input.settings;
   const body = {
     model: c.model,
-    messages: input.messages.map((m) =>
-      m.role === "tool"
-        ? { role: "tool", content: m.content, tool_call_id: m.toolCallId }
-        : m.native?.scope === input.nativeScope && m.native
-          ? m.native.items[0]
-          : {
-              role: m.role,
-              content: m.content,
-              ...(m.calls?.length
-                ? {
-                    tool_calls: m.calls.map((c) => ({
-                      id: c.id,
-                      type: "function",
-                      function: { name: c.name, arguments: c.arguments },
-                    })),
-                  }
-                : {}),
-            },
-    ),
+    messages: completionMessages(input.messages, input.nativeScope),
     stream: true,
     ...(c.temperature !== null ? { temperature: c.temperature } : {}),
     ...(c.topP !== null ? { top_p: c.topP } : {}),

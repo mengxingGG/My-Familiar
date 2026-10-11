@@ -113,7 +113,7 @@ export const mcpClient = definePlugin({
     id: "familiar.mcp-client",
     version: "0.2.0",
     provides: ["mcp.manager"],
-    requires: ["familiar.home", "agent.tools", "secrets.local"],
+    requires: ["familiar.home", "agent.tools", "secrets.local", "media.assets"],
     permissions: ["network.mcp", "process.mcp"],
   },
   async start(ctx) {
@@ -291,6 +291,47 @@ export const mcpClient = definePlugin({
                         { name: t.name, arguments: args },
                         { signal, timeout: 60000 },
                       );
+                      const images = result.content.filter(
+                        (v) => v.type === "image",
+                      );
+                      if (images.length > 8)
+                        throw new Error("MCP 返回图片过多");
+                      if (images.length) {
+                        const attachments = [];
+                        for (const item of images) {
+                          const img = item as {
+                            data: string;
+                            mimeType: string;
+                          };
+                          if (
+                            typeof img.data !== "string" ||
+                            img.data.length > 16 * 1024 * 1024
+                          )
+                            throw new Error("MCP 图片过大");
+                          attachments.push(
+                            await ctx
+                              .use("media.assets")
+                              .add(
+                                `${c.name}-${t.name}`,
+                                img.mimeType,
+                                Buffer.from(img.data, "base64"),
+                                "mcp",
+                              ),
+                          );
+                        }
+                        return {
+                          type: "familiar.multimodal",
+                          text: JSON.stringify({
+                            isError: result.isError ?? false,
+                            structuredContent: result.structuredContent,
+                            content: result.content
+                              .filter((v) => v.type === "text")
+                              .map((v) => (v as { text: string }).text)
+                              .join("\n"),
+                          }),
+                          attachments,
+                        };
+                      }
                       return {
                         isError: result.isError ?? false,
                         structuredContent: result.structuredContent,

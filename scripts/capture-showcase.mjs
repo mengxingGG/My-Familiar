@@ -219,20 +219,25 @@ try {
     },
   });
 
+  // 演示新的记忆分层：核心只放规则，教训与扩展记忆按主题写明何时读。
   const core =
-    "# 核心记忆\n\n## 相处的小约定\n- 我叫柚子，是一只热情的小狐狸。\n- 忙碌时安静陪着，聊起小进展时认真回应。\n\n## 值得记住的偏好\n- 喜欢把大任务拆成小步骤，一件一件完成。\n- 休息时喜欢散步，顺便看看路边的小花。\n\n## 最近一起做的事\n- 完成了一个小项目，想留一点时间庆祝。\n";
+    "# 核心规则\n\n只放用户要求必须遵守的规则和长期偏好，每条一行。\n\n- 称呼我“小林”。\n- 我说“在忙”时安静陪着，不主动打扰。\n- 给建议时先说结论，再一步步拆开。\n- 晚上十一点后提醒我早点休息。\n";
   await request("memory.write", {
     path: "CORE.md",
     text: core,
     revision: (await request("memory.read", { path: "CORE.md" })).revision,
   });
   await request("memory.write", {
-    path: "daily/2026/09/2026-09-22.md",
-    text: "# 2026-09-22\n\n今天听到了一个好消息：一起惦记的小项目完成了。比起催着开始下一件事，更想陪着好好庆祝这个小进展。\n",
+    path: "daily/2026/10/2026-10-11.md",
+    text: "# 2026-10-11 · 一起度过的一天\n\n## 21:40\n\n一起惦记的小项目终于完成了。比起催着开始下一件事，今天更想陪小林好好庆祝。\n",
   });
   await request("memory.write", {
-    path: "lessons/2026-09-22-先听完再给建议.md",
-    text: "# 先听完，再给建议\n\n分享生活中的开心小事时，先回应感受。需要计划或建议时，再一起拆解。\n",
+    path: "lessons/分享好消息.md",
+    text: "# 分享好消息\n> 何时读：用户分享开心的小事或进展时\n\n- 先回应感受，再问细节 — 急着给建议会打断分享的心情\n",
+  });
+  await request("memory.write", {
+    path: "topics/周末徒步.md",
+    text: "# 周末徒步\n> 何时读：聊到周末计划或户外活动时\n\n- 常走西山步道，单程约两小时\n- 出门前提醒带水和防晒\n",
   });
   await page.locator('[data-page="memories"]').click();
   await page.locator("#memory-files").selectOption("CORE.md");
@@ -240,8 +245,23 @@ try {
     (text) => document.querySelector("#memory-editor").value === text,
     core,
   );
-  // 只截取记忆编辑区域，排除上方显示本机路径的卡片。
-  await page.locator(".memory-layout").screenshot({ path: raw("memory") });
+  // 只截取文件列表和编辑区域；本机路径显示在上方，不进入截图。
+  await page.locator("#memories .split").screenshot({ path: raw("memory") });
+  await page.locator('[data-page="voice"]').click();
+  await page.waitForFunction(
+    () => !document.querySelector("#voice-save").disabled,
+  );
+  const voiceEnd = await page.locator("#voice-sec-wake").boundingBox();
+  await page.screenshot({
+    path: raw("voice"),
+    clip: {
+      x: 0,
+      y: 0,
+      width: await page.evaluate(() => innerWidth),
+      // 停在底部吸附的保存栏上方。
+      height: Math.min(voiceEnd.y - 8, (await page.evaluate(() => innerHeight)) - 70),
+    },
+  });
   assert.deepEqual(errors, [], "演示过程中不能出现页面异常");
   await writeFile(
     join(output, "capture.json"),
@@ -256,7 +276,7 @@ try {
       2,
     ),
   );
-  console.log("已捕获实际宠物、气泡、输入、控制器、模型选择和记忆界面。");
+  console.log("已捕获实际宠物、气泡、输入、控制器、模型选择、记忆和语音界面。");
 } finally {
   await controller?.close();
   await runtime?.close();

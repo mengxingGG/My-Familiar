@@ -2,6 +2,7 @@ import { WorkspaceFiles } from "./files.ts";
 import { join } from "node:path";
 import {
   definePlugin,
+  memoryLimits,
   type ToolEntry,
 } from "../../packages/contracts/index.ts";
 import { revision } from "../home-files/store.ts";
@@ -15,7 +16,7 @@ export const toolsBasic = definePlugin({
   manifest: {
     manifestVersion: 1,
     id: "familiar.tools-basic",
-    version: "0.2.0",
+    version: "0.3.0",
     provides: [],
     requires: [
       "agent.tools",
@@ -37,6 +38,25 @@ export const toolsBasic = definePlugin({
     const memory = ctx.use("memory.files"),
       skills = ctx.use("skills.catalog"),
       mcp = ctx.use("mcp.manager");
+    // 召回记录用于对比后续向量检索的命中率，不包含记忆正文。
+    const recall = (event: Record<string, unknown>) =>
+      ctx.emit("memory.trace", {
+        v: 1,
+        type: "recall",
+        time: Date.now(),
+        ...event,
+      });
+    const change = {
+      action: { type: "string", enum: ["add", "replace", "remove"] },
+      text: { type: "string", maxLength: 4000 },
+      old_text: { type: "string", maxLength: 1000 },
+      force: { type: "boolean" },
+    };
+    const note = {
+      topic: { type: "string", maxLength: 40 },
+      when: { type: "string", maxLength: 120 },
+      ...change,
+    };
     const entries: ToolEntry[] = [
       {
         name: "files_list",
@@ -117,9 +137,13 @@ export const toolsBasic = definePlugin({
       {
         name: "memory_search",
         category: "search",
-        description: "检索核心记忆、日记和教训，可输入日期或关键词",
+        description: "检索核心规则、日记、教训和扩展记忆，可输入日期或关键词",
         parameters: schema({ query: str }),
-        execute: async ({ query }) => memory.search(query),
+        execute: async ({ query }, { session }) => {
+          const hits = await memory.search(query);
+          recall({ session, tool: "memory_search", query, hits: hits.map((h) => h.path) });
+          return hits;
+        },
       },
       {
         name: "memory_read",
@@ -128,8 +152,9 @@ export const toolsBasic = definePlugin({
           { path: str, offset: { type: "integer", minimum: 0 } },
           ["path"],
         ),
-        execute: async ({ path, offset = 0 }) => {
+        execute: async ({ path, offset = 0 }, { session }) => {
           const value = await memory.read(path);
+          recall({ session, tool: "memory_read", path, offset });
           return {
             text: value.text.slice(offset, offset + 24000),
             totalCharacters: value.text.length,
@@ -149,27 +174,28 @@ export const toolsBasic = definePlugin({
       {
         name: "memory_remember",
         category: "write",
-        description: "记住用户明确确认的长期偏好或约定",
-        parameters: schema({ text: str }),
-        execute: async ({ text }, { signal }) => memory.remember(text, signal),
+        description: `更新核心规则：只记用户要求必须遵守的规则和长期偏好。action 默认 add；replace 用 old_text 定位并改写原条目，remove 删除。核心上限 ${memoryLimits.core} 字符，写满会被拒绝，需先合并或删除，或把只适用于某个主题的规则改用 memory_topic。结果提示重复或取代时没有写入，确认后用 replace 或 force。`,
+        parameters: schema(change, []),
+        execute: async ({ old_text, ...args }, { signal }) =>
+          memory.remember({ ...args, old: old_text }, signal),
       },
       {
         name: "memory_lesson",
         category: "write",
-        description: "记录可复用的经验、技能或犯错教训",
-        parameters: schema(
-          {
-            title: str,
-            text: str,
-            category: {
-              type: "string",
-              enum: ["lesson", "skill", "experience"],
-            },
-          },
-          ["title", "text"],
-        ),
-        execute: async ({ title, text, category }) =>
-          memory.lesson(title, text, category),
+        description:
+          "记下可复用的经验教训：按主题写入 lessons/<topic>.md，每条写成“规则 — 原因”。新主题必须填写 when（何时该读）。不要记录缺依赖、未配置凭据等环境问题，“某工具不能用”之类的否定结论，重试即可的瞬时错误，或没有试成功的做法。写错了用 replace 或 remove 原地修正。",
+        parameters: schema(note, ["topic"]),
+        execute: async ({ old_text, ...args }, { signal }) =>
+          memory.note("lessons", { ...args, old: old_text }, signal),
+      },
+      {
+        name: "memory_topic",
+        category: "write",
+        description:
+          "写入扩展记忆：只适用于某个项目或某类任务的约定与资料，按主题写入 topics/<topic>.md。新主题必须填写 when（何时该读）。经历和进展写日记，全局规则写核心。用 replace 或 remove 原地修改。",
+        parameters: schema(note, ["topic"]),
+        execute: async ({ old_text, ...args }, { signal }) =>
+          memory.note("topics", { ...args, old: old_text }, signal),
       },
       {
         name: "skill_read",

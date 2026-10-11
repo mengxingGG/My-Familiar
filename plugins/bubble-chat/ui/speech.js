@@ -2,6 +2,14 @@ const api = window.familiar,
   $ = (id) => document.getElementById(id);
 let text = "";
 let approvalId;
+$("read").onclick = () =>
+  api.request("voice.read", { text }).catch((e) => {
+    $("state").textContent = e.message;
+  });
+$("stop-audio").onclick = () => api.request("voice.stop");
+api.on("familiar:voice-state", (v) => {
+  $("stop-audio").hidden = v.phase !== "speaking";
+});
 function render(view) {
   text = view.text;
   $("name").textContent = view.name;

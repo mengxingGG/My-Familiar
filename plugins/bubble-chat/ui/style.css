@@ -1,3 +1,5 @@
+/* 头顶气泡与输入条：与控制器和角色插画同一套奶油、鼠尾草绿配色。
+   正文字号与行高参与气泡高度估算（每行约 22 字、24px），修改时同步 index.ts。 */
 * {
   box-sizing: border-box;
 }
@@ -9,8 +11,9 @@ body {
   overflow: hidden;
   background: transparent;
   font:
-    12px/1.7 "Segoe UI",
+    12px/1.7 "Microsoft YaHei UI",
     "Microsoft YaHei",
+    "Segoe UI",
     sans-serif;
   color: #4b5942;
 }
@@ -19,15 +22,15 @@ body {
 }
 .speech-card,
 .composer-card {
-  background: #fffcf2;
-  border: 1px solid #daddcb;
-  box-shadow: 0 3px 12px #283d2317;
-  border-radius: 19px;
-  height: calc(100% - 10px);
+  position: relative;
   display: flex;
   flex-direction: column;
+  height: calc(100% - 10px);
   padding: 11px 15px;
-  position: relative;
+  border: 1.5px solid #daddcb;
+  border-radius: 19px;
+  background: #fffcf2;
+  box-shadow: 0 3px 12px #283d2317;
 }
 .speech-card:after,
 .composer-card:after {
@@ -38,61 +41,73 @@ body {
   width: 16px;
   height: 16px;
   background: #fffcf2;
-  border-right: 1px solid #daddcb;
-  border-bottom: 1px solid #daddcb;
+  border-right: 1.5px solid #daddcb;
+  border-bottom: 1.5px solid #daddcb;
   transform: rotate(45deg);
+}
+.composer-card:focus-within {
+  border-color: #a0b38c;
+}
+.composer-card:focus-within:after {
+  border-color: #a0b38c;
 }
 header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 8px;
-  font-size: 10px;
-  color: #a0a58c;
-  flex-shrink: 0;
+  color: #8a917c;
+  font-size: 11px;
 }
 header #name {
-  color: #82946c;
+  color: #62774f;
+  font-weight: 600;
 }
 header button {
   margin-left: auto;
+  padding: 0 4px;
   font-size: 18px;
   line-height: 20px;
-  padding: 0 3px;
 }
 button {
+  padding: 3px 7px;
   border: 0;
+  border-radius: 6px;
   background: transparent;
-  color: #849572;
+  color: #6c7c5c;
   font: inherit;
   cursor: pointer;
-  border-radius: 6px;
-  padding: 3px 7px;
 }
 button:hover {
   background: #edf0e3;
+  color: #4b5942;
 }
 button:focus-visible,
-textarea:focus-visible {
+select:focus-visible {
   outline: 2px solid #a0b38c;
   outline-offset: 2px;
 }
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 #speech {
   flex: 1;
+  padding: 7px 2px 8px;
   overflow: auto;
+  font-size: 13px;
+  line-height: 1.8;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 13px;
-  padding: 7px 2px 8px;
-  line-height: 1.8;
   user-select: text;
 }
 footer {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
-  font-size: 10px;
   padding-top: 4px;
+  font-size: 12px;
 }
 footer #copy {
   margin-left: auto;
@@ -101,83 +116,141 @@ footer #copy {
   color: #ad8264;
 }
 textarea {
-  font:
-    13px/1.7 "Microsoft YaHei",
-    sans-serif;
-  color: #4b5942;
-  background: transparent;
-  resize: none;
-  width: 100%;
-  border: 0;
-  padding: 8px 0;
   flex: 1;
+  width: 100%;
   min-height: 35px;
+  padding: 8px 0;
+  border: 0;
   outline: 0;
+  resize: none;
+  background: transparent;
+  color: #4b5942;
+  font:
+    13px/1.7 "Microsoft YaHei UI",
+    "Microsoft YaHei",
+    sans-serif;
 }
 textarea::placeholder {
-  color: #b0b69e;
+  color: #a6ac95;
+}
+.media-toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+}
+.media-toolbar button {
+  padding: 3px 6px;
+}
+.media-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: #6c7c5c;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.media-toolbar input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #70855e;
+}
+#voice-status {
+  min-height: 15px;
+  overflow: hidden;
+  color: #6c7c5c;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#attachments {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  max-height: 45px;
+  overflow: auto;
+}
+#attachments button {
+  max-width: 150px;
+  overflow: hidden;
+  background: #edf0e3;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .composer-card footer small {
-  font-size: 8px;
-  color: #a5ac96;
+  color: #8a917c;
+  font-size: 11px;
 }
 .composer-card footer #send {
   margin-left: auto;
+  padding: 5px 14px;
   background: #70855e;
   color: #fffef1;
-  padding: 5px 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 0 #556a45;
 }
-.composer-card {
-  border-radius: 19px;
-  background: #fffcf2;
+.composer-card footer #send:hover {
+  background: #62774f;
 }
 .speech-window #state {
-  font-size: 9px;
+  font-size: 11px;
+}
+#state {
+  max-width: 180px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 #error {
-  font-size: 10px;
   color: #a77454;
+  font-size: 12px;
 }
-button:disabled {
-  opacity: 0.4;
-  cursor: default;
+#approval {
+  min-height: 0;
+  font-size: 12px;
+}
+#approval-detail {
+  max-height: 126px;
+  padding: 8px;
+  overflow: auto;
+  border-radius: 8px;
+  background: #f0f2eb;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#approval button {
+  margin-right: 6px;
+}
+#allow {
+  background: #70855e;
+  color: #fffef1;
+  font-weight: 600;
+}
+#deny {
+  color: #ad8264;
+}
+#allow-scope {
+  max-width: 175px;
+  padding: 4px;
+  border: 1px solid #d6dac8;
+  border-radius: 6px;
+  background: #f4f5ed;
+  color: #374034;
+  font: inherit;
 }
 ::-webkit-scrollbar {
   width: 4px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d6dcc9;
   border-radius: 4px;
+  background: #d6dcc9;
 }
-
-#approval {
-  font-size: 12px;
-  min-height: 0;
-}
-#approval-detail {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  max-height: 126px;
-  overflow: auto;
-  background: #f0f2eb;
-  padding: 8px;
-  border-radius: 8px;
-}
-#approval button {
-  margin-right: 8px;
-}
-#state {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#allow-scope {
-  max-width: 175px;
-  font: inherit;
-  border-radius: 6px;
-  padding: 4px;
-  background: #f4f5ed;
-  color: #374034;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }

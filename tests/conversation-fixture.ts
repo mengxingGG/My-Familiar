@@ -34,10 +34,26 @@ export const conversationFixture = definePlugin({
       list: async () => [],
       read: async () => ({ text: "", revision: "" }),
       write: async () => {},
-      remember: async () => ({ refined: false }),
-      lesson: async () => "",
+      remember: async () => ({
+        path: "CORE.md",
+        action: "add",
+        written: false,
+        entries: 0,
+        characters: 0,
+      }),
+      note: async () => ({
+        path: "lessons/fixture.md",
+        action: "add",
+        written: false,
+        entries: 0,
+        characters: 0,
+      }),
       search: async () => [],
-      status: () => ({ root: "", refining: false }),
+      status: () => ({
+        root: "",
+        core: { characters: 0, limit: 2000 },
+        index: { characters: 0, limit: 1000, omitted: 0 },
+      }),
     });
     ctx.provide("skills.catalog", {
       list: async () => [],

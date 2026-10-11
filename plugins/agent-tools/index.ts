@@ -213,6 +213,10 @@ export const agentTools = definePlugin({
           parameters,
         })),
       async run(call, signal, options) {
+        return (await ctx.use("agent.tools").runRich!(call, signal, options))
+          .text;
+      },
+      async runRich(call, signal, options) {
         signal.throwIfAborted();
         const tool = tools.get(call.name);
         if (!tool) throw new Error("工具未启用或不存在");
@@ -246,11 +250,33 @@ export const agentTools = definePlugin({
           signal,
           session: options?.session,
         });
+        if (
+          value &&
+          typeof value === "object" &&
+          "type" in value &&
+          value.type === "familiar.multimodal"
+        ) {
+          const rich =
+            value as import("../../packages/contracts/media.ts").ToolResult;
+          if (
+            typeof rich.text !== "string" ||
+            !Array.isArray(rich.attachments) ||
+            rich.attachments.length > 8
+          )
+            throw new Error("图片工具结果格式无效");
+          return {
+            text: rich.text.slice(0, 32000),
+            attachments: rich.attachments,
+          };
+        }
         const text =
           typeof value === "string" ? value : (JSON.stringify(value) ?? "null");
-        return text.length > 32000
-          ? text.slice(0, 32000) + "\n[结果已截断]"
-          : text;
+        return {
+          text:
+            text.length > 32000
+              ? text.slice(0, 32000) + "\n[结果已截断]"
+              : text,
+        };
       },
     });
     ctx.effect(async () => {

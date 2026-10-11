@@ -47,7 +47,7 @@ export const experienceControls = definePlugin({
       "history.send": (p: any) => {
         if (p.id !== history.current()) throw new Error("请先点击继续此会话");
         presentation.controller(true);
-        return chat.send(p.text);
+        return chat.send({ text: p.text, attachments: p.attachments });
       },
       "history.cancel": () => chat.cancel(),
       "history.presentation": (active: unknown) => {

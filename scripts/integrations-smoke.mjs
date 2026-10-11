@@ -1,4 +1,4 @@
-import { _electron as electron, chromium } from "playwright/test";
+import { _electron as electron } from "playwright/test";
 import electronPath from "electron";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
@@ -91,7 +91,7 @@ try {
         ?.querySelector('input[value="persona-fixture"]'),
   );
   for (const id of ["mianmian", "lili", "fangfang", "youzi", "diandian"]) {
-    await page.locator("#character").selectOption(id);
+    await page.locator(`#character input[value="${id}"]`).check();
     await wait(
       async () =>
         (await request("runtime.status")).settings.pet.character === id &&
@@ -117,7 +117,7 @@ try {
       (await request("runtime.status")).settings.persona.style === "concise",
   );
   await page.locator('[data-page="home"]').click();
-  await page.locator("#character").selectOption("youzi");
+  await page.locator('#character input[value="youzi"]').check();
   await wait(
     async () =>
       (await request("runtime.status")).settings.pet.character === "youzi",
@@ -199,16 +199,25 @@ try {
       )
       .join("") +
     "</body></html>";
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const gallery = await browser.newPage({
-      viewport: { width: 1300, height: 270 },
+  // 用已启动的 Electron 渲染角色目录，不再额外依赖 Playwright 自带的 Chromium。
+  const galleryPath = join(output, "characters.html");
+  await writeFile(galleryPath, html);
+  const png = await controller.evaluate(async ({ BrowserWindow }, file) => {
+    const win = new BrowserWindow({
+      show: false,
+      width: 1300,
+      height: 270,
+      paintWhenInitiallyHidden: true,
     });
-    await gallery.setContent(html);
-    await gallery.screenshot({ path: join(output, "characters.png") });
-  } finally {
-    await browser.close();
-  }
+    try {
+      await win.loadFile(file);
+      await new Promise((r) => setTimeout(r, 300));
+      return (await win.webContents.capturePage()).toPNG().toString("base64");
+    } finally {
+      win.destroy();
+    }
+  }, galleryPath);
+  await writeFile(join(output, "characters.png"), Buffer.from(png, "base64"));
   await writeFile(
     join(output, "report.json"),
     JSON.stringify(

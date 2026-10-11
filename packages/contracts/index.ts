@@ -13,8 +13,11 @@ import {
 export * from "./llm.ts";
 export * from "./context.ts";
 export * from "./agent.ts";
+export * from "./memory.ts";
 export * from "./companion.ts";
 export * from "./integrations.ts";
+export * from "./media.ts";
+export * from "./voice.ts";
 export type PetAction = "idle" | "greet" | "drag" | "think" | "sleep" | "happy";
 export interface Character {
   id: string;
@@ -47,6 +50,8 @@ export interface Message {
   text: string;
   status: "complete" | "streaming" | "cancelled" | "error";
   time: number;
+  attachments?: import("./media.ts").Attachment[];
+  origin?: "text" | "voice";
 }
 export interface ChatState {
   messages: Message[];
@@ -61,7 +66,7 @@ export interface ConfigSection<T> {
 }
 export interface Surface {
   create(
-    kind: "pet" | "composer" | "speech" | "controller",
+    kind: "pet" | "composer" | "speech" | "controller" | "voice",
     html: string,
   ): Promise<void>;
   send(kind: string, channel: string, payload: unknown): void;
@@ -103,7 +108,12 @@ declare module "../kernel/index.ts" {
       prompt(config: Settings): string;
     };
     "config.provider": ConfigSection<Settings["provider"]>;
-    "platform.autostart": { get(): boolean; set(enabled: boolean): boolean };
+    "platform.autostart": {
+      get(): boolean;
+      set(enabled: boolean): boolean;
+      /** 无法写入系统登录启动时的原因。 */
+      unavailable(): string | undefined;
+    };
     commands: {
       register(name: string, command: Command): Dispose;
       call(name: string, params?: unknown): Promise<unknown>;
@@ -139,7 +149,7 @@ declare module "../kernel/index.ts" {
     };
     conversation: {
       state(): ChatState;
-      send(text: string): Promise<void>;
+      send(text: string | import("./media.ts").ChatInput): Promise<void>;
       cancel(): Promise<void>;
       clear(): Promise<void>;
     };

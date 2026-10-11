@@ -1,4 +1,5 @@
 import { conversationFixture } from "./conversation-fixture.ts";
+import { mediaAssets, mediaFixture } from "./media-fixture.ts";
 import { contextCompaction } from "../plugins/context-compaction/index.ts";
 import { sse, jsonRequest } from "../plugins/llm-shared/http.ts";
 import test from "node:test";
@@ -343,6 +344,8 @@ test("会话生成互斥、配置快照、清空后无迟到消息，取消部�
     },
   });
   k.install(conversationFixture);
+  k.install(mediaAssets);
+  k.install(mediaFixture);
   k.install(contextCompaction);
   k.install(conversation);
   await k.startAll();

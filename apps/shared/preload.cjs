@@ -18,6 +18,9 @@ contextBridge.exposeInMainWorld("familiar", {
         "familiar:focus",
         "familiar:chat",
         "familiar:settings",
+        "familiar:voice-host",
+        "familiar:voice-state",
+        "familiar:dictation",
       ].includes(channel)
     )
       throw new Error("事件不允许");

@@ -1,4 +1,5 @@
 import { conversationFixture } from "./conversation-fixture.ts";
+import { mediaAssets, mediaFixture } from "./media-fixture.ts";
 import { contextCompaction } from "../plugins/context-compaction/index.ts";
 import type { ToolCall, PromptMessage } from "../packages/contracts/index.ts";
 import test from "node:test";
@@ -618,6 +619,8 @@ function harness(
     },
   });
   k.install(llmRouter);
+  k.install(mediaAssets);
+  k.install(mediaFixture);
   k.install(conversationFixture);
   k.install(contextCompaction);
   k.install(conversation);

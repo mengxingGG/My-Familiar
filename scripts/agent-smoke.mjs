@@ -43,11 +43,11 @@ const mock = createServer(async (req, res) => {
   const emit = (v) => res.write("data: " + JSON.stringify(v) + "\n\n");
   const last = body.messages.at(-1);
   let call;
-  if (body.messages[0].content.includes("精炼成不超过"))
+  if (body.messages[0].content.includes("记忆整理的判断器"))
     emit({
       choices: [
         {
-          delta: { content: "# 核心记忆\n- 测试用户喜欢绿茶。" },
+          delta: { content: '{"answers":[{"id":"relation","choice":0}]}' },
           finish_reason: "stop",
         },
       ],
@@ -159,21 +159,30 @@ try {
     () =>
       document.querySelector("#memory-file-title").textContent === "CORE.md",
   );
+  const core = (await request("memory.read", { path: "CORE.md" })).text;
   await page.locator("#memory-editor").fill("用户偏好绿茶。".repeat(600));
   await page.locator("#memory-save").click();
-  await page.waitForFunction(
-    () =>
-      document
-        .querySelector("#memory-editor")
-        .value.includes("测试用户喜欢绿茶") &&
-      !document.querySelector("#memory-save").disabled,
+  await page.waitForFunction(() =>
+    document.querySelector("#toast").textContent.includes("核心规则上限"),
   );
-  assert.ok(
-    Array.from(await page.locator("#memory-editor").inputValue()).length <=
-      3000,
+  // 超限保存被拒绝，不调用模型精炼，文件保持原样。
+  assert.equal((await request("memory.read", { path: "CORE.md" })).text, core);
+  await page
+    .locator("#memory-editor")
+    .fill(core.trimEnd() + "\n\n- 测试用户喜欢绿茶。\n");
+  await page.locator("#memory-save").click();
+  await page.waitForFunction(() =>
+    document.querySelector("#toast").textContent.includes("记忆已保存"),
+  );
+  assert.match(
+    (await request("memory.read", { path: "CORE.md" })).text,
+    /测试用户喜欢绿茶/,
+  );
+  await page.waitForFunction(() =>
+    document.querySelector("#memory-health").textContent.includes("核心规则"),
   );
   await page.screenshot({ path: join(output, "memories.png"), fullPage: true });
-  console.log("PASS: 管理器编辑记忆、自动精炼、原文保留");
+  console.log("PASS: 管理器编辑记忆，核心超限拒绝保存且原文不变");
   await page.locator("[data-page=skills]").click();
   await page
     .locator("#skill-content")
@@ -185,7 +194,7 @@ try {
     document.querySelector("#skills-list").textContent.includes("smoke-skill"),
   );
   const skillRow = page
-    .locator("#skills-list .extension-row")
+    .locator("#skills-list .list-row")
     .filter({ hasText: "smoke-skill" });
   await skillRow.getByRole("button", { name: "停用", exact: true }).click();
   await skillRow.getByRole("button", { name: "启用", exact: true }).waitFor();
@@ -305,7 +314,7 @@ try {
         exa,
         checks: [
           "model-list-inflight-edit",
-          "core-refinement",
+          "core-limit-reject",
           "skill-install-toggle-preview",
           "mcp-stdio-credentials-tools",
           "pet-shell-approval-allow-deny",

@@ -24,9 +24,27 @@
         aria-label="文字输入"
       ></textarea>
       <div id="error" role="alert" hidden></div>
+      <div id="attachments" aria-label="已添加附件"></div>
+      <div class="media-toolbar">
+        <button type="button" id="attach" title="添加图片或文件">附件</button>
+        <button type="button" id="snapshot" title="截取当前屏幕作为附件">
+          截图
+        </button>
+        <button type="button" id="dictate" title="录音转文字，编辑后发送">
+          麦克风
+        </button>
+        <button type="button" id="voice-start" title="连续语音对话">
+          语音对话
+        </button>
+        <button type="button" id="voice-stop" hidden>结束语音</button>
+        <label title="文字回复自动朗读"
+          ><input id="autoread" type="checkbox" />朗读</label
+        >
+      </div>
+      <small id="voice-status" aria-live="polite"></small>
       <footer>
         <small>Enter 换行 · Shift + Enter 发送 · Esc 收起</small
-        ><button id="send" type="submit">发送 ↗</button
+        ><button id="send" type="submit">发送</button
         ><button id="cancel" type="button" hidden>停止</button>
       </footer>
     </form>

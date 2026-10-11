@@ -1,4 +1,5 @@
-import { chromium } from "playwright/test";
+import { _electron as electron } from "playwright/test";
+import electronPath from "electron";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -53,7 +54,7 @@ export async function renderShowcase(source) {
         <div class="chip"><span class="dot"></span> Windows 桌面伙伴</div>
         <h1 style="font-size:80px;line-height:1.25;letter-spacing:-3px;font-weight:650;margin:26px 0">让桌面，<br>多一点<span style="color:#7b925f">陪伴。</span></h1>
         <p style="font-size:24px;line-height:1.85;color:#6f7c69">在头顶接住你的一句话，<br>把平凡日子里的小事，慢慢记在心里。</p>
-        <div style="display:flex;gap:26px;margin-top:38px;font-size:18px;color:#4f684d"><span>气泡对话</span><span style="color:#bec8b3">/</span><span>可选形象与性格</span><span style="color:#bec8b3">/</span><span>重要日记</span></div>
+        <div style="display:flex;gap:26px;margin-top:38px;font-size:18px;color:#4f684d"><span>气泡对话</span><span style="color:#bec8b3">/</span><span>叫名字语音聊天</span><span style="color:#bec8b3">/</span><span>形象与性格</span><span style="color:#bec8b3">/</span><span>分层记忆</span></div>
       </div>
       <div class="dot-grid" style="position:absolute;right:65px;top:185px;width:695px;height:570px;border:1px solid #dce2ce;border-radius:210px 210px 40px 40px;background-color:#ebefdf">
         <div style="position:absolute;left:30px;top:28px">${await scene(shots.speech, 635, 525)}</div>
@@ -123,6 +124,12 @@ export async function renderShowcase(source) {
     height: 670,
     html: `<div class="board" style="height:670px"><div class="kicker">MEET YOUR FAMILIAR</div><h2 style="margin-top:10px">喜欢它的样子，也喜欢它的脾气。</h2><p class="sub" style="margin-top:10px">7 位小伙伴 · 5 种性格，可跟随形象，也能自由搭配。</p><div style="display:flex;gap:14px;margin-top:34px">${characters.join("")}</div><div style="position:absolute;bottom:78px;left:72px;font-size:17px;color:#6a7b5f">图中标签为推荐性格；固定选择性格后，更换形象不会覆盖它。</div>${foot("仓库原创角色素材")}</div>`,
   });
+  const frameTitles = {
+    controller: "Familiar / 形象与桌面",
+    models: "Familiar / 模型连接",
+    memory: "Familiar / 记忆与日记 · 编辑区域",
+    voice: "Familiar / 图片与语音",
+  };
   for (const [name, title, subtitle] of [
     [
       "controller",
@@ -137,11 +144,23 @@ export async function renderShowcase(source) {
     [
       "memory",
       "把重要的小事，留在记忆里。",
-      "核心记忆、每天的日记、可复用的教训，分开整理，随时查看。",
+      "核心规则随身带着，日记、教训和项目约定按需翻看，都是你能编辑的文件。",
+    ],
+    [
+      "voice",
+      "叫一声名字，就接上话。",
+      "本机唤醒 · 连续语音与插话打断 · 宠物自己的原创声音；文字输入一直都在。",
     ],
   ]) {
     const png = await readFile(join(source, `${name}.png`));
-    const frameWidth = name === "memory" ? 1456 : 1390;
+    // 整张图不超过 1500 像素高：截图偏长时收窄展示框，避免渲染窗口高度受限而截断。
+    const frameWidth = Math.min(
+      name === "memory" ? 1456 : 1390,
+      Math.floor(
+        ((1500 - 246 - 43 - 100) * png.readUInt32BE(16)) /
+          png.readUInt32BE(20),
+      ),
+    );
     const height =
       Math.ceil(
         (246 +
@@ -154,30 +173,60 @@ export async function renderShowcase(source) {
     pages.push({
       file: `${name}.png`,
       height,
-      html: `<div class="board" style="height:${height}px"><div class="kicker">${name === "memory" ? "LITTLE THINGS, WELL REMEMBERED" : "MAKE IT YOURS"}</div><h2 style="margin-top:10px">${title}</h2><p class="sub" style="margin-top:9px">${subtitle}</p><div style="margin:34px auto 0;width:${name === "memory" ? 1456 : 1390}px">${frame(src, name === "memory" ? "Familiar / 记忆与日记 · 编辑区域" : `Familiar / ${name === "models" ? "模型连接" : "我的灵伴"}`)}</div>${foot(name === "memory" ? "真实记忆编辑区域截图" : "真实控制器截图")}</div>`,
+      html: `<div class="board" style="height:${height}px"><div class="kicker">${{ memory: "LITTLE THINGS, WELL REMEMBERED", voice: "JUST CALL ITS NAME" }[name] ?? "MAKE IT YOURS"}</div><h2 style="margin-top:10px">${title}</h2><p class="sub" style="margin-top:9px">${subtitle}</p><div style="margin:34px auto 0;width:${frameWidth}px">${frame(src, frameTitles[name])}</div>${foot(name === "memory" ? "真实记忆编辑区域截图" : "真实控制器截图")}</div>`,
     });
   }
-  const browser = await chromium.launch({ headless: true });
+  // 用随项目安装的 Electron 排版，不依赖另外下载的浏览器；固定 1 倍缩放，输出 1600 像素宽。
+  const host = await electron.launch({
+    executablePath: electronPath,
+    args: [resolve("scripts/showcase-host.cjs"), "--force-device-scale-factor=1"],
+  });
   const manifest = [];
   try {
     for (const item of pages) {
-      const html = `<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><style>${css}</style><body>${item.html}</body></html>`;
-      await writeFile(join(source, item.file.replace(".png", ".html")), html);
-      const page = await browser.newPage({
-        viewport: { width: 1600, height: item.height },
-        deviceScaleFactor: 1,
-      });
-      await page.setContent(html);
-      await page.evaluate(async () => {
-        await document.fonts.ready;
-        await Promise.all([...document.images].map((img) => img.decode()));
-      });
-      await page.screenshot({ path: join(output, item.file) });
+      const html = `<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><style>${css}</style><body>${item.html}</body></html>`,
+        file = join(source, item.file.replace(".png", ".html"));
+      await writeFile(file, html);
+      const png = await host.evaluate(
+        async ({ BrowserWindow }, { file, height }) => {
+          const win = new BrowserWindow({
+            show: false,
+            width: 1600,
+            height,
+            useContentSize: true,
+            enableLargerThanScreen: true,
+            // 离屏渲染不受屏幕高度限制，长图也能完整输出。
+            webPreferences: { offscreen: true },
+          });
+          try {
+            await win.loadFile(file);
+            await win.webContents.executeJavaScript(
+              "document.fonts.ready.then(() => Promise.all([...document.images].map((img) => img.decode())))",
+            );
+            await new Promise((r) => setTimeout(r, 200));
+            const image = await win.webContents.capturePage({
+              x: 0,
+              y: 0,
+              width: 1600,
+              height,
+            });
+            const size = image.getSize();
+            return (
+              size.width === 1600 ? image : image.resize({ width: 1600, quality: "best" })
+            )
+              .toPNG()
+              .toString("base64");
+          } finally {
+            win.destroy();
+          }
+        },
+        { file, height: item.height },
+      );
+      await writeFile(join(output, item.file), Buffer.from(png, "base64"));
       manifest.push({ file: item.file, width: 1600, height: item.height });
-      await page.close();
     }
   } finally {
-    await browser.close();
+    await host.close();
   }
   await writeFile(
     join(source, "published.json"),

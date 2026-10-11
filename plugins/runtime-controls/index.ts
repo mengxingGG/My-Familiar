@@ -36,6 +36,7 @@ export const runtimeControls = definePlugin({
         providers: ctx.use("llm.registry").list(),
         session: ctx.use("conversation").state().session,
         autostart: ctx.use("platform.autostart").get(),
+        autostartUnavailable: ctx.use("platform.autostart").unavailable(),
         characters: ctx
           .use("character.catalog")
           .list()

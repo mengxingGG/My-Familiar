@@ -1,6 +1,6 @@
 {
   "name": "my-familiar",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "author": "mengxingGG",
   "repository": {
@@ -26,6 +26,8 @@
     "smoke:experience": "node scripts/experience-smoke.mjs",
     "smoke:integrations": "node scripts/integrations-smoke.mjs",
     "smoke:context": "node scripts/context-smoke.mjs",
+    "smoke:voice": "node scripts/media-voice-smoke.mjs",
+    "smoke:wake": "node scripts/wake-smoke.mjs",
     "smoke:integrations:packaged": "node scripts/integrations-smoke.mjs --packaged",
     "smoke:context:packaged": "node scripts/context-smoke.mjs --packaged",
     "check:cli": "node --experimental-transform-types --disable-warning=ExperimentalWarning scripts/check-cli-dependencies.mjs",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "@types/node": "24.13.3",
+    "@types/ws": "^8.18.1",
     "electron": "44.0.0",
     "electron-builder": "26.15.3",
     "esbuild": "0.28.1",
@@ -79,6 +82,9 @@
   "dependencies": {
     "@modelcontextprotocol/client": "2.0.0",
     "ajv": "8.18.0",
+    "mammoth": "1.12.3",
+    "pdfjs-dist": "^5.4.149",
+    "ws": "8.21.3",
     "yaml": "2.9.1"
   }
 }

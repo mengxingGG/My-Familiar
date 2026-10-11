@@ -1,40 +1,51 @@
 export function createCompanionSettings(api, toast) {
   const $ = (id) => document.getElementById(id);
-  const nav = document.querySelector("nav");
-  for (const [id, label] of [
-    ["memories", "记忆与日记"],
-    ["skills", "Skills"],
-    ["mcp", "MCP 工具"],
-  ]) {
-    const b = document.createElement("button");
-    b.dataset.page = id;
-    const icon = document.createElement("span");
-    icon.textContent = { memories: "◷", skills: "◇", mcp: "⌘" }[id];
-    b.append(icon, document.createTextNode(label));
-    nav.insertBefore(b, nav.lastElementChild);
-  }
-  const host = document.createElement("div");
-  host.innerHTML = `
-    <div id="agent-confirmations" class="card form" hidden><h3>宠物正在等待你的确认</h3><b id="confirm-title"></b><pre id="confirm-detail"></pre><div class="row"><select id="confirm-scope" aria-label="允许范围"><option value="once">仅本次</option><option value="session">本会话同工具一直允许</option><option value="whitelist">此操作加入白名单</option></select><button id="confirm-allow" class="primary">允许</button><button id="confirm-deny" class="ghost">拒绝</button></div></div>
-    <section id="memories" class="page" hidden>
-      <div class="card form"><b>一起积累的记忆</b><small id="home-path"></small><small id="memory-health"></small><div class="row"><input id="memory-search" placeholder="搜索关键词或日期，如 2026-09-18"><button id="memory-search-button" class="ghost">检索</button><button id="memory-reload" class="ghost">全部文件</button></div><div id="memory-results"></div></div>
-      <div class="memory-layout"><div class="card form"><label>记忆文件<select id="memory-files" size="14"></select></label></div><div class="card form"><b id="memory-file-title">选择记忆文件</b><textarea id="memory-editor" rows="17" spellcheck="false" aria-label="记忆内容"></textarea><small id="core-count"></small><div class="row"><small>修改保留备份。核心超限会调用模型精炼。</small><button id="memory-save" class="primary">保存记忆</button></div></div></div>
-    </section>
-    <section id="skills" class="page" hidden><div class="card form"><b>把会做的事，整理成方法</b><p>Skill 是可按需读取的说明文件。停用后宠物不再加载它；安装不会自动执行其中的脚本。</p><div id="skills-list"></div></div>
-      <div class="card form"><h3>安装 Skill</h3><label>本地目录、SKILL.md 路径或 HTTPS 文件地址<input id="skill-source" placeholder="C:\\路径\\my-skill 或 https://…/SKILL.md"></label><label>也可以直接粘贴完整 SKILL.md<textarea id="skill-content" rows="8" placeholder="---&#10;name: my-skill&#10;description: 什么时候使用它&#10;---&#10;具体步骤"></textarea></label><button id="skill-install" class="primary">安装到宠物目录</button><pre id="skill-preview" hidden></pre></div>
-    </section>
-    <section id="mcp" class="page" hidden><div class="card form"><b>按需连接外部工具</b><p>Exa 和高德已预置，启用后可以搜索和读取网页。密钥加密保存；其他工具按具体操作确认。</p><div id="mcp-list"></div></div>
-      <div class="card form"><h3 id="mcp-edit-title">添加 / 编辑 MCP</h3><div class="parameter-grid"><label>ID<input id="mcp-id" placeholder="my-mcp"></label><label>名称<input id="mcp-name" placeholder="工具名称"></label><label>连接方式<select id="mcp-transport"><option value="http">Streamable HTTP</option><option value="stdio">本地 stdio</option></select></label><label class="inline-check"><input id="mcp-enabled" type="checkbox">启用（本地服务会运行程序）</label></div>
-      <label id="mcp-url-row">服务 URL<input id="mcp-url" placeholder="https://mcp.exa.ai/mcp"></label><div id="mcp-local-row" hidden><label>程序<input id="mcp-command" placeholder="node 或程序完整路径"></label><label>参数（每行一项）<textarea id="mcp-args" rows="3"></textarea></label><small>stdio 服务是本机程序，请仅启用可信来源。工作目录在宠物之家。</small></div>
-      <div class="parameter-grid"><label>鉴权位置<select id="mcp-auth-kind"><option value="header">HTTP Header</option><option value="query">URL 查询参数（密钥仍加密保存）</option><option value="env">stdio 环境变量</option></select></label><label>鉴权字段名（无需鉴权可留空）<input id="mcp-auth-name" placeholder="x-api-key 或 API_KEY"></label><label>Header 前缀（可选）<input id="mcp-auth-prefix" placeholder="Bearer "></label></div><label>API Key<input id="mcp-key" type="password" autocomplete="off" placeholder="留空保留原密钥"></label><small id="mcp-key-state"></small>
-      <div class="row"><button id="mcp-new" class="ghost">新配置</button><button id="mcp-delete-key" class="ghost danger">删除此配置的密钥</button><button id="mcp-save" class="primary">保存配置和密钥</button></div></div>
-      <div class="card form"><h3>安装本地 MCP 包</h3><label>服务 ID<input id="mcp-package-id" placeholder="my-server"></label><label>固定版本 npm 包<input id="mcp-package" placeholder="@scope/server@1.2.3"></label><small>安装到宠物目录，跳过 npm 安装脚本，安装后默认停用。需要已安装 Node.js。</small><button id="mcp-install" class="primary">安装 MCP</button></div>
-    </section>`;
-  document.querySelector("main").insertBefore(host, $("toast"));
+  $("memories").innerHTML = `
+    <div class="group">
+      <p id="memory-health" class="group-note"></p><p class="group-note"><small id="home-path"></small></p>
+      <div class="toolbar"><input id="memory-search" type="search" placeholder="搜索关键词或日期，例如 2026-09-18" aria-label="搜索记忆"><button id="memory-search-button" class="quiet">搜索</button><button id="memory-reload" class="quiet">显示全部文件</button></div>
+      <div id="memory-results" class="panel list" hidden></div>
+    </div>
+    <div class="split">
+      <div class="panel side-list"><select id="memory-files" size="18" aria-label="记忆文件"></select></div>
+      <div class="panel detail">
+        <div class="detail-head"><b id="memory-file-title">选择一个记忆文件</b></div>
+        <textarea id="memory-editor" rows="18" spellcheck="false" aria-label="记忆内容"></textarea>
+        <div class="editor-foot"><small id="core-count"></small><button id="memory-save" class="primary">保存记忆</button></div>
+        <small>保存前的版本会留作备份。核心规则超出上限时不会保存，请先合并或删减。</small>
+      </div>
+    </div>`;
+  $("skills").innerHTML = `
+    <div class="group"><h3>已安装</h3><div id="skills-list" class="panel list"></div><pre id="skill-preview" class="code-block" hidden></pre></div>
+    <div class="group"><h3>安装 Skill</h3><div class="panel panel-form">
+      <label class="field">本地目录、SKILL.md 路径或 HTTPS 文件地址<input id="skill-source" placeholder="C:\\路径\\my-skill 或 https://…/SKILL.md" spellcheck="false"></label>
+      <label class="field">或者直接粘贴完整的 SKILL.md<textarea id="skill-content" rows="8" placeholder="---&#10;name: my-skill&#10;description: 什么时候使用它&#10;---&#10;具体步骤"></textarea></label>
+      <div class="button-row"><button id="skill-install" class="primary">安装到宠物目录</button></div>
+    </div></div>`;
+  $("mcp").innerHTML = `
+    <div class="group"><h3>已配置的服务</h3><p class="group-note">已预置 Exa 和高德，填好密钥并启用后即可搜索网页、查询地点。其它工具按具体操作确认。</p><div id="mcp-list" class="panel list"></div></div>
+    <div class="group"><h3 id="mcp-edit-title">添加或编辑服务</h3><div class="panel panel-form">
+      <div class="field-grid"><label class="field">ID<input id="mcp-id" placeholder="my-mcp" spellcheck="false"></label><label class="field">名称<input id="mcp-name" placeholder="工具名称"></label>
+      <label class="field">连接方式<select id="mcp-transport"><option value="http">Streamable HTTP</option><option value="stdio">本地 stdio 程序</option></select></label>
+      <span class="field"><span>启用</span><label class="check"><input id="mcp-enabled" type="checkbox">保存后连接（本地服务会运行程序）</label></span></div>
+      <label id="mcp-url-row" class="field">服务 URL<input id="mcp-url" placeholder="https://mcp.exa.ai/mcp" spellcheck="false"></label>
+      <div id="mcp-local-row" class="field-grid" hidden><label class="field">程序<input id="mcp-command" placeholder="node 或程序完整路径" spellcheck="false"></label><label class="field">参数（每行一项）<textarea id="mcp-args" rows="3" spellcheck="false"></textarea><small>只启用来源可信的程序。工作目录在宠物之家。</small></label></div>
+      <div class="field-grid"><label class="field">鉴权位置<select id="mcp-auth-kind"><option value="header">HTTP Header</option><option value="query">URL 查询参数（密钥仍加密保存）</option><option value="env">stdio 环境变量</option></select></label>
+      <label class="field">鉴权字段名<input id="mcp-auth-name" placeholder="x-api-key 或 API_KEY" spellcheck="false"><small>不需要鉴权时留空。</small></label>
+      <label class="field">Header 前缀（可选）<input id="mcp-auth-prefix" placeholder="Bearer "></label>
+      <label class="field">API Key<input id="mcp-key" type="password" autocomplete="off" placeholder="留空则保留原密钥"><small id="mcp-key-state"></small></label></div>
+      <div class="button-row"><button id="mcp-new" class="quiet">新建配置</button><button id="mcp-delete-key" class="quiet danger">删除此配置的密钥</button><button id="mcp-save" class="primary">保存配置和密钥</button></div>
+    </div></div>
+    <div class="group"><h3>安装本地 MCP 包</h3><div class="panel panel-form">
+      <div class="field-grid"><label class="field">服务 ID<input id="mcp-package-id" placeholder="my-server" spellcheck="false"></label><label class="field">固定版本的 npm 包<input id="mcp-package" placeholder="@scope/server@1.2.3" spellcheck="false"></label></div>
+      <small>安装到宠物目录并跳过 npm 安装脚本，装好后默认停用。需要本机已安装 Node.js。</small>
+      <div class="button-row"><button id="mcp-install" class="primary">安装 MCP 包</button></div>
+    </div></div>`;
   let memoryPath = "",
     memoryRevision,
     memoryDirty = false,
     memoryTruncated = false,
+    coreLimit = 2000,
     approvalId,
     servers = [];
   async function run(id, fn) {
@@ -48,7 +59,7 @@ export function createCompanionSettings(api, toast) {
       b.disabled = false;
     }
   }
-  function button(text, fn, cls = "ghost") {
+  function button(text, fn, cls = "quiet") {
     const b = document.createElement("button");
     b.textContent = text;
     b.className = cls;
@@ -64,19 +75,26 @@ export function createCompanionSettings(api, toast) {
     return b;
   }
   function row(title, detail, actions) {
-    const r = document.createElement("div");
-    r.className = "extension-row";
-    const text = document.createElement("div"),
+    const r = document.createElement("div"),
+      text = document.createElement("div"),
       b = document.createElement("b"),
-      small = document.createElement("small");
+      small = document.createElement("small"),
+      buttons = document.createElement("div");
+    r.className = "list-row";
+    text.className = "list-text";
+    buttons.className = "list-actions";
     b.textContent = title;
     small.textContent = detail;
     text.append(b, small);
-    const buttons = document.createElement("div");
-    buttons.className = "extension-actions";
     buttons.append(...actions);
     r.append(text, buttons);
     return r;
+  }
+  function empty(target, text) {
+    const p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = text;
+    target.replaceChildren(p);
   }
   async function openMemory(path) {
     if (memoryDirty && !confirm("放弃这份记忆尚未保存的修改？")) return;
@@ -93,20 +111,35 @@ export function createCompanionSettings(api, toast) {
   }
   function count() {
     $("core-count").textContent = memoryTruncated
-      ? "文件较长：当前只预览前 10 万字符，请在宠物记忆目录中编辑完整文件。"
+      ? "文件较长，这里只预览前 10 万字符。请在宠物的记忆目录中编辑完整文件。"
       : memoryPath === "CORE.md"
-        ? `${Array.from($("memory-editor").value).length} / 3000 字符（超出后自动精炼）`
-        : "日记按当地日期追加；可在这里整理更正。";
+        ? `${Array.from($("memory-editor").value).length} / ${coreLimit} 字符。只放必须遵守的规则和长期偏好，超出时不保存。`
+        : /^(lessons|topics)\//.test(memoryPath)
+          ? "第二行“> 何时读：”会进入记忆索引；每一条以“- ”开头。"
+          : memoryPath.startsWith("daily/")
+            ? "日记按当天日期追加，可以在这里整理或更正。"
+            : "身份和相处约定会随会话一起交给模型。";
   }
+  const layers = [
+    ["核心与身份", (p) => !p.includes("/")],
+    ["教训", (p) => p.startsWith("lessons/")],
+    ["扩展记忆", (p) => p.startsWith("topics/")],
+    ["日记", (p) => p.startsWith("daily/")],
+  ];
   async function memories() {
     const files = await api.request("memory.list");
-    $("memory-files").replaceChildren(
-      ...files.map((p) => {
-        const o = document.createElement("option");
-        o.value = o.textContent = p;
-        return o;
-      }),
-    );
+    const groups = layers
+      .map(([label, test]) => {
+        const items = files.filter(test);
+        if (label === "日记") items.reverse();
+        if (!items.length) return;
+        const group = document.createElement("optgroup");
+        group.label = label;
+        group.append(...items.map((p) => new Option(p.split("/").pop(), p)));
+        return group;
+      })
+      .filter(Boolean);
+    $("memory-files").replaceChildren(...groups);
     if (memoryPath && files.includes(memoryPath))
       $("memory-files").value = memoryPath;
     else await openMemory("CORE.md");
@@ -120,6 +153,7 @@ export function createCompanionSettings(api, toast) {
   $("memory-reload").onclick = () =>
     run("memory-reload", async () => {
       $("memory-results").replaceChildren();
+      $("memory-results").hidden = true;
       await memories();
     });
   $("memory-save").onclick = () =>
@@ -127,7 +161,7 @@ export function createCompanionSettings(api, toast) {
       if (!memoryPath) return;
       if (memoryTruncated)
         throw new Error(
-          "文件较长，当前仅预览前 10 万字符，请在宠物记忆目录中编辑完整文件",
+          "文件较长，这里只预览前 10 万字符，请在宠物的记忆目录中编辑完整文件",
         );
       await api.request("memory.write", {
         path: memoryPath,
@@ -138,25 +172,30 @@ export function createCompanionSettings(api, toast) {
       await openMemory(memoryPath);
       toast("记忆已保存，下一轮对话生效");
     });
-  $("memory-search-button").onclick = () =>
-    run("memory-search-button", async () => {
-      const results = await api.request("memory.search", {
-        query: $("memory-search").value,
-      });
-      $("memory-results").replaceChildren(
-        ...results.map((r) =>
-          row(r.path, r.excerpt, [button("打开", () => openMemory(r.path))]),
-        ),
-      );
-      if (!results.length) $("memory-results").textContent = "没有匹配的记忆。";
+  async function searchMemory() {
+    const results = await api.request("memory.search", {
+      query: $("memory-search").value,
     });
+    $("memory-results").hidden = false;
+    $("memory-results").replaceChildren(
+      ...results.map((r) =>
+        row(r.path, r.excerpt.trim(), [button("打开", () => openMemory(r.path))]),
+      ),
+    );
+    if (!results.length) empty($("memory-results"), "没有匹配的记忆。");
+  }
+  $("memory-search-button").onclick = () =>
+    run("memory-search-button", searchMemory);
+  $("memory-search").onkeydown = (e) => {
+    if (e.key === "Enter") void run("memory-search-button", searchMemory);
+  };
   async function skills() {
     const items = await api.request("skills.list");
     $("skills-list").replaceChildren(
       ...items.map((s) =>
         row(
           s.id,
-          (s.enabled ? "已启用 · " : "已停用 · ") + (s.error || s.description),
+          (s.enabled ? "已启用。" : "已停用。") + (s.error || s.description),
           [
             button(s.enabled ? "停用" : "启用", async () => {
               await api.request("skills.toggle", {
@@ -175,17 +214,19 @@ export function createCompanionSettings(api, toast) {
             button(
               "移除",
               async () => {
-                if (confirm(`移除 ${s.id}？文件会保留在 .removed 备份。`)) {
+                if (confirm(`移除 ${s.id}？文件会移到 .removed 备份。`)) {
                   await api.request("skills.remove", { id: s.id });
                   await skills();
                 }
               },
-              "ghost danger",
+              "quiet danger",
             ),
           ],
         ),
       ),
     );
+    if (!items.length)
+      empty($("skills-list"), "还没有 Skill。可以在下方安装。");
   }
   $("skill-install").onclick = () =>
     run("skill-install", async () => {
@@ -204,6 +245,9 @@ export function createCompanionSettings(api, toast) {
   function editMcp(
     c = { id: "", name: "", transport: "http", enabled: false },
   ) {
+    $("mcp-edit-title").textContent = c.id
+      ? `编辑 ${c.name || c.id}`
+      : "添加或编辑服务";
     $("mcp-id").value = c.id;
     $("mcp-id").readOnly = !!c.id;
     $("mcp-name").value = c.name;
@@ -219,7 +263,7 @@ export function createCompanionSettings(api, toast) {
     $("mcp-key").value = "";
     $("mcp-key-state").textContent = c.hasKey
       ? "此配置已保存加密密钥。"
-      : "此配置尚无密钥。";
+      : "此配置还没有密钥。";
     transport();
   }
   $("mcp-transport").onchange = transport;
@@ -230,12 +274,15 @@ export function createCompanionSettings(api, toast) {
       ...servers.map((c) =>
         row(
           c.name,
-          `${c.id} · ${c.connected ? `已连接 ${c.tools} 个工具` : c.enabled ? "已启用，尚未连接" : "未启用"}${c.error ? " · " + c.error : ""}`,
+          `${c.id}：${c.connected ? `已连接 ${c.tools} 个工具` : c.enabled ? "已启用，尚未连接" : "未启用"}${c.error ? "。" + c.error : ""}`,
           [
-            button("配置", () => editMcp(c)),
-            button(c.connected ? "重连" : "连接", async () => {
+            button("编辑", () => {
+              editMcp(c);
+              $("mcp-edit-title").scrollIntoView({ block: "start" });
+            }),
+            button(c.connected ? "重新连接" : "连接", async () => {
               if (!c.enabled) {
-                toast("请先在配置中启用服务", true);
+                toast("请先在配置中启用这个服务", true);
                 editMcp(c);
                 return;
               }
@@ -246,18 +293,19 @@ export function createCompanionSettings(api, toast) {
             button(
               "移除",
               async () => {
-                if (confirm(`移除 ${c.name} 的连接配置？本地包保留。`)) {
+                if (confirm(`移除 ${c.name} 的连接配置？本地安装的包会保留。`)) {
                   await api.request("mcp.remove", { id: c.id });
                   await mcps();
                   if ($("mcp-id").value === c.id) editMcp();
                 }
               },
-              "ghost danger",
+              "quiet danger",
             ),
           ],
         ),
       ),
     );
+    if (!servers.length) empty($("mcp-list"), "还没有 MCP 服务。");
   }
   $("mcp-save").onclick = () =>
     run("mcp-save", async () => {
@@ -291,7 +339,7 @@ export function createCompanionSettings(api, toast) {
       if (c.enabled) {
         await api.request("mcp.connect", { id: c.id });
         await mcps();
-        toast("MCP 已连接，下一轮对话可用");
+        toast("MCP 已连接，下一轮对话可以使用");
       }
     });
   $("mcp-delete-key").onclick = () =>
@@ -310,18 +358,20 @@ export function createCompanionSettings(api, toast) {
         package: $("mcp-package").value.trim(),
       });
       await mcps();
-      toast("已安装，默认停用；请配置后启用");
+      toast("已安装，默认停用；配置好后再启用");
     });
+  editMcp();
   let polling = false;
   async function poll() {
     if (polling) return;
     polling = true;
     try {
       const s = await api.request("companion.status");
-      $("home-path").textContent = `宠物之家：${s.home}`;
-      $("memory-health").textContent = s.memory.refining
-        ? "正在精炼核心记忆…"
-        : s.memory.lastError || "核心记忆、日记与教训分开保存。";
+      $("home-path").textContent = `存放位置：${s.home}`;
+      coreLimit = s.memory.core.limit;
+      $("memory-health").textContent =
+        s.memory.lastError ||
+        `核心规则 ${s.memory.core.characters} / ${s.memory.core.limit} 字符，索引 ${s.memory.index.characters} / ${s.memory.index.limit} 字符${s.memory.index.omitted ? `，${s.memory.index.omitted} 个文件未列入索引` : ""}。日记、教训和扩展记忆由宠物按需读取。`;
       const a = s.approvals[0];
       if (approvalId !== a?.id) $("confirm-scope").value = "once";
       $("confirm-scope").disabled = !a?.rule;

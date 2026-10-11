@@ -72,7 +72,23 @@ export function platformWindows(options: {
             "controller.open",
             "pet.ready",
           ],
-          composer: ["chat.state", "chat.send", "chat.cancel", "chat.close"],
+          voice: ["voice.host"],
+          composer: [
+            "chat.state",
+            "chat.send",
+            "chat.cancel",
+            "chat.close",
+            "media.choose",
+            "media.paste",
+            "media.capture",
+            "media.preview",
+            "voice.state",
+            "voice.dictate",
+            "voice.finish",
+            "voice.start",
+            "voice.stop",
+            "voice.autoread",
+          ],
           speech: [
             "speech.state",
             "speech.hover",
@@ -80,6 +96,9 @@ export function platformWindows(options: {
             "chat.open",
             "chat.cancel",
             "agent.decide",
+            "voice.read",
+            "voice.stop",
+            "voice.state",
           ],
           controller: [
             ...companionCommands,
@@ -185,7 +204,7 @@ export function platformWindows(options: {
             height: isPet
               ? 300
               : kind === "composer"
-                ? 160
+                ? 240
                 : kind === "speech"
                   ? 220
                   : 760,
@@ -194,14 +213,14 @@ export function platformWindows(options: {
             frame: !isOverlay,
             thickFrame: !isOverlay,
             transparent: isOverlay,
-            backgroundColor: isOverlay ? "#00000000" : "#f7f5f0",
+            backgroundColor: isOverlay ? "#00000000" : "#f6f4ec",
             // Windows 在 resizable:false 下锁定最小/最大尺寸，阻止气泡自适应。
             // 保留程序调尺寸的能力，下面单独拦截用户拖边框。
             resizable: true,
             maximizable: !isOverlay,
             fullscreenable: !isOverlay,
             skipTaskbar: isOverlay,
-            alwaysOnTop: isOverlay,
+            alwaysOnTop: isOverlay && kind !== "voice",
             show: false,
             autoHideMenuBar: true,
             webPreferences: {
@@ -211,7 +230,9 @@ export function platformWindows(options: {
               sandbox: true,
               // 输入条和气泡反复隐藏、唤醒，不能依赖后台帧调度来恢复交互。
               // 它们没有常驻动画；宠物动画仍保留后台节流。
-              backgroundThrottling: kind !== "composer" && kind !== "speech",
+              backgroundThrottling: !["composer", "speech", "voice"].includes(
+                kind,
+              ),
             },
           });
           windows.set(kind, window);
@@ -220,7 +241,21 @@ export function platformWindows(options: {
           window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
           window.webContents.on("will-navigate", (e) => e.preventDefault());
           window.webContents.session.setPermissionRequestHandler(
-            (_wc, _permission, callback) => callback(false),
+            (wc, permission, callback, details) =>
+              callback(
+                permission === "media" &&
+                  wc === windows.get("voice")?.webContents &&
+                  details.isMainFrame &&
+                  "mediaTypes" in details &&
+                  details.mediaTypes?.length === 1 &&
+                  details.mediaTypes[0] === "audio",
+              ),
+          );
+          window.webContents.session.setPermissionCheckHandler(
+            (wc, permission, _origin, details) =>
+              permission === "media" &&
+              wc === windows.get("voice")?.webContents &&
+              details.mediaType === "audio",
           );
           window.webContents.on("render-process-gone", (_e, details) =>
             ctx.report(new Error(`界面 ${kind} 已退出：${details.reason}`)),
@@ -394,6 +429,8 @@ export function platformWindows(options: {
           Menu.buildFromTemplate([
             { label: "说句话  Ctrl+Alt+Space", click: () => call("chat.open") },
             { label: "重新显示上次回复", click: () => call("speech.recall") },
+            { label: "开始语音对话", click: () => call("voice.start") },
+            { label: "停止语音", click: () => call("voice.stop") },
             { label: "打开控制器", click: () => options.launch("controller") },
             { type: "separator" },
             { label: "显示宠物", click: () => call("pet.show", true) },

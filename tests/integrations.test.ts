@@ -32,6 +32,7 @@ import {
   githubBusinessSchema,
 } from "../plugins/github-integration/policy.ts";
 import { mcpClient } from "../plugins/mcp-client/index.ts";
+import { mediaAssets } from "../plugins/media-assets/index.ts";
 import { githubIntegration } from "../plugins/github-integration/index.ts";
 import { channelChat } from "../plugins/channel-chat/index.ts";
 import { contextCompaction } from "../plugins/context-compaction/index.ts";
@@ -311,6 +312,7 @@ test("GitHub MCP 注册时过滤账户管理，业务写调用默认不弹窗，
     }),
   );
   k.install(mcpClient);
+  k.install(mediaAssets);
   try {
     await k.startAll();
     const manager = k.resolve("mcp.manager"),

@@ -104,7 +104,7 @@ try {
   config.provider.baseUrl = `http://127.0.0.1:${mock.address().port}/v1`;
   await request("settings.apply", config);
   await page.locator("#scale").fill("135");
-  await page.locator("#character").selectOption("luna");
+  await page.locator('#character input[value="luna"]').check();
   await wait(async () => {
     const c = (await request("runtime.status")).settings;
     return c.pet.scale === 1.35 && c.pet.character === "luna";
@@ -301,9 +301,9 @@ try {
   assert.equal(amap.enabled, false);
   await page.locator('[data-page="mcp"]').click();
   await page
-    .locator("#mcp-list .extension-row")
+    .locator("#mcp-list .list-row")
     .filter({ hasText: "高德地图" })
-    .getByRole("button", { name: "配置", exact: true })
+    .getByRole("button", { name: "编辑", exact: true })
     .click();
   assert.equal(await page.locator("#mcp-auth-kind").inputValue(), "query");
   await page.locator("#mcp-key").fill("TEST_ONLY_NOT_A_REAL_KEY");

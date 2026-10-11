@@ -1,74 +1,108 @@
 export function createExperienceSettings(api, toast) {
   const $ = (id) => document.getElementById(id);
-  for (const [id, label] of [
-    ["history", "历史会话"],
-    ["permissions", "工具权限"],
-    ["care", "主动关怀"],
-  ]) {
-    const b = document.createElement("button");
-    b.dataset.page = id;
-    b.textContent = label;
-    document
-      .querySelector("nav")
-      .insertBefore(b, document.querySelector('nav [data-page="system"]'));
-  }
-  const host = document.createElement("div");
-  host.innerHTML = `
-  <section id="history" class="page" hidden>
-    <div class="row history-toolbar"><input id="history-search" type="search" placeholder="搜索名称或对话内容" aria-label="搜索会话"><button id="history-search-button" class="ghost">搜索</button><button id="history-new" class="primary">新会话</button></div>
-    <div class="history-layout"><div class="card form"><label>历史会话<select id="history-list" size="16"></select></label></div>
-    <div class="card form history-detail"><div class="row"><b id="history-title">选择一段对话</b><button id="history-rename" class="ghost">重命名</button><button id="history-delete" class="ghost danger">删除</button></div>
-    <div id="history-rename-form" class="row" hidden><input id="history-new-title" maxlength="100" aria-label="会话新名称"><button id="history-rename-save" class="primary">保存名称</button></div>
-    <div class="row"><button id="history-previous" class="ghost">更早的消息</button><span id="history-range"></span><button id="history-next" class="ghost">更晚的消息</button></div>
-    <div id="history-messages" aria-live="polite"></div><small id="history-state"></small>
-    <details id="history-context" hidden><summary id="history-context-title">会话交接摘要</summary><div id="history-context-body" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;padding:12px 0"></div></details>
-    <button id="history-continue" class="ghost">继续此会话</button>
-    <textarea id="history-input" rows="3" placeholder="Enter 换行 · Shift+Enter 发送" aria-label="历史会话文字输入"></textarea>
-    <div class="row"><small>在此页对话时，宠物不冒泡。</small><button id="history-stop" class="ghost">停止回复</button><button id="history-send" class="primary">发送</button></div>
+  $("history").innerHTML = `
+    <div class="toolbar"><input id="history-search" type="search" placeholder="搜索标题或对话内容" aria-label="搜索对话"><button id="history-search-button" class="quiet">搜索</button><button id="history-new" class="primary">新会话</button></div>
+    <div class="split">
+      <div class="panel side-list"><select id="history-list" size="18" aria-label="对话列表"></select></div>
+      <div class="panel detail">
+        <div class="detail-head"><b id="history-title">选择一段对话</b><button id="history-rename" class="quiet">重命名</button><button id="history-delete" class="quiet danger">删除</button></div>
+        <div id="history-rename-form" class="inline-field" hidden><input id="history-new-title" maxlength="100" aria-label="会话的新名称"><button id="history-rename-save" class="primary">保存名称</button></div>
+        <div class="pager"><button id="history-previous" class="quiet">更早的消息</button><span id="history-range"></span><button id="history-next" class="quiet">更晚的消息</button></div>
+        <div id="history-messages" aria-live="polite"></div>
+        <details id="history-context" hidden><summary id="history-context-title">会话交接摘要</summary><div id="history-context-body"></div></details>
+        <div class="compose">
+          <div class="compose-foot"><small id="history-state"></small><button id="history-continue" class="quiet">继续这段对话</button></div>
+          <textarea id="history-input" rows="3" placeholder="Enter 换行，Shift + Enter 发送" aria-label="输入消息"></textarea>
+          <div id="history-attachments" class="attachments"></div>
+          <div class="compose-tools"><button id="history-attach" class="quiet">添加图片或文件</button><button id="history-snapshot" class="quiet">截图</button><button id="history-dictate" class="quiet">语音转文字</button><button id="history-voice-stop" class="quiet">停止语音</button><small id="history-voice-state"></small></div>
+          <div class="compose-foot"><small>在此页聊天时，宠物不弹气泡。</small><button id="history-stop" class="quiet">停止回复</button><button id="history-send" class="primary">发送</button></div>
+        </div>
+      </div>
+    </div>`;
+  $("permissions").innerHTML = `
+    <div class="group"><h3>处理方式</h3><div class="panel panel-form">
+      <label class="field">运行模式<select id="policy-mode"><option value="custom">按下面每类操作的设置处理</option><option value="auto">全自动：所有工具操作直接允许</option></select></label>
+      <p id="policy-auto-note" class="notice-text" hidden>全自动会直接允许 Shell、写入、安装和外部工具，拥有当前 Windows 用户能访问的全部权限。位置授权仍需单独开启。</p>
     </div></div>
-  </section>
-  <section id="permissions" class="page" hidden><div class="card form">
-    <h3>默认怎么处理工具操作</h3><label>运行模式<select id="policy-mode"><option value="custom">按下面的规则处理</option><option value="auto">全自动：所有工具操作直接允许</option></select></label>
-    <p id="policy-auto-note" hidden>全自动会允许 Shell、写入、安装和外部工具，拥有当前 Windows 用户可用的访问权限。位置授权仍单独设置。</p>
-    <div id="policy-defaults"></div><small>工作目录是默认落点，绝对路径也可使用。白名单精确匹配文件目标或命令和参数；本会话授权适用于同一工具、同一操作类别，切换会话或重启后失效。</small>
-    <div class="row"><button id="policy-revoke-session" class="ghost">撤销本会话授权</button><button id="policy-save" class="primary">保存权限策略</button></div></div>
-    <div class="card form"><h3>已记住的白名单</h3><div id="policy-rules"></div></div>
-  </section>
-  <section id="care" class="page" hidden><div class="card form"><h3>惦记你，也尊重你的节奏</h3>
-    <label class="setting"><span>开启主动关怀</span><input id="care-enabled" type="checkbox" role="switch"></label>
-    <small>它会在合适的时候自然问候，结合相处记忆和最近的对话关心你。你正忙着聊天时，它会等一等。</small><small id="care-saved"></small></div>
-    <div class="card form"><h3>你想让它记得的提醒</h3><p>只在这里管理自己添加的提醒，勾选后每天按指定时间启用。</p><div id="care-custom-list"></div>
-    <label>提醒名称<input id="care-custom-label" maxlength="60" placeholder="例如：起来走走"></label><label>每天的时间<input id="care-custom-time" type="time" value="15:30"></label><label>希望它怎么提醒<textarea id="care-custom-prompt" rows="3" maxlength="2000" placeholder="例如：提醒我伸展一下，顺便喝点水。"></textarea></label><label class="inline-check"><input id="care-custom-enabled" type="checkbox">添加后启用</label><button id="care-custom-add" class="primary">添加自定义提醒</button></div>
-    <div class="card form"><h3>位置与附近的好去处</h3>
-    <label class="setting"><span>授权读取设备位置</span><input id="care-location" type="checkbox" role="switch"></label><small>只使用 Windows 的 GPS、Wi-Fi 或基站位置。拒绝 IP、默认位置和来源不明的结果。撤销授权会清除内存中的位置。</small>
-    <label class="setting"><span>用高德查询附近餐馆</span><input id="care-nearby" type="checkbox" role="switch"></label><small>需先在 MCP 工具中保存高德 Web 服务 Key 并启用。开启后会将坐标发送给高德，用于坐标转换、附近搜索和步行路线；时间和人均价格缺失时会注明暂缺。</small>
-    <div class="row"><button id="care-locate" class="ghost">获取设备位置</button><button id="care-system-location" class="ghost">Windows 位置设置</button></div><small id="care-location-state"></small></div>
-    <div class="card form"><div class="row"><h3>看看它会怎么说</h3><button id="care-preview" class="primary">试一次问候</button></div><p id="care-status"></p><p id="care-message"></p></div>
-  </section>`;
-  document.querySelector("main").insertBefore(host, $("toast"));
+    <div class="group"><h3>每类操作的默认选择</h3><div id="policy-defaults" class="panel"></div>
+      <p class="group-note" style="margin-top:10px">工作目录是默认位置，也可以使用绝对路径。白名单精确匹配文件目标，或命令及其参数。本会话授权只对同一工具、同一类操作有效，换会话或重启后失效。</p></div>
+    <div class="group"><h3>已记住的白名单</h3><div id="policy-rules" class="panel list"></div></div>
+    <div class="page-actions"><button id="policy-revoke-session" class="quiet">撤销本会话的授权</button><button id="policy-save" class="primary">保存权限设置</button></div>`;
+  $("care").innerHTML = `
+    <div class="group"><div class="group-head"><h3>问候</h3><small id="care-saved" class="save-state"></small></div><div class="panel">
+      <label class="row-setting"><div class="row-text"><b>开启主动关怀</b><small>它会在合适的时候自然地问候，结合相处的记忆和最近的对话。你正在聊天时它会等一等。</small></div><input id="care-enabled" type="checkbox" role="switch"></label>
+    </div></div>
+    <div class="group"><h3>我的提醒</h3><p class="group-note">勾选的提醒每天按时出现。</p><div id="care-custom-list" class="panel list"></div>
+      <div class="panel panel-form" style="margin-top:12px">
+        <div class="field-grid"><label class="field">提醒名称<input id="care-custom-label" maxlength="60" placeholder="例如：起来走走"></label><label class="field">每天的时间<input id="care-custom-time" type="time" value="15:30"></label></div>
+        <label class="field">希望它怎么提醒你<textarea id="care-custom-prompt" rows="3" maxlength="2000" placeholder="例如：提醒我伸展一下，顺便喝点水。"></textarea></label>
+        <div class="button-row"><label class="check"><input id="care-custom-enabled" type="checkbox">添加后立即启用</label><button id="care-custom-add" class="primary" style="margin-left:auto">添加提醒</button></div>
+      </div></div>
+    <div class="group"><h3>位置与附近的去处</h3><div class="panel">
+      <label class="row-setting"><div class="row-text"><b>允许读取设备位置</b><small>只使用 Windows 的 GPS、Wi-Fi 或基站定位，不使用 IP 和来源不明的位置。关闭后会清除内存中的位置。</small></div><input id="care-location" type="checkbox" role="switch"></label>
+      <label class="row-setting"><div class="row-text"><b>用高德查询附近餐馆</b><small>需要先在 MCP 工具里保存高德 Web 服务 Key 并启用。开启后会把坐标发给高德，用于坐标转换、附近搜索和步行路线。</small></div><input id="care-nearby" type="checkbox" role="switch"></label>
+      <div class="row-setting"><div class="row-text"><b>当前位置</b><small id="care-location-state"></small></div><div class="button-row"><button id="care-locate" class="quiet">获取设备位置</button><button id="care-system-location" class="quiet">Windows 位置设置</button></div></div>
+    </div></div>
+    <div class="group"><h3>试一次</h3><div class="panel panel-form">
+      <div class="button-row"><button id="care-preview" class="primary">让它问候一次</button><small id="care-status"></small></div>
+      <p id="care-message"></p>
+    </div></div>`;
+  let attachments = [],
+    lastDictation = "",
+    voice = {};
+  function showAttachments() {
+    $("history-attachments").replaceChildren(
+      ...attachments.map((a) => {
+        const b = document.createElement("button");
+        b.className = "quiet";
+        b.textContent = a.name + " ×";
+        b.title = "移除这个附件";
+        b.onclick = () => {
+          attachments = attachments.filter((v) => v.id !== a.id);
+          showAttachments();
+        };
+        return b;
+      }),
+    );
+  }
+  function addAttachments(items) {
+    if (!Array.isArray(items)) items = [items];
+    if (attachments.length + items.length > 8)
+      throw new Error("最多添加 8 个附件");
+    attachments.push(...items);
+    showAttachments();
+  }
   const categories = {
-    read: "读取文件和只读工具",
-    search: "搜索",
-    write: "宠物目录内写入、记忆整理",
-    outsideWrite: "宠物目录外写入",
-    shell: "Shell 执行",
-    install: "安装或启用扩展",
-    mcp: "其他 MCP 操作",
+    read: ["读取文件和只读工具", ""],
+    search: ["搜索", ""],
+    write: ["写入宠物目录、整理记忆", ""],
+    outsideWrite: ["写入宠物目录以外的文件", ""],
+    shell: ["执行 Shell 命令", "不是系统沙箱，命令拥有你的用户权限"],
+    install: ["安装或启用扩展", ""],
+    mcp: ["其它 MCP 工具操作", ""],
   };
-  for (const [key, label] of Object.entries(categories)) {
-    const row = document.createElement("label");
-    row.className = "setting";
-    const span = document.createElement("span");
-    span.textContent = label;
-    const select = document.createElement("select");
+  for (const [key, [label, note]] of Object.entries(categories)) {
+    const row = document.createElement("label"),
+      text = document.createElement("div"),
+      b = document.createElement("b"),
+      select = document.createElement("select");
+    row.className = "row-setting";
+    text.className = "row-text";
+    b.textContent = label;
+    text.append(b);
+    if (note) {
+      const small = document.createElement("small");
+      small.textContent = note;
+      text.append(small);
+    }
     select.id = "policy-" + key;
-    for (const [value, text] of [
-      ["allow", "允许"],
-      ["ask", "询问"],
+    for (const [value, name] of [
+      ["allow", "直接允许"],
+      ["ask", "先问我"],
       ["deny", "禁止"],
     ])
-      select.add(new Option(text, value));
-    row.append(span, select);
+      select.add(new Option(name, value));
+    row.append(text, select);
     $("policy-defaults").append(row);
   }
   let page = "",
@@ -96,6 +130,12 @@ export function createExperienceSettings(api, toast) {
   function bind(id, fn) {
     $(id).onclick = () => run(id, fn);
   }
+  function empty(target, text) {
+    const p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = text;
+    target.replaceChildren(p);
+  }
   async function historyList() {
     summaries = await api.request("history.list", {
       query: $("history-search").value,
@@ -104,7 +144,7 @@ export function createExperienceSettings(api, toast) {
       ...summaries.map(
         (s) =>
           new Option(
-            `${s.title} · ${new Date(s.updated).toLocaleDateString()}`,
+            `${s.title}（${new Date(s.updated).toLocaleDateString()}）`,
             s.id,
           ),
       ),
@@ -116,31 +156,48 @@ export function createExperienceSettings(api, toast) {
       follow = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
     list.replaceChildren(
       ...displayed.map((m) => {
-        const row = document.createElement("article");
+        const row = document.createElement("article"),
+          label = document.createElement("small"),
+          text = document.createElement("div");
         row.className = "history-message " + m.role;
-        const label = document.createElement("small");
-        label.textContent = `${m.role === "user" ? "你" : "宠物"} · ${new Date(m.time).toLocaleString()}${m.status === "complete" ? "" : " · " + ({ streaming: "回复中", error: "失败", cancelled: "已停止" }[m.status] || m.status)}`;
-        const text = document.createElement("div");
+        label.textContent = `${m.role === "user" ? "你" : "宠物"}，${new Date(m.time).toLocaleString()}${m.status === "complete" ? "" : "，" + ({ streaming: "回复中", error: "失败", cancelled: "已停止" }[m.status] || m.status)}`;
         text.textContent = m.text;
         row.append(label, text);
+        for (const a of m.attachments ?? []) {
+          const file = document.createElement("small");
+          file.textContent = `附件：${a.name}（${(a.bytes / 1024).toFixed(0)} KB）`;
+          row.append(file);
+        }
+        if (m.role === "assistant" && m.status === "complete") {
+          const b = document.createElement("button");
+          b.className = "quiet";
+          b.textContent = "朗读";
+          b.onclick = () =>
+            api
+              .request("voice.read", { text: m.text })
+              .catch((e) => toast(e.message, true));
+          row.append(b);
+        }
         return row;
       }),
     );
+    if (!displayed.length) empty(list, "这段对话还没有消息。");
     if (follow) list.scrollTop = list.scrollHeight;
-    $("history-continue").hidden = selected === current;
-    $("history-input").disabled = !selected || selected !== current;
-    $("history-send").disabled =
-      !selected || selected !== current || historyBusy;
-    $("history-stop").hidden = !historyBusy || selected !== current;
-    $("history-state").textContent =
-      selected === current
-        ? historyError || (historyBusy ? "正在回复…" : "当前会话，可直接继续")
-        : "历史会话：点击继续后再输入";
+    const live = !!selected && selected === current;
+    $("history-continue").hidden = !selected || live;
+    $("history-input").disabled = !live;
+    $("history-send").disabled = !live || historyBusy;
+    $("history-stop").hidden = !historyBusy || !live;
+    $("history-state").textContent = live
+      ? historyError || (historyBusy ? "正在回复…" : "当前会话，可以直接继续聊")
+      : "这是过去的会话。点“继续这段对话”后再输入。";
     $("history-previous").disabled = offset === 0;
     $("history-next").disabled = next === null;
+    // 只有一页时不显示翻页，避免两个永远不可用的按钮。
+    $("history-previous").parentElement.hidden = offset === 0 && next === null;
     $("history-range").textContent = displayed.length
-      ? `${offset + 1}—${offset + displayed.length} 条`
-      : "还没有消息";
+      ? `第 ${offset + 1}–${offset + displayed.length} 条`
+      : "";
   }
   async function load(id, start) {
     const count = summaries.find((s) => s.id === id)?.count ?? 0;
@@ -157,7 +214,7 @@ export function createExperienceSettings(api, toast) {
     $("history-list").value = id;
     $("history-context").hidden = !data.context;
     $("history-context-title").textContent =
-      `会话交接摘要 · 已压缩 ${data.context?.compactions ?? 0} 次`;
+      `会话交接摘要（已压缩 ${data.context?.compactions ?? 0} 次）`;
     const titles = {
       goals: "当前目标",
       constraints: "约束和更正",
@@ -180,6 +237,18 @@ export function createExperienceSettings(api, toast) {
     $("history-messages").scrollTop = $("history-messages").scrollHeight;
   }
   async function status() {
+    const [v, d] = await Promise.all([
+      api.request("voice.state"),
+      api.request("voice.dictation"),
+    ]);
+    voice = v;
+    $("history-voice-state").textContent = v.message;
+    $("history-dictate").textContent = v.dictating ? "结束录音" : "语音转文字";
+    if (d && d.target === "history" && d.id !== lastDictation) {
+      lastDictation = d.id;
+      $("history-input").value +=
+        ($("history-input").value ? "\n" : "") + d.text;
+    }
     const s = await api.request("history.state");
     current = s.current;
     historyBusy = s.busy;
@@ -234,7 +303,7 @@ export function createExperienceSettings(api, toast) {
     $("history-rename-form").hidden = true;
   });
   bind("history-delete", async () => {
-    if (selected && confirm("删除这段会话？已形成的日记和核心记忆会保留。")) {
+    if (selected && confirm("删除这段会话？已经写下的日记和核心记忆会保留。")) {
       await api.request("history.remove", { id: selected });
       selected = undefined;
       await openHistory();
@@ -244,13 +313,32 @@ export function createExperienceSettings(api, toast) {
   bind("history-next", () => load(selected, next));
   async function send() {
     const text = $("history-input").value;
-    await api.request("history.send", { id: selected, text });
+    await api.request("history.send", {
+      id: selected,
+      text,
+      attachments: attachments.map((a) => a.id),
+    });
     $("history-input").value = "";
+    attachments = [];
+    showAttachments();
     await historyList();
     await load(selected);
     await status();
   }
   bind("history-send", send);
+  bind("history-attach", async () =>
+    addAttachments(await api.request("media.choose")),
+  );
+  bind("history-snapshot", async () =>
+    addAttachments(await api.request("media.capture")),
+  );
+  bind("history-dictate", async () => {
+    await api.request(voice.dictating ? "voice.finish" : "voice.dictate", {
+      target: "history",
+    });
+    await status();
+  });
+  bind("history-voice-stop", () => api.request("voice.stop"));
   bind("history-stop", () => api.request("history.cancel"));
   $("history-input").onkeydown = (e) => {
     if (e.key === "Enter" && e.shiftKey && !e.isComposing) {
@@ -265,13 +353,17 @@ export function createExperienceSettings(api, toast) {
       $("policy-" + key).value = policy.defaults[key];
     $("policy-rules").replaceChildren(
       ...policy.whitelist.map((rule) => {
-        const row = document.createElement("div");
-        row.className = "extension-row";
-        const label = document.createElement("small");
+        const row = document.createElement("div"),
+          text = document.createElement("div"),
+          label = document.createElement("small"),
+          actions = document.createElement("div"),
+          b = document.createElement("button");
+        row.className = "list-row";
+        text.className = "list-text";
+        actions.className = "list-actions";
         label.textContent = rule.label;
-        const b = document.createElement("button");
         b.textContent = "撤销";
-        b.className = "ghost";
+        b.className = "quiet";
         b.onclick = async () => {
           try {
             const latest = await api.request("policy.get");
@@ -284,13 +376,17 @@ export function createExperienceSettings(api, toast) {
             toast(e.message, true);
           }
         };
-        row.append(label, b);
+        text.append(label);
+        actions.append(b);
+        row.append(text, actions);
         return row;
       }),
     );
     if (!policy.whitelist.length)
-      $("policy-rules").textContent =
-        "还没有白名单。等待确认时可选择记住具体操作。";
+      empty(
+        $("policy-rules"),
+        "还没有白名单。宠物请你确认时，可以选择“加入白名单”记住具体操作。",
+      );
   }
   $("policy-mode").onchange = () =>
     ($("policy-auto-note").hidden = $("policy-mode").value !== "auto");
@@ -304,15 +400,15 @@ export function createExperienceSettings(api, toast) {
       ),
     });
     renderPolicy();
-    toast("权限策略已保存");
+    toast("权限设置已保存");
   });
   bind("policy-revoke-session", async () => {
     await api.request("policy.resetSession");
-    toast("本会话授权已撤销");
+    toast("本会话的授权已撤销");
   });
   function careValues() {
     if (!care?.settings)
-      throw new Error("尚未读取到关怀设置，请确认宠物已连接");
+      throw new Error("还没有读到关怀设置，请确认宠物已经运行");
     return {
       enabled: $("care-enabled").checked,
       location: $("care-location").checked,
@@ -323,19 +419,23 @@ export function createExperienceSettings(api, toast) {
   function renderCustom() {
     $("care-custom-list").replaceChildren(
       ...care.settings.custom.map((item) => {
-        const row = document.createElement("div");
-        row.className = "extension-row";
-        const label = document.createElement("label");
-        label.className = "inline-check";
-        const input = document.createElement("input");
+        const row = document.createElement("div"),
+          info = document.createElement("div"),
+          label = document.createElement("label"),
+          input = document.createElement("input"),
+          text = document.createElement("b"),
+          detail = document.createElement("small"),
+          actions = document.createElement("div"),
+          remove = document.createElement("button");
+        row.className = "list-row";
+        info.className = "list-text";
+        label.className = "check";
+        actions.className = "list-actions";
         input.type = "checkbox";
         input.checked = item.enabled;
         input.setAttribute("aria-label", "启用 " + item.label);
-        const text = document.createElement("span");
-        text.textContent = item.label + " · 每天 " + item.time;
-        const detail = document.createElement("small");
+        text.textContent = `${item.label}，每天 ${item.time}`;
         detail.textContent = item.prompt;
-        const info = document.createElement("div");
         label.append(input, text);
         info.append(label, detail);
         input.onchange = async () => {
@@ -357,8 +457,7 @@ export function createExperienceSettings(api, toast) {
             input.disabled = false;
           }
         };
-        const remove = document.createElement("button");
-        remove.className = "ghost";
+        remove.className = "quiet";
         remove.textContent = "移除";
         remove.onclick = async () => {
           remove.disabled = true;
@@ -376,17 +475,18 @@ export function createExperienceSettings(api, toast) {
             remove.disabled = false;
           }
         };
-        row.append(info, remove);
+        actions.append(remove);
+        row.append(info, actions);
         return row;
       }),
     );
     if (!care.settings.custom.length)
-      $("care-custom-list").textContent = "还没有自定义提醒。";
+      empty($("care-custom-list"), "还没有提醒。可以在下面添加。");
   }
   async function readCare() {
     const value = await api.request("care.get");
     if (!value?.settings || !Array.isArray(value.settings.custom))
-      throw new Error("宠物与控制器版本不一致，请退出两者后重新启动");
+      throw new Error("宠物和控制器版本不一致，请退出两者后重新启动");
     return value;
   }
   async function careStatus(fill = false) {
@@ -398,11 +498,11 @@ export function createExperienceSettings(api, toast) {
     }
     $("care-status").textContent = care.busy
       ? "正在准备问候…"
-      : care.lastError || "设置好模型后，可以试一次。";
+      : care.lastError || "需要先在“模型连接”里设置好模型服务。";
     $("care-message").textContent = care.lastMessage || "";
     $("care-location-state").textContent = care.location
-      ? `位置来源：${care.location.source} · 精度约 ${Math.round(care.location.accuracy)} 米 · ${new Date(care.location.time).toLocaleTimeString()}`
-      : "未取得设备位置；使用普通问候，不通过 IP 推测。";
+      ? `来源：${care.location.source}，精度约 ${Math.round(care.location.accuracy)} 米，${new Date(care.location.time).toLocaleTimeString()} 获取`
+      : "还没有设备位置。问候不会通过 IP 猜测你在哪里。";
   }
   async function saveCare() {
     await api.request("care.set", careValues());

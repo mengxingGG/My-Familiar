@@ -115,7 +115,7 @@ try {
     enabled: false,
   });
   await page.locator("#scale").fill("125");
-  await page.locator("#character").selectOption("luna");
+  await page.locator('#character input[value="luna"]').check();
   await page.waitForFunction(
     () =>
       document.getElementById("pet-save-status").textContent === "已自动保存",

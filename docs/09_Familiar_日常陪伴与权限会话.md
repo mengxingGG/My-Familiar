@@ -2,7 +2,7 @@
 
 ## 当前用法
 
-“我的灵伴”的角色、大小、置顶、安静陪伴和气泡关闭时间修改后自动保存、实时生效。气泡默认在回复完成后 15 秒收起；鼠标停留时暂停，移开后重新计时。生成和等待确认期间不自动关闭。设置为 0 可保持显示。
+“形象与桌面”的角色、大小、置顶、安静陪伴和气泡关闭时间修改后自动保存、实时生效。气泡默认在回复完成后 15 秒收起；鼠标停留时暂停，移开后重新计时。生成和等待确认期间不自动关闭。设置为 0 可保持显示。
 
 “历史会话”可以查看、搜索完整正文、新建、重命名、删除和继续旧对话。Enter 换行，Shift+Enter 或按钮发送。当前正在操作控制器中的历史会话时，宠物不冒泡。关闭或离开控制器后不影响 Runtime。开始新会话会保留旧会话；明确删除只删除该会话，不删除已经形成的日记和记忆。
 
@@ -62,6 +62,8 @@ MCP 的官方 Exa 搜索、高德固定只读工具，以及启用服务声明�
 ## Windows 登录启动与构建
 
 Electron 44 写入会自行转义 args，源码目录作为原始参数传入。读取时须给可执行路径加命令行引号，并从 launchItems 匹配 `Familiar`、用户范围、参数和启用状态；`openAtLogin` 读取的是 AppUserModelID，不能直接判断自定义 name。参考 [Electron API](https://www.electronjs.org/docs/latest/api/app#appsetloginitemsettingssettings-macos-windows) 和 [44.0.0 Windows 实现](https://github.com/electron/electron/blob/v44.0.0/shell/browser/browser_win.cc)。
+
+从 Codex 等 MSIX 打包应用的终端启动时，子进程继承该应用的包身份，HKCU 与 `%APPDATA%` 写入会进入那个应用的私有注册表和 `LocalCache`：Electron 能读回启动项，开关显示已开启，Windows 登录时却看不到，宠物数据也与桌面快捷方式启动的不是同一份。Familiar 不以 MSIX 发布，因此 `process.windowsStore` 为真即视为处在外部沙箱，`platform.autostart` 返回原因、拒绝写入，控制器禁用开关并显示原因。控制器离线时同样禁用开关，写入失败回到原状态。
 
 Windows 源码构建新增 Windows 10/11 SDK 要求，用系统 .NET Framework C# 编译器生成 `dist/native/Familiar.Location.exe`；运行用户不需要 SDK。未来打包时该 exe 必须放在 app.asar.unpacked，已配置 asarUnpack，本轮未重新打包。
 

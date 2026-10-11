@@ -43,7 +43,7 @@ export async function rpc(
     };
     const timer = setTimeout(
       () => finish(new Error("宠物响应超时")),
-      /^(memory.write|skills.install|mcp.install|mcp.connect|github.connect|github.save|feishu.save|care.preview|care.location)$/.test(
+      /^(memory.write|skills.install|mcp.install|mcp.connect|github.connect|github.save|feishu.save|care.preview|care.location|media.choose|voice.catalog|voice.sample|voice.verify)$/.test(
         method,
       )
         ? 120000

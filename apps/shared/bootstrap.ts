@@ -46,12 +46,20 @@ import { personaConfig } from "../../plugins/conversation/config.ts";
 import { autostartWindows } from "../../plugins/autostart-windows/index.ts";
 import { homeFiles } from "../../plugins/home-files/index.ts";
 import { memoryFiles } from "../../plugins/memory-files/index.ts";
+import { memoryJudge } from "../../plugins/memory-judge/index.ts";
+import { memoryTrace } from "../../plugins/memory-trace/index.ts";
 import { skillsLocal } from "../../plugins/skills-local/index.ts";
 import { agentTools } from "../../plugins/agent-tools/index.ts";
 import { agentRunner } from "../../plugins/agent-runner/index.ts";
 import { mcpClient } from "../../plugins/mcp-client/index.ts";
 import { toolsBasic } from "../../plugins/tools-basic/index.ts";
 import { companionControls } from "../../plugins/companion-controls/index.ts";
+import { mediaAssets } from "../../plugins/media-assets/index.ts";
+import { mediaInput } from "../../plugins/media-input/index.ts";
+import { platformMedia } from "../../plugins/platform-media/index.ts";
+import { voiceWindows } from "../../plugins/voice-windows/index.ts";
+import { voiceApi } from "../../plugins/voice-api/index.ts";
+import { voiceSession } from "../../plugins/voice-session/index.ts";
 
 // 宿主只做环境引导和官方插件组合，不实现产品业务。
 export async function bootstrap(role: "runtime" | "controller") {
@@ -89,6 +97,10 @@ export async function bootstrap(role: "runtime" | "controller") {
       "familiar.amap-care": ["network.amap"],
       "familiar.feishu": ["process.feishu", "network.dependencies"],
       "familiar.github": ["process.github", "network.dependencies"],
+      "familiar.platform-media": ["desktop.capture", "files.picker"],
+      "familiar.voice-windows": ["device.microphone"],
+      "familiar.voice-api": ["network.voice"],
+      "familiar.voice-session": ["device.microphone", "network.voice"],
     },
     log: ({ plugin, message }) => console.error(`[${plugin}] ${message}`),
   });
@@ -154,6 +166,21 @@ export async function bootstrap(role: "runtime" | "controller") {
           providerLlamacpp,
           storageLocal(join(directory, "data")),
           platform,
+          mediaAssets,
+          platformMedia,
+          mediaInput,
+          voiceWindows(
+            join(
+              root.replace("app.asar", "app.asar.unpacked"),
+              "native",
+              "Familiar.Speech.exe",
+            ),
+          ),
+          voiceApi(
+            join(directory, "audio-cache"),
+            join(root, "assets", "voices"),
+          ),
+          voiceSession(join(root, "assets", "voices")),
           characterPack(join(root, "characters")),
           petConfig,
           personaConfig,
@@ -178,6 +205,8 @@ export async function bootstrap(role: "runtime" | "controller") {
                   )),
             join(directory, "home"),
           ),
+          memoryTrace,
+          memoryJudge,
           memoryFiles,
           skillsLocal,
           agentTools,

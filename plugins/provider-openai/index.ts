@@ -3,6 +3,7 @@ import type {
   ProviderInput,
 } from "../../packages/contracts/index.ts";
 import { providerPlugin } from "../llm-shared/plugin.ts";
+import { responseImages } from "../llm-shared/images.ts";
 import { baseOptions } from "../llm-shared/chat-completions.ts";
 import {
   chatModels,
@@ -22,13 +23,33 @@ function prompt(input: ProviderInput) {
             {
               type: "function_call_output",
               call_id: m.toolCallId,
-              output: m.content,
+              output: m.images?.length
+                ? [
+                    { type: "input_text", text: m.content },
+                    ...responseImages(m),
+                  ]
+                : m.content,
             },
           ]
         : m.native && m.native.scope === input.nativeScope
           ? m.native.items
           : [
-              ...(m.content ? [{ role: m.role, content: m.content }] : []),
+              ...(m.content || m.images?.length
+                ? [
+                    {
+                      role: m.role,
+                      content: m.images?.length
+                        ? [
+                            {
+                              type: "input_text",
+                              text: m.content || "请查看图片",
+                            },
+                            ...responseImages(m),
+                          ]
+                        : m.content,
+                    },
+                  ]
+                : []),
               ...(m.calls ?? []).map((c) => ({
                 type: "function_call",
                 call_id: c.id,

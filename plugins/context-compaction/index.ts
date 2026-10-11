@@ -154,13 +154,15 @@ export const contextCompaction = definePlugin({
             threshold,
           };
         }
+        // 压缩本来就要重建前缀，调用方提供的新前缀（如刷新后的记忆）从这里开始计入预算。
+        const target = input.nextSystem ?? system;
         // 保留最近两轮及当前请求；小窗口下仅按完整用户轮次减少保留量。
         let at = Math.max(1, starts.length - 3);
         while (
           at < starts.length - 1 &&
           (
             await count([
-              system,
+              target,
               ...restore(checkpoint, history.slice(starts[at])),
             ])
           ).tokens >
@@ -169,7 +171,7 @@ export const contextCompaction = definePlugin({
           at++;
         const cut = starts[at];
         const recent = history.slice(cut);
-        if ((await count([system, ...recent])).tokens > budget)
+        if ((await count([target, ...recent])).tokens > budget)
           throw new Error("当前输入超过可用上下文，原会话已保留");
         // 只交接可见内容和实际工具记录；供应商私有推理仍留在原会话，不写进摘要。
         const source = history
@@ -290,7 +292,7 @@ export const contextCompaction = definePlugin({
           offset = end;
         }
         const messages = restore(checkpoint, recent),
-          result = await count([system, ...messages]);
+          result = await count([target, ...messages]);
         signal.throwIfAborted();
         if (
           result.tokens > budget ||

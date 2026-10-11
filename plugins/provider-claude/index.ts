@@ -5,6 +5,7 @@ import type {
   ThinkingMode,
 } from "../../packages/contracts/index.ts";
 import { providerPlugin } from "../llm-shared/plugin.ts";
+import { claudeImages } from "../llm-shared/images.ts";
 import { baseOptions } from "../llm-shared/chat-completions.ts";
 import {
   headers,
@@ -33,13 +34,16 @@ function prompt(input: ProviderInput) {
                 {
                   type: "tool_result",
                   tool_use_id: m.toolCallId,
-                  content: m.content,
+                  content: m.images?.length
+                    ? [{ type: "text", text: m.content }, ...claudeImages(m)]
+                    : m.content,
                 },
               ]
             : m.native && m.native.scope === input.nativeScope
               ? m.native.items
               : [
                   ...(m.content ? [{ type: "text", text: m.content }] : []),
+                  ...claudeImages(m),
                   ...(m.calls ?? []).map((c) => ({
                     type: "tool_use",
                     id: c.id,

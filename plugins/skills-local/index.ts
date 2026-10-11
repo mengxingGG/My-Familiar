@@ -58,7 +58,7 @@ const builtins: Record<string, [string, string]> = {
   ],
   "companion-memory": [
     "记住偏好、检索共同经历、整理每日记忆与复盘教训。",
-    "先区分普通聊天、重要经历和长期信息。用户要求记住长期偏好时调用 memory_remember；重要共同经历或用户希望留下的事件用 memory_diary 写简洁日记，不抄录问答，不记普通寒暄。不要把猜测或隐私凭据存入记忆。用户询问过去先用 memory_search，按日期找 daily 文件，再 memory_read；当前会话压缩后缺失的细节按摘要索引用 context_read 回查。可复用的错误修正写 memory_lesson，列清问题、原因、可靠做法、验证结果。值得复用时写成 Skill 草稿，交由用户确认安装。",
+    "先区分普通聊天、重要经历和长期信息。用户要求必须遵守的规则或长期偏好用 memory_remember；偏好变了用 replace 原地改写，核心写满时先合并或删除。重要共同经历或用户希望留下的事件用 memory_diary 写简洁日记，不抄录问答，不记普通寒暄。不要把猜测或隐私凭据存入记忆。用户询问过去先看记忆索引，再用 memory_search，按日期找 daily 文件，再 memory_read；当前会话压缩后缺失的细节按摘要索引用 context_read 回查。可复用的经验用 memory_lesson 按主题写成“规则 — 原因”，新主题写明何时该读；不记环境问题、否定结论、瞬时错误和没试成功的做法。只适用于某个项目的约定用 memory_topic。值得复用时写成 Skill 草稿，交由用户确认安装。",
   ],
   "workspace-files": [
     "在灵伴工作目录中读取、搜索和编辑文本文件。",

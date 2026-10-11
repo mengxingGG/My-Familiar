@@ -8,6 +8,7 @@ import {
   type PromptMessage,
   type ConversationSummary,
   type ContextCheckpoint,
+  type MemoryChanged,
 } from "../../packages/contracts/index.ts";
 type StoredMessage = Message & {
   native?: NativeTurn;
@@ -40,6 +41,7 @@ export const conversation = definePlugin({
       "settings",
       "persona.catalog",
       "storage.local",
+      "media.input",
     ],
   },
   async start(ctx) {
@@ -74,6 +76,11 @@ export const conversation = definePlugin({
         : { id: randomUUID(), epoch: 0, fingerprint: "", trimmed: 0 };
     let active: { abort: AbortController; task: Promise<void> } | undefined,
       error: string | undefined;
+    // 记忆快照按会话冻结；新会话、压缩、重启或用户编辑记忆时刷新，见文档 17。
+    const memoryFrozen = new Map<string, string>();
+    ctx.on<MemoryChanged>("memory.changed", (event) => {
+      if (event?.source === "user") memoryFrozen.clear();
+    });
     let changing = false;
     const index = new Map(
       (await storage.read<ConversationSummary[]>("conversation-index", [])).map(
@@ -121,11 +128,18 @@ export const conversation = definePlugin({
     };
     ctx.provide("conversation", {
       state,
-      async send(text) {
+      async send(input) {
         if (changing) throw new Error("正在切换会话，请稍候");
         if (active) throw new Error("正在回复，请先停止当前生成");
-        if (typeof text !== "string" || !text.trim() || text.length > 8000)
-          throw new Error("请输入 1—8000 个字符");
+        // 准备附件时也占用发送入口，避免双击导致并行写入同一会话。
+        changing = true;
+        let prepared;
+        try {
+          prepared = await ctx.use("media.input").prepare(input);
+        } finally {
+          changing = false;
+        }
+        const { text, attachments, origin } = prepared;
         const config = settings.get();
         if (!config.provider.model)
           throw new Error("请先打开控制器，填写并测试模型连接");
@@ -135,6 +149,8 @@ export const conversation = definePlugin({
             text: text.trim(),
             status: "complete",
             time: Date.now(),
+            ...(attachments.length ? { attachments } : {}),
+            origin,
           },
           assistant: StoredMessage = {
             id: randomUUID(),
@@ -142,6 +158,7 @@ export const conversation = definePlugin({
             text: "",
             status: "streaming",
             time: Date.now(),
+            origin,
           };
         messages.push(user, assistant);
         error = undefined;
@@ -150,25 +167,35 @@ export const conversation = definePlugin({
           try {
             await persist();
             abort.signal.throwIfAborted();
-            const system = {
+            const live = await ctx.use("memory.files").context(),
+              frozen = memoryFrozen.get(session.id) ?? live,
+              skillPrompt = await ctx.use("skills.catalog").prompt();
+            const prefix = (memory: string): PromptMessage => ({
               role: "system",
-              content: `${ctx.use("persona.catalog").prompt(config)}\n你可以调用当前提供的工具。只有实际工具结果才能证明完成操作；没有执行过就不能声称做过。普通陪伴不必调用工具。用户提及过去时先检索记忆，明确要求记住的长期信息写入核心记忆；可复用的错误和经验写入教训。不要展示思考过程。\n${await ctx.use("memory.files").context()}\n${await ctx.use("skills.catalog").prompt()}`,
-            };
-            const fingerprint = createHash("sha256")
-              .update(
-                JSON.stringify([
-                  config.provider.kind,
-                  config.provider.baseUrl,
-                  config.provider.model,
-                  config.provider.thinking,
-                  config.provider.temperature,
-                  config.provider.topP,
-                  config.provider.maxOutputTokens,
-                  system,
-                  ctx.use("agent.tools").list(),
-                ]),
-              )
-              .digest("hex");
+              content: `${ctx.use("persona.catalog").prompt(config)}\n你可以调用当前提供的工具。只有实际工具结果才能证明完成操作；没有执行过就不能声称做过。普通陪伴不必调用工具。用户提及过去时先检索记忆，明确要求记住的长期信息写入核心记忆；可复用的错误和经验写入教训。不要展示思考过程。\n${memory}\n${skillPrompt}`,
+            });
+            const fingerprintOf = (value: PromptMessage) =>
+              createHash("sha256")
+                .update(
+                  JSON.stringify([
+                    config.provider.kind,
+                    config.provider.baseUrl,
+                    config.provider.model,
+                    config.provider.thinking,
+                    config.provider.temperature,
+                    config.provider.topP,
+                    config.provider.maxOutputTokens,
+                    value,
+                    ctx.use("agent.tools").list(),
+                  ]),
+                )
+                .digest("hex");
+            let memory = frozen,
+              system = prefix(frozen),
+              fingerprint = fingerprintOf(system);
+            // 本会话已写入的新记忆留到压缩时再进入前缀，避免每次写入都打破缓存。
+            const nextSystem = live === frozen ? undefined : prefix(live),
+              refreshed = !memoryFrozen.has(session.id);
             if (session.fingerprint && session.fingerprint !== fingerprint)
               session.epoch++;
             session.fingerprint = fingerprint;
@@ -185,7 +212,12 @@ export const conversation = definePlugin({
             for (let i = start; i < messages.length; i++) {
               const m = messages[i];
               if (m.id === user.id) {
-                history.push({ id: m.id, role: m.role, content: m.text });
+                history.push({
+                  id: m.id,
+                  role: m.role,
+                  content: m.text,
+                  attachments: m.attachments,
+                });
                 break;
               }
               if (m.role === "assistant" && m.proactive) {
@@ -202,7 +234,12 @@ export const conversation = definePlugin({
                 messages[i + 1].status === "complete"
               ) {
                 const answer = messages[++i];
-                history.push({ id: m.id, role: m.role, content: m.text });
+                history.push({
+                  id: m.id,
+                  role: m.role,
+                  content: m.text,
+                  attachments: m.attachments,
+                });
                 if (answer.trace?.length)
                   history.push(
                     ...answer.trace.map((part, n) => ({
@@ -222,6 +259,7 @@ export const conversation = definePlugin({
             const fitted = await ctx.use("context.compaction").prepare({
               sessionId: session.id,
               system,
+              nextSystem,
               history,
               checkpoint: session.checkpoint,
               settings: config.provider,
@@ -243,7 +281,25 @@ export const conversation = definePlugin({
               session.checkpoint = fitted.checkpoint;
               session.compactions = (session.compactions ?? 0) + 1;
               // 只移动模型上下文起点，完整会话始终留给历史管理器。
+              if (nextSystem) {
+                memory = live;
+                system = nextSystem;
+                fingerprint = fingerprintOf(system);
+                session.fingerprint = fingerprint;
+              }
             }
+            memoryFrozen.delete(session.id);
+            memoryFrozen.set(session.id, memory);
+            if (memoryFrozen.size > 20)
+              memoryFrozen.delete(memoryFrozen.keys().next().value!);
+            ctx.emit("memory.trace", {
+              v: 1,
+              type: "inject",
+              time: Date.now(),
+              session: session.id,
+              characters: Array.from(memory).length,
+              refreshed: refreshed || memory !== frozen,
+            });
             session.status = {
               id: session.id,
               epoch: session.epoch,

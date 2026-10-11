@@ -75,7 +75,10 @@ const launch = async (executablePath) => {
 try {
   let { page, request } = await launch(oldExe);
   const oldStatus = await request("runtime.status");
-  assert.equal(oldStatus.apiVersion, 3, "基线应为 v0.1.0 协议");
+  // v0.1.0 使用协议 3 且会自动写日记；v0.2.0 使用协议 4，日记只由模型主动写入。
+  const from = { 3: "0.1.0", 4: "0.2.0" }[oldStatus.apiVersion];
+  assert.ok(from, "基线应为 v0.1.0 或 v0.2.0");
+  const to = JSON.parse(await readFile(resolve("package.json"), "utf8")).version;
   await request("care.set", {
     ...(await request("care.get")).settings,
     enabled: false,
@@ -93,7 +96,16 @@ try {
   });
   await request("settings.apply", settings);
   await request("secret.set", { config: settings.provider, key });
-  const core = "# 核心记忆\n\n- 升级演示：这份旧记忆必须原样保留。\n";
+  // v0.2.0 允许 3000 字的核心记忆；升级到核心规则 2000 字上限后必须原样保留并提示整理。
+  const core =
+    from === "0.1.0"
+      ? "# 核心记忆\n\n- 升级演示：这份旧记忆必须原样保留。\n"
+      : "# 核心记忆\n\n" +
+        Array.from(
+          { length: 90 },
+          (_, i) => `- 升级演示第 ${i + 1} 条：旧版留下的偏好，必须原样保留。`,
+        ).join("\n") +
+        "\n";
   await request("memory.write", {
     path: "CORE.md",
     text: core,
@@ -115,9 +127,21 @@ try {
       state.messages.at(-1).status === "complete"
     );
   });
-  await wait(async () =>
-    (await request("memory.list")).some((p) => p.startsWith("daily/")),
-  );
+  if (from === "0.1.0")
+    await wait(async () =>
+      (await request("memory.list")).some((p) => p.startsWith("daily/")),
+    );
+  else {
+    await request("memory.write", {
+      path: "daily/2026/09/2026-09-22.md",
+      text: "# 2026-09-22 · 一起度过的一天\n\n升级演示：旧版写下的日记。\n",
+    });
+    await request("memory.write", {
+      path: "lessons/2026-09-22-lesson-升级演示-1790000000000.md",
+      text: "# 升级演示教训\n\n分类：lesson\n\n旧格式的教训文件要原样保留。\n",
+    });
+  }
+  const oldStyle = (await request("runtime.status")).settings.persona.style;
   const diaries = (await request("memory.list")).filter((p) =>
     p.startsWith("daily/"),
   );
@@ -138,12 +162,27 @@ try {
     current.settings.persona.instruction,
     settings.persona.instruction,
   );
-  assert.equal(current.settings.persona.style, "custom");
+  assert.equal(
+    current.settings.persona.style,
+    from === "0.1.0" ? "custom" : oldStyle,
+  );
   assert.equal(current.settings.pet.character, "luna");
   assert.equal(current.settings.pet.scale, 1.25);
   assert.equal(current.settings.provider.contextTokens, 100000);
   assert.equal(current.settings.provider.autoCompactPercent, 80);
   assert.equal((await request("memory.read", { path: "CORE.md" })).text, core);
+  if (from !== "0.1.0") {
+    assert.match(
+      (await request("companion.status")).memory.lastError,
+      /超出上限/,
+      "超过新上限的旧核心应提示整理，而不是被截断或改写",
+    );
+    assert.ok(
+      (await request("memory.list")).includes(
+        "lessons/2026-09-22-lesson-升级演示-1790000000000.md",
+      ),
+    );
+  }
   assert.equal(
     await readFile(join(home, "skills/upgrade-demo/SKILL.md"), "utf8"),
     skill,
@@ -173,14 +212,17 @@ try {
     JSON.stringify(
       {
         passed: true,
-        from: "0.1.0",
-        to: "0.2.0",
+        from,
+        to,
         checks: [
           "settings",
           "custom-personality",
           "context-defaults",
           "encrypted-key-unchanged-and-usable",
           "core-memory",
+          ...(from === "0.1.0"
+            ? []
+            : ["over-limit-core-kept-with-warning", "old-lesson-file-kept"]),
           "old-diary-unchanged",
           "custom-skill",
           "history-and-session",
@@ -191,7 +233,7 @@ try {
     ),
   );
   console.log(
-    "PASS: v0.1.0 → v0.2.0 配置、自定义性格、密钥可用性、核心记忆、旧日记、Skill 与历史会话保持。",
+    `PASS: v${from} → v${to} 配置、性格、密钥可用性、核心记忆、旧日记、Skill 与历史会话保持。`,
   );
   console.log("OUTPUT: " + output);
 } finally {

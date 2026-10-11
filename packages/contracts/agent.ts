@@ -70,20 +70,6 @@ export interface McpConfig {
 declare module "../kernel/index.ts" {
   interface Services {
     "familiar.home": { root: string };
-    "memory.files": {
-      list(): Promise<string[]>;
-      read(path: string): Promise<{ text: string; revision: string }>;
-      write(path: string, text: string, revision?: string): Promise<void>;
-      context(): Promise<string>;
-      remember(
-        text: string,
-        signal?: AbortSignal,
-      ): Promise<{ refined: boolean }>;
-      lesson(title: string, text: string, category?: string): Promise<string>;
-      search(query: string): Promise<{ path: string; excerpt: string }[]>;
-      diary(text: string, signal?: AbortSignal): Promise<string>;
-      status(): { root: string; lastError?: string; refining: boolean };
-    };
     "skills.catalog": {
       list(): Promise<SkillInfo[]>;
       read(id: string, path?: string): Promise<string>;
@@ -104,6 +90,14 @@ declare module "../kernel/index.ts" {
         signal: AbortSignal,
         options?: { silent?: boolean; session?: string },
       ): Promise<string>;
+      runRich?(
+        call: ToolCall,
+        signal: AbortSignal,
+        options?: { silent?: boolean; session?: string },
+      ): Promise<{
+        text: string;
+        attachments?: import("./media.ts").Attachment[];
+      }>;
     };
     "agent.approvals": {
       list(): Approval[];

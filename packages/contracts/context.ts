@@ -21,6 +21,8 @@ export interface ContextCheckpoint {
 export interface ContextInput {
   sessionId: string;
   system: PromptMessage;
+  /** 发生压缩时改用的新系统前缀（例如刷新后的记忆快照）；dropped 为 0 时调用方继续使用 system。 */
+  nextSystem?: PromptMessage;
   history: (PromptMessage & { id: string })[];
   checkpoint?: ContextCheckpoint;
   settings: ProviderProfile;

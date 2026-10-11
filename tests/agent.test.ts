@@ -22,6 +22,8 @@ import {
   characters,
   datePath,
 } from "../plugins/memory-files/index.ts";
+import { memoryJudge } from "../plugins/memory-judge/index.ts";
+import { memoryTrace } from "../plugins/memory-trace/index.ts";
 import { skillsLocal, parseSkill } from "../plugins/skills-local/index.ts";
 import { storageLocal } from "../plugins/storage-local/index.ts";
 import { agentTools } from "../plugins/agent-tools/index.ts";
@@ -32,6 +34,7 @@ import {
   contextTools,
 } from "../plugins/context-compaction/index.ts";
 import { mcpClient, validateMcp } from "../plugins/mcp-client/index.ts";
+import { mediaAssets, mediaFixture } from "./media-fixture.ts";
 import { conversation } from "../plugins/conversation/index.ts";
 import { runProcess } from "../plugins/agent-tools/process.ts";
 import { personaPrompt, personas } from "../plugins/conversation/config.ts";
@@ -290,12 +293,16 @@ async function harness(
     }),
   );
   for (const p of [
+    memoryTrace,
+    memoryJudge,
     memoryFiles,
     contextCompaction,
     skillsLocal,
     agentTools,
     contextTools,
     mcpClient,
+    mediaAssets,
+    mediaFixture,
     toolsBasic,
     agentRunner,
     conversation,
@@ -327,16 +334,16 @@ test("文件之家拒绝越界和链接，写入检查版本并保留原文", as
   await symlink(outside, join(store.root, "link"), "junction");
   await assert.rejects(store.read("link/secret"), /链接/);
 });
-test("核心记忆自动精炼 3000 字符边界，日记同日追加、去重、重启和检索", async () => {
+test("核心规则超限拒绝保存，日记同日追加、去重、重启和检索", async () => {
   const root = await temporary(),
-    k = await harness(root, async function* () {
-      yield "🙂".repeat(3000);
-    });
+    k = await harness(root);
   try {
     const m = k.resolve("memory.files");
-    await m.write("core.md", "旧资料".repeat(1500));
-    assert.equal(characters((await m.read("CORE.md")).text), 3000);
-    assert.ok((await m.list()).some((p) => p.includes("core-overflow")));
+    const core = (await m.read("CORE.md")).text;
+    await assert.rejects(m.write("core.md", "旧资料".repeat(1500)), /核心规则上限/);
+    assert.equal((await m.read("CORE.md")).text, core);
+    assert.ok(characters(core) <= 2000);
+    assert.ok(!(await m.list()).some((p) => p.includes("core-overflow")));
     const time = Date.now();
     await m.diary("今天一起去了森林。");
     await m.diary("这次带上了绿茶。");
@@ -347,7 +354,11 @@ test("核心记忆自动精炼 3000 字符边界，日记同日追加、去重�
     assert.equal(diary.split("今天一起去了森林。").length, 2);
     assert.doesNotMatch(diary, /你说：|我的回应：/);
     assert.ok((await m.search(datePath(time))).length);
-    await m.lesson("路径错误", "先检查路径，再改文件。", "lesson");
+    await m.note("lessons", {
+      topic: "路径错误",
+      when: "修改文件前",
+      text: "先检查路径，再改文件 — 曾经改错过同名文件",
+    });
     assert.ok((await m.search("路径错误"))[0].path.startsWith("lessons/"));
     await k.dispose();
     const restart = await harness(root);
@@ -360,18 +371,29 @@ test("核心记忆自动精炼 3000 字符边界，日记同日追加、去重�
     await k.dispose();
   }
 });
-test("精炼失败保留完整资料，核心仍有内容且凭据脱敏", async () => {
+test("查重不可用时照常写入并提示，核心凭据脱敏，超限新增被拒绝", async () => {
   const k = await harness(await temporary(), async function* () {
     throw new Error("offline");
   });
   try {
     const m = k.resolve("memory.files");
-    await m.remember("偏好".repeat(2000) + "\nAPI_KEY=not-for-memory");
-    assert.ok(characters((await m.read("CORE.md")).text) <= 3000);
-    assert.match((await m.read("CORE.md")).text, /偏好/);
+    assert.equal(
+      (await m.remember({ text: "用户偏好简短回答。\nAPI_KEY=not-for-memory" }))
+        .written,
+      true,
+    );
+    const second = await m.remember({ text: "晚上十点后少打扰。" });
+    assert.equal(second.written, true);
+    assert.match(second.notice!, /查重暂不可用/);
+    assert.match((await m.read("CORE.md")).text, /简短回答/);
     assert.doesNotMatch((await m.read("CORE.md")).text, /not-for-memory/);
-    assert.match(m.status().lastError!, /精炼/);
-    assert.ok((await m.list()).some((p) => p.includes("overflow")));
+    assert.match(m.status().lastError!, /查重/);
+    const before = (await m.read("CORE.md")).text;
+    await assert.rejects(
+      m.remember({ text: "偏好".repeat(1000), force: true }),
+      /核心规则上限/,
+    );
+    assert.equal((await m.read("CORE.md")).text, before);
   } finally {
     await k.dispose();
   }
@@ -698,7 +720,7 @@ test("超过原工具轮数后仍可立即取消，不执行剩余工具并可�
   }
 });
 
-test("取消核心精炼不会在后台继续改写记忆，长日记保留末尾且可分段读取", async () => {
+test("取消写入查重不会在后台继续改写记忆，长日记保留末尾且可分段读取", async () => {
   const root = await temporary();
   let started = false;
   const k = await harness(root, async function* (input) {
@@ -715,9 +737,11 @@ test("取消核心精炼不会在后台继续改写记忆，长日记保留末�
   });
   try {
     const m = k.resolve("memory.files"),
-      before = (await m.read("CORE.md")).text,
       abort = new AbortController();
-    const task = m.remember("偏好".repeat(2000), abort.signal);
+    // 已有条目时新增会先请判断器查重；取消发生在判断请求中。
+    await m.remember({ text: "用户喜欢绿茶。", force: true });
+    const before = (await m.read("CORE.md")).text;
+    const task = m.remember({ text: "用户喜欢乌龙茶。" }, abort.signal);
     const rejected = assert.rejects(task);
     await waitFor(() => started);
     abort.abort();
