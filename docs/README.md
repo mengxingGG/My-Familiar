@@ -9,7 +9,7 @@
 | [开发宪法](02_Familiar_开发宪法_v0.1.md) | 内核、插件与边界约束；含 Tauri 第 87–99 条、Live 语音第 100–106 条 |
 | [首版范围与参考项目](03_Familiar_首版范围与参考项目调研_v0.1.md) | 首版取舍、参考项目和分阶段验收 |
 | [插件实现与气泡交互](04_Familiar_插件实现与气泡交互_v0.1.md) | 当前模块契约、进程边界与输入输出行为 |
-| [本地预览验收记录](05_Familiar_本地预览验收记录_v0.1.md) | 已验证结果、证据与未验证范围 |
+| [本地开发与回归测试](05_Familiar_本地预览验收记录_v0.1.md) | 测试分层、复现命令与数据隔离 |
 | [继续开发指南](06_Familiar_继续开发指南.md) | 代码入口、修改规则、数据目录与开发顺序 |
 | [LLM 接入与会话缓存](07_Familiar_LLM接入与会话缓存.md) | 七种协议、模型设置、上下文预算、缓存和真实服务验收 |
 | [记忆与 Agent 扩展](08_Familiar_记忆与Agent扩展.md) | 文件之家、分层记忆与记忆工具、Skill 和 MCP 的安装规范、密钥与工具确认 |
@@ -28,14 +28,14 @@
 | [Tauri 多平台改造方案](15_Familiar_Tauri多平台改造方案.md) | 保留插件架构的目标分层、依赖迁移、移动生命周期、数据回退与 M0–M5 验收路线 |
 | [Live 语音改造调研与实施方案](16_Familiar_Live语音改造调研与实施方案.md) | 唤醒后持续对话、云端/本地原生 Live、固定音色、现有延迟缺口、插件与记忆边界、V0–V4 验收路线（待实施） |
 | [记忆系统改造方案](17_Familiar_记忆系统改造方案.md) | 核心规则加程序索引、写满拒绝、按会话冻结快照、`memory.judge` 判断接口与记录；第一步已实施，向量模型与判断模型为候选 |
-| [Android 开工与系统能力方案](18_Familiar_Android开工与系统能力方案.md) | Claude UI / Codex 核心分工、M0 基线、模拟器准备、日历/笔记/无障碍与 AppFunctions 候选、AutoGLM/Cherry/Hermes 参考和实施切片 |
-| [Android 常驻运行实施](19_Familiar_Android常驻运行实施.md) | ARM64 工具链、独立运行进程、共享核心与原生能力、设备证据和未完成清单 |
-| [Android 验收核对](20_Familiar_Android验收核对.md) | 当前交付、原目标逐项证据、历史报告范围与仍未闭合的功能/验收差异 |
-| [Android 执行器兼容性调查](21_Familiar_Android执行器兼容性调查.md) | ARM 转译环境的 Go 故障对照、原始证据和结果未知处理 |
-| [Android 飞书办公执行器](../plugins/feishu-android/README.md) | 机器人/个人办公、设备授权与刷新、共享审批、Keystore 凭据与工作区边界；真实账号与转译稳定性待验证 |
-| [Android UI 开发任务书](android-ui/BRIEF.md) | Claude 自主设计并实现完整移动前端；桌面风格参考、接口和系统任务交互 |
-| [Android 前端集成边界](android-ui/INTEGRATION.md) | Codex 的版本化产品桥、独立预览、构建命令与原生宿主接线边界 |
+| [Android 架构与系统能力](18_Familiar_Android开工与系统能力方案.md) | 移动端分层、系统工具选择与权限边界 |
+| [Android 常驻运行实现](19_Familiar_Android常驻运行实施.md) | 独立进程、气泡、停靠、无障碍及版本更新 |
+| [Android 兼容性与测试](20_Familiar_Android验收核对.md) | 测试矩阵、平台限制与仍需验证的设备范围 |
+| [Android 执行器兼容性](21_Familiar_Android执行器兼容性调查.md) | Go/Wasm 路线、工作区边界与结果未知处理 |
+| [Android 飞书办公执行器](../plugins/feishu-android/README.md) | 身份、设备授权与刷新、共享审批、Keystore 与工作区边界 |
+| [Android 移动界面规范](android-ui/BRIEF.md) | 桌面风格、页面、桥接口与任务交互要求 |
+| [Android 前端集成](android-ui/INTEGRATION.md) | 版本化产品桥、独立预览、构建命令与宿主接线 |
 
-总体设计描述长期目标，不意味着这些功能已经实现。继续开发时先看实现文档和验收记录，再对照开发宪法。当前交互以用户最近确认的气泡与临时输入条为准：Windows 为 Enter 换行、Shift+Enter 发送；Android 气泡为回车发送、Shift+Enter 换行，保留发送按钮。
+总体设计描述长期目标，不意味着这些功能已经实现。继续开发时先看实现文档和测试矩阵，再对照开发宪法。Windows 气泡为 Enter 换行、Shift+Enter 发送；Android 气泡为回车发送、Shift+Enter 换行，保留发送按钮。
 
 文档 01/03 的首版范围作为历史基线保留；后续多平台路线以文档 15 和宪法增补为准。方案中的新能力/目录必须与“已实现”“实机验证通过”分开标注。

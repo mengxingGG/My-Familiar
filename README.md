@@ -48,7 +48,7 @@ Android 已接入项目的共享 Kernel、Provider、会话、记忆、Skills �
 - **图片、文件与语音**：图片/PDF/Word 通过系统选择器导入，选择后仍须发送；识别、朗读和 Live 各自配置服务。麦克风授权后也不会自动录音。
 - **连接与凭据**：支持 HTTP MCP、GitHub 接入和飞书私聊/办公，相关账号按需配置。模型密钥由 Android Keystore 加密，发行包不包含开发者或用户密钥。Android 暂不支持桌面的 stdio/npm MCP。
 
-首次 Android 验收使用用户指定的模拟器，已用真实 DeepSeek 从原生气泡验证连续聊天、应用启动、无障碍观察/点击、日程写入及审批拒绝。模拟器通过 ARM64 转译运行；真 ARM 手机、HyperOS 后台策略、真实软键盘和长期功耗仍需设备验证。飞书、高德、GitHub 和云语音的账号业务应在配置后按需验证。详见 [Android 验收核对](docs/20_Familiar_Android验收核对.md)。
+Android 已在支持 ARM64 转译的模拟器上验证气泡聊天、应用操作、日程写入与审批。真实 ARM 手机、HyperOS 后台策略、不同厂商输入法和长期功耗仍需设备验证。飞书、高德、GitHub 和云语音业务需配置相应账号与服务。详见 [Android 兼容性与测试](docs/20_Familiar_Android验收核对.md)。
 
 正式包包名为 `app.familiar.mobile`；先前开发包为 `app.familiar.mobile.debug`，二者可并存。旧版请先覆盖安装 [0.3.1 加密迁移版](https://github.com/mengxingGG/My-Familiar/releases/tag/v0.3.1-migration)，在设置中导出 `.familiar` 文件，再由正式版选择文件、输入密码、核对记忆冲突和模型地址后导入。迁移核心记忆、日记、教训、扩展记忆、模型连接及可选模型密钥、昵称/性格和宠物设置；聊天原文、附件、第三方登录和系统权限不在本次迁移范围。验证新版可用后再决定是否卸载旧版。详见 [迁移步骤](docs/releases/v0.3.1-migration.md)。
 

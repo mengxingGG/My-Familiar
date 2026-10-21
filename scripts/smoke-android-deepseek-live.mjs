@@ -3,12 +3,14 @@ import {execFileSync} from 'node:child_process';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {createHash,createDecipheriv,randomUUID} from 'node:crypto';
 import {chromium} from 'playwright';
+import {join} from 'node:path';
+import {homedir} from 'node:os';
 
 // 仅在用户明确同意后使用：只解密 Familiar 自身、指定 DeepSeek 地址的单个凭据。
 // 明文仅经过内存和本机 CDP；不写入文件、命令参数、日志或测试报告。
 const approved=process.argv.includes('--import-approved-windows-deepseek');
 const app='app.familiar.mobile.debug',out=process.env.FAMILIAR_DEEPSEEK_REPORT_DIR??'.artifacts/android-deepseek-live',port=9285;
-const root='C:/Users/admin/AppData/Roaming/Familiar',sourcePaths=[root+'/data/settings.json',root+'/data/model-secret.json',root+'/runtime/Local State'];
+const root=join(process.env.APPDATA??join(homedir(),'AppData','Roaming'),'Familiar'),sourcePaths=[join(root,'data/settings.json'),join(root,'data/model-secret.json'),join(root,'runtime/Local State')];
 await mkdir(out,{recursive:true});
 const hash=data=>createHash('sha256').update(data).digest('hex');
 const adb=(...args)=>execFileSync('C:/AndroidSDK/platform-tools/adb.exe',['-s','emulator-5554',...args],{encoding:'utf8',windowsHide:true,timeout:30000}).trim();
@@ -49,8 +51,8 @@ try{
   const source=JSON.parse(await readFile(sourcePaths[0],'utf8')).provider;assert.equal(source.kind,'compatible');assert.equal(source.baseUrl,'https://api.deepseek.com');assert.equal(source.model,'deepseek-flash');
   const scope=hash(source.kind+'\n'+new URL(source.baseUrl).href.replace(/\/$/,'')),saved=JSON.parse(await readFile(sourcePaths[1],'utf8'));
   const encoded=typeof saved==='string'?saved:saved.entries?.[scope];assert(encoded,'Selected Familiar credential missing');const encrypted=Buffer.from(encoded,'base64');assert.equal(encrypted.subarray(0,3).toString(),'v10');
-  const ps="$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.Security; $state=ConvertFrom-Json ([IO.File]::ReadAllText('C:/Users/admin/AppData/Roaming/Familiar/runtime/Local State')); $protected=[Convert]::FromBase64String($state.os_crypt.encrypted_key); if ([Text.Encoding]::ASCII.GetString($protected,0,5) -ne 'DPAPI') { throw 'Unsupported Familiar store' }; $plain=[Security.Cryptography.ProtectedData]::Unprotect($protected[5..($protected.Length-1)],$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($plain)); [Array]::Clear($plain,0,$plain.Length)";
-  let master;try{master=Buffer.from(execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',ps],{windowsHide:true,encoding:'utf8',timeout:15000}),'base64');assert.equal(master.length,32);const decipher=createDecipheriv('aes-256-gcm',master,encrypted.subarray(3,15));decipher.setAuthTag(encrypted.subarray(-16));secretBytes=Buffer.concat([decipher.update(encrypted.subarray(15,-16)),decipher.final()]);}catch{throw Error('WINDOWS_FAMILIAR_DECRYPT_FAILED');}finally{master?.fill(0);}
+  const ps="$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.Security; $state=ConvertFrom-Json ([IO.File]::ReadAllText($env:FAMILIAR_LIVE_WINDOWS_STATE)); $protected=[Convert]::FromBase64String($state.os_crypt.encrypted_key); if ([Text.Encoding]::ASCII.GetString($protected,0,5) -ne 'DPAPI') { throw 'Unsupported Familiar store' }; $plain=[Security.Cryptography.ProtectedData]::Unprotect($protected[5..($protected.Length-1)],$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($plain)); [Array]::Clear($plain,0,$plain.Length)";
+  let master;try{master=Buffer.from(execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',ps],{windowsHide:true,encoding:'utf8',timeout:15000,env:{...process.env,FAMILIAR_LIVE_WINDOWS_STATE:sourcePaths[2]}}),'base64');assert.equal(master.length,32);const decipher=createDecipheriv('aes-256-gcm',master,encrypted.subarray(3,15));decipher.setAuthTag(encrypted.subarray(-16));secretBytes=Buffer.concat([decipher.update(encrypted.subarray(15,-16)),decipher.final()]);}catch{throw Error('WINDOWS_FAMILIAR_DECRYPT_FAILED');}finally{master?.fill(0);}
   assert(secretBytes.length>10&&secretBytes.length<8192);assert(!/[\r\n]/.test(secretBytes.toString()));
   const advanced={};for(const key of ['temperature','topP','maxOutputTokens','contextTokens','autoCompactPercent','timeoutSeconds','thinking','cache'])if(source[key]!==undefined)advanced[key]=source[key];
   await call('provider.save',{kind:source.kind,baseUrl:source.baseUrl,model:source.model,advanced,apiKey:secretBytes.toString()});keySaved=true;changed=true;
