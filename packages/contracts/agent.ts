@@ -13,10 +13,20 @@ export interface ToolCall {
 export interface ToolContext {
   signal: AbortSignal;
   session?: string;
+  label?: string;
 }
 export interface ToolEntry extends ToolSpec {
+  /** 按需目录中的实现仍保留参数校验与审批，但不把完整定义塞入每轮模型请求。 */
+  advertised?: boolean;
+  /** 目录入口不应再被另一个目录重复收录。 */
+  catalogRoute?: boolean;
+  denialKey?: (args: Record<string, unknown>) => string;
+  /** 仅缩短可重新查询的中间资料；完整结果仍保存在执行记录中。completed 是其后的已完成调用。 */
+  compactResult?: (call: ToolCall, result: string, completed: readonly ToolCall[]) => string | undefined;
   approval?: boolean;
   category?: ToolCategory;
+  /** 只用于内置记忆和目录路由；联网搜索由 search 类别始终放行。 */
+  alwaysAllowed?: boolean;
   permission?: (
     args: any,
   ) => Promise<{ category: ToolCategory; scope: string }>;
@@ -29,6 +39,7 @@ export interface Approval {
   time: number;
   category?: ToolCategory;
   rule?: string;
+  choices?: ApprovalChoice[];
 }
 export type ToolCategory =
   | "read"
@@ -40,7 +51,8 @@ export type ToolCategory =
   | "mcp";
 export type ApprovalChoice = "once" | "session" | "whitelist";
 export interface ToolPolicy {
-  mode: "custom" | "auto";
+  /** custom 仅兼容旧配置，读取后归入 limited。 */
+  mode: "custom" | "limited" | "approval" | "deny" | "auto";
   defaults: Record<ToolCategory, "allow" | "ask" | "deny">;
   whitelist: { key: string; label: string }[];
 }
@@ -49,6 +61,7 @@ export interface PermissionIntent {
   category: ToolCategory;
   scope: string;
   session?: string;
+  alwaysAllowed?: boolean;
 }
 export interface SkillInfo {
   id: string;
@@ -56,6 +69,8 @@ export interface SkillInfo {
   enabled: boolean;
   source: string;
   error?: string;
+  /** 平台禁用的内置技能不能通过切换开关启用。 */
+  supported?: boolean;
 }
 export interface McpConfig {
   id: string;
@@ -85,15 +100,18 @@ declare module "../kernel/index.ts" {
     "agent.tools": {
       register(tool: ToolEntry): Dispose;
       list(): ToolSpec[];
+      compactList?(): ToolSpec[];
+      denialKey?(call: ToolCall): string;
+      compactResults?(messages: PromptMessage[]): PromptMessage[];
       run(
         call: ToolCall,
         signal: AbortSignal,
-        options?: { silent?: boolean; session?: string },
+        options?: { silent?: boolean; session?: string; label?: string },
       ): Promise<string>;
       runRich?(
         call: ToolCall,
         signal: AbortSignal,
-        options?: { silent?: boolean; session?: string },
+        options?: { silent?: boolean; session?: string; label?: string; expectedTool?: ToolEntry },
       ): Promise<{
         text: string;
         attachments?: import("./media.ts").Attachment[];
@@ -124,6 +142,8 @@ declare module "../kernel/index.ts" {
           onTrace?: (messages: PromptMessage[]) => void;
           silent?: boolean;
           permissionSession?: string;
+          permissionLabel?: string;
+          archiveSession?: string;
         },
       ): AsyncIterable<string>;
     };
@@ -132,20 +152,22 @@ declare module "../kernel/index.ts" {
         (McpConfig & {
           connected: boolean;
           tools: number;
+          toolNames?: string[];
           hasKey: boolean;
           error?: string;
         })[]
       >;
-      save(config: McpConfig): Promise<void>;
+      save(config: McpConfig, update?: { expectedRevision?: string | null; expectedKey?: string; key?: string; officialGithub?: true }): Promise<void>;
       setKey(id: string, key: string): Promise<void>;
-      connect(id: string): Promise<{ tools: string[] }>;
+      connect(id: string, options?: { signal?: AbortSignal; expectedRevision?: string }): Promise<{ tools: string[] }>;
+      disconnect(id: string): Promise<void>;
       callReadOnly(
         id: string,
         tool: string,
         args: Record<string, unknown>,
         signal: AbortSignal,
       ): Promise<unknown>;
-      remove(id: string): Promise<void>;
+      remove(id: string, update?: { expectedRevision?: string; clearKey?: boolean }): Promise<void>;
       installPackage(
         id: string,
         pkg: string,

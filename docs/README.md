@@ -1,6 +1,6 @@
 # Familiar 文档
 
-后续开发先读 [开发宪法](02_Familiar_开发宪法_v0.1.md) → [Tauri 多平台改造方案](15_Familiar_Tauri多平台改造方案.md) → [继续开发指南](06_Familiar_继续开发指南.md)，再读受影响模块与验收记录。2026-10-11 已确定采用 Tauri 2 作为多平台目标宿主，保留现有插件架构；当前运行实现仍为 Electron Windows 版，迁移和移动端验证尚未开始。
+后续开发先读 [开发宪法](02_Familiar_开发宪法_v0.1.md) → [Tauri 多平台改造方案](15_Familiar_Tauri多平台改造方案.md) → [继续开发指南](06_Familiar_继续开发指南.md)，再读受影响模块与验收记录。2026-10-21 进入 Windows / Android 1.0 正式发行：Android 使用 Tauri 2、共享插件核心和独立常驻 Runtime。平台能力有差异，真机与账号验证范围以验收记录为准。
 
 | 文档 | 内容 |
 | --- | --- |
@@ -16,6 +16,9 @@
 | [v0.1.0 发行说明](releases/v0.1.0.md) | 下载、安装、数据迁移、构建发布和预览版边界 |
 | [v0.2.0 发行说明](releases/v0.2.0.md) | 飞书、GitHub、角色性格、重要日记、会话压缩与升级步骤 |
 | [v0.3.0 发行说明](releases/v0.3.0.md) | 图片与语音、分层记忆、新控制器界面与从 v0.2.0 升级 |
+| [v1.0.0 正式版](releases/v1.0.0.md) | Windows / Android 正式发行、验证与平台范围 |
+| [Android 0.3.1 迁移版](releases/v0.3.1-migration.md) | 旧签名覆盖升级、加密单文件导出和正式版导入 |
+| [权限、日历时钟与迁移](22_Familiar_权限与Android日历闹钟迁移.md) | 四模式、四项审批选择、系统接口及其边界 |
 | [飞书、GitHub 与角色性格](10_Familiar_飞书GitHub与角色性格.md) | CLI 登录与依赖安装、私聊配对、办公工具、GitHub MCP、独立性格和新角色 |
 | [重要日记与会话压缩](11_Familiar_重要日记与会话压缩.md) | 主动日记、256K 默认上限、80% 压缩、会话交接和原文检索 |
 | [展示图片与重新拍摄](12_Familiar_展示素材.md) | README 图片、隔离演示数据、拍摄与排版更新方法 |
@@ -24,6 +27,13 @@
 | [Tauri 多平台改造方案](15_Familiar_Tauri多平台改造方案.md) | 保留插件架构的目标分层、依赖迁移、移动生命周期、数据回退与 M0–M5 验收路线 |
 | [Live 语音改造调研与实施方案](16_Familiar_Live语音改造调研与实施方案.md) | 唤醒后持续对话、云端/本地原生 Live、固定音色、现有延迟缺口、插件与记忆边界、V0–V4 验收路线（待实施） |
 | [记忆系统改造方案](17_Familiar_记忆系统改造方案.md) | 核心规则加程序索引、写满拒绝、按会话冻结快照、`memory.judge` 判断接口与记录；第一步已实施，向量模型与判断模型为候选 |
+| [Android 开工与系统能力方案](18_Familiar_Android开工与系统能力方案.md) | Claude UI / Codex 核心分工、M0 基线、模拟器准备、日历/笔记/无障碍与 AppFunctions 候选、AutoGLM/Cherry/Hermes 参考和实施切片 |
+| [Android 常驻运行实施](19_Familiar_Android常驻运行实施.md) | ARM64 工具链、独立运行进程、共享核心与原生能力、设备证据和未完成清单 |
+| [Android 验收核对](20_Familiar_Android验收核对.md) | 当前交付、原目标逐项证据、历史报告范围与仍未闭合的功能/验收差异 |
+| [Android 执行器兼容性调查](21_Familiar_Android执行器兼容性调查.md) | ARM 转译环境的 Go 故障对照、原始证据和结果未知处理 |
+| [Android 飞书办公执行器](../plugins/feishu-android/README.md) | 机器人/个人办公、设备授权与刷新、共享审批、Keystore 凭据与工作区边界；真实账号与转译稳定性待验证 |
+| [Android UI 开发任务书](android-ui/BRIEF.md) | Claude 自主设计并实现完整移动前端；桌面风格参考、接口和系统任务交互 |
+| [Android 前端集成边界](android-ui/INTEGRATION.md) | Codex 的版本化产品桥、独立预览、构建命令与原生宿主接线边界 |
 
 总体设计描述长期目标，不意味着这些功能已经实现。继续开发时先看实现文档和验收记录，再对照开发宪法。当前交互以用户最近确认的气泡与临时输入条为准：Enter 换行、Shift+Enter 发送，保留发送按钮。
 

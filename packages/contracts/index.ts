@@ -16,6 +16,8 @@ export * from "./agent.ts";
 export * from "./memory.ts";
 export * from "./companion.ts";
 export * from "./integrations.ts";
+export * from "./feishu-channel.ts";
+export * from "./github-auth.ts";
 export * from "./media.ts";
 export * from "./voice.ts";
 export type PetAction = "idle" | "greet" | "drag" | "think" | "sleep" | "happy";
@@ -145,7 +147,7 @@ declare module "../kernel/index.ts" {
     };
     "llm.chat": {
       stream(input: Omit<ProviderInput, "key">): AsyncIterable<string>;
-      test(): Promise<string>;
+      test(options?: { settings?: ProviderProfile; signal?: AbortSignal; timeoutMs?: number }): Promise<string>;
     };
     conversation: {
       state(): ChatState;
@@ -156,6 +158,8 @@ declare module "../kernel/index.ts" {
     "transport.client": { call(name: string, params?: unknown): Promise<any> };
   }
 }
+export type { FeishuOfficeStatus, FeishuOfficeUpdate } from "./feishu-office.ts";
+export type { FeishuAuthStatus, FeishuAuthBegin } from "./feishu-auth.ts";
 export const definePlugin = (plugin: Plugin) => plugin;
 export const defaults: Settings = {
   version: 0,

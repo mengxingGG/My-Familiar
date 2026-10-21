@@ -37,7 +37,7 @@ export async function limitedBytes(response: Response, max = 20 * 1024 * 1024) {
   }
   return Buffer.concat(chunks);
 }
-export function voiceApi(directory: string, assetsDirectory: string) {
+export function voiceApi(directory: string, assetsDirectory: string, initial: VoiceSettings = voiceDefaults) {
   return definePlugin({
     manifest: {
       manifestVersion: 1,
@@ -58,7 +58,7 @@ export function voiceApi(directory: string, assetsDirectory: string) {
         secrets = ctx.use("secrets.local"),
         cache = new AudioCache(directory);
       let config = validateVoice(
-        await storage.read("voice-settings", voiceDefaults),
+        await storage.read("voice-settings", initial),
       );
       const style = () => {
         const c = ctx.use("settings").get();
@@ -175,7 +175,7 @@ export function voiceApi(directory: string, assetsDirectory: string) {
           const catalogConfig = draft ? validateVoice(draft) : config,
             profile = catalogConfig[slot];
           if (slot === "tts" && profile.kind === "system")
-            return {
+            return ctx.use("voice.local").catalog?.() ?? {
               models: [{ id: "windows", name: "Windows 本地语音（无需 API）" }],
               voices: ctx.use("voice.local").voices(),
               voiceSource: "api",
@@ -332,6 +332,9 @@ export function voiceApi(directory: string, assetsDirectory: string) {
             : undefined;
           if (!text) throw new Error("没有可朗读的文字");
           if (text.length > 4096) throw new Error("单段语音过长，请分段朗读");
+          signal.throwIfAborted();
+          const local = c.tts.kind === "system" ? await ctx.use("voice.local").resolveVoice?.(voice) : undefined;
+          signal.throwIfAborted();
           const id = audioKey([
               streaming ? "v3-pcm" : "v2",
               c.tts,
@@ -343,8 +346,10 @@ export function voiceApi(directory: string, assetsDirectory: string) {
               c.followPersona ? tone.id : "custom",
               text,
               voiceScope("tts", c),
+              ...(local ? [local.scope] : []),
             ]),
             hit = await cache.read(id, c.cacheDays);
+          signal.throwIfAborted();
           if (hit) return hit;
           let data: Uint8Array,
             mimeType = "audio/wav";
@@ -354,7 +359,7 @@ export function voiceApi(directory: string, assetsDirectory: string) {
               .synthesize(
                 text,
                 c.followPersona ? tone.id : "direct",
-                voice,
+                local?.voice ?? voice,
                 c.tts.speed,
                 signal,
               );

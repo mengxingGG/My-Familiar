@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { replaceFile } from "./rename.ts";
 import { join } from "node:path";
 import { definePlugin } from "../../packages/contracts/index.ts";
 export function storageLocal(directory: string) {
@@ -33,7 +34,7 @@ export function storageLocal(directory: string) {
           const operation = queue.then(async () => {
             const destination = file(key);
             await writeFile(destination + ".tmp", body, { mode: 0o600 });
-            await rename(destination + ".tmp", destination);
+            await replaceFile(destination + ".tmp", destination);
           });
           queue = operation.catch(() => {});
           return operation;

@@ -39,6 +39,8 @@ declare module "../kernel/index.ts" {
         source?: Attachment["source"],
       ): Promise<Attachment>;
       get(ids: string[]): Promise<Attachment[]>;
+      /** 读取完整文本供本地导入；按用途限制大小，不截断文件。 */
+      text(id: string, maxBytes: number): Promise<string>;
       resolve(messages: PromptMessage[]): Promise<PromptMessage[]>;
       preview(
         id: string,

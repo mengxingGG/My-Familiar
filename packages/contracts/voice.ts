@@ -140,6 +140,9 @@ declare module "../kernel/index.ts" {
     };
     "voice.local": {
       voices(): { id: string; name: string }[];
+      catalog?(): Promise<VoiceCatalog>;
+      /** 在缓存命中前核对已安装音色；返回固定音色和引擎版本范围。 */
+      resolveVoice?(voice: string): Promise<{ voice: string; scope: string }>;
       synthesize(
         text: string,
         style: string,
@@ -151,7 +154,7 @@ declare module "../kernel/index.ts" {
     "voice.session": {
       state(): VoiceState;
       start(dictation?: boolean): Promise<void>;
-      stop(): Promise<void>;
+      stop(rearm?: boolean): Promise<void>;
       finishDictation(): Promise<void>;
       speak(text: string): Promise<void>;
     };

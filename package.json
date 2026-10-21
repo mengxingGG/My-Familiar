@@ -1,6 +1,6 @@
 {
   "name": "my-familiar",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "private": true,
   "author": "mengxingGG",
   "repository": {
@@ -32,11 +32,18 @@
     "smoke:context:packaged": "node scripts/context-smoke.mjs --packaged",
     "check:cli": "node --experimental-transform-types --disable-warning=ExperimentalWarning scripts/check-cli-dependencies.mjs",
     "smoke:agent:packaged": "node scripts/agent-smoke.mjs --packaged",
-    "smoke:experience:packaged": "node scripts/experience-smoke.mjs --packaged"
+    "smoke:experience:packaged": "node scripts/experience-smoke.mjs --packaged",
+    "mobile:build": "node scripts/build-mobile-ui.mjs",
+    "mobile:preview": "node scripts/preview-mobile-ui.mjs",
+    "smoke:mobile": "node scripts/smoke-mobile-ui.mjs",
+    "android:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1",
+    "smoke:android": "node scripts/smoke-android-device.mjs"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "2.12.3",
     "@types/node": "24.13.3",
     "@types/ws": "^8.18.1",
+    "@types/yauzl": "3.4.0",
     "electron": "44.0.0",
     "electron-builder": "26.15.3",
     "esbuild": "0.28.1",
@@ -76,15 +83,22 @@
       "include": "scripts/installer.nsh"
     },
     "asarUnpack": [
-      "dist/native/**"
+      "dist/native/**",
+      "dist/documents/**"
     ]
   },
   "dependencies": {
+    "@larksuiteoapi/node-sdk": "1.76.0",
     "@modelcontextprotocol/client": "2.0.0",
+    "@tauri-apps/api": "2.12.4",
+    "@thednp/dommatrix": "3.1.2",
     "ajv": "8.18.0",
+    "axios": "1.20.0",
     "mammoth": "1.12.3",
-    "pdfjs-dist": "^5.4.149",
+    "pdfjs-dist": "6.4.299",
+    "pinyin-pro": "3.29.5",
     "ws": "8.21.3",
-    "yaml": "2.9.1"
+    "yaml": "2.9.1",
+    "yauzl": "3.4.0"
   }
 }

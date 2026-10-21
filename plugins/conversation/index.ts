@@ -108,17 +108,19 @@ export const conversation = definePlugin({
     const publish = () => {
       if (ctx.active) ctx.emit("conversation.changed", state());
     };
-    const persist = async () => {
+    let persistQueue = Promise.resolve();
+    const persist = () => {
       const snapshot = structuredClone({ version: 2, messages, session });
       index.set(session.id, summary());
       const entries = [...index.values()];
-      // 先写独立会话和索引，再更新当前指针；旧版 conversation 仍保留可读副本。
-      await storage.write(
-        "conversation-session-" + snapshot.session.id,
-        snapshot,
-      );
-      await storage.write("conversation-index", entries);
-      await storage.write("conversation", snapshot);
+      // 三份记录作为一个顺序操作，避免流式检查点和结束写入交叉覆盖。
+      const operation = persistQueue.then(async () => {
+        await storage.write("conversation-session-" + snapshot.session.id, snapshot);
+        await storage.write("conversation-index", entries);
+        await storage.write("conversation", snapshot);
+      });
+      persistQueue = operation.catch(() => {});
+      return operation;
     };
     await persist();
     ctx.emit("conversation.session", session.id);
@@ -256,6 +258,9 @@ export const conversation = definePlugin({
                   });
               }
             }
+            // Android 可按预算切换为按需目录，按真正可用的最小目录预留空间；Agent 每轮仍核算实际定义。
+            const agentTools = ctx.use("agent.tools");
+            const toolSpecs = agentTools.compactList?.() ?? agentTools.list();
             const fitted = await ctx.use("context.compaction").prepare({
               sessionId: session.id,
               system,
@@ -264,9 +269,9 @@ export const conversation = definePlugin({
               checkpoint: session.checkpoint,
               settings: config.provider,
               plan,
-              toolTokens: ctx.use("agent.tools").list().length
+              toolTokens: toolSpecs.length
                 ? Buffer.byteLength(
-                    JSON.stringify(ctx.use("agent.tools").list()),
+                    JSON.stringify(toolSpecs),
                     "utf8",
                   ) + 1024
                 : 0,
@@ -318,11 +323,13 @@ export const conversation = definePlugin({
             const sessionKey = createHash("sha256")
               .update(`${session.id}:${session.epoch}:${fingerprint}`)
               .digest("hex");
+            let lastCheckpoint = 0;
             for await (const delta of provider.stream({
               settings: config.provider,
               messages: [system, ...fitted.messages],
               signal: abort.signal,
               sessionKey,
+              archiveSession: session.id,
               onUsage(value) {
                 if (session.status)
                   session.status.usage = { ...session.status.usage, ...value };
@@ -341,6 +348,11 @@ export const conversation = definePlugin({
             })) {
               if (abort.signal.aborted) break;
               assistant.text += delta;
+              // 首段立即保存，后续限制写盘频率；移动进程被回收后保留最近检查点。
+              if (Date.now() - lastCheckpoint >= 1000) {
+                await persist();
+                lastCheckpoint = Date.now();
+              }
               publish();
             }
             assistant.status = abort.signal.aborted ? "cancelled" : "complete";

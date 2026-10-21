@@ -328,16 +328,16 @@ export const llmRouter = definePlugin({
           request.release();
         }
       },
-      async test() {
-        const c = settings.get().provider;
+      async test(options) {
+        const c = options?.settings ?? settings.get().provider;
         let text = "";
         const input = makeInput(
           {
             settings: c,
             messages: [{ role: "user", content: "请只回复：连接成功" }],
-            signal: ctx.abort.signal,
+            signal: options?.signal ?? ctx.abort.signal,
           },
-          Math.min(c.timeoutSeconds * 1000, 60000),
+          Math.min(c.timeoutSeconds * 1000, options?.timeoutMs ?? 60000, 60000),
         );
         try {
           for await (const chunk of registry.get(c.kind).stream(input)) {

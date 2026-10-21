@@ -3,14 +3,15 @@ import {
   readFile,
   writeFile,
   appendFile,
-  rename,
   lstat,
   readdir,
   copyFile,
   realpath,
+  unlink,
 } from "node:fs/promises";
 import { resolve, join, dirname, relative, isAbsolute } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
+import { replaceFile } from "../storage-local/rename.ts";
 export const revision = (text: string) =>
   createHash("sha256").update(text).digest("hex");
 export class FileStore {
@@ -57,8 +58,11 @@ export class FileStore {
         if (create && i < parts.length - 1) await mkdir(current);
       }
     }
-    const parent = await realpath(dirname(current)).catch(() => this.root),
-      rel = relative(await realpath(this.root), parent);
+    // Android 的 /data/user/0 与 /data/data 可能指向同一目录；缺失父目录时
+    // 也必须使用规范根路径比较，避免首次创建 Skill 被误判为越界。
+    const canonicalRoot = await realpath(this.root),
+      parent = await realpath(dirname(current)).catch(() => canonicalRoot),
+      rel = relative(canonicalRoot, parent);
     if (rel.startsWith("..") || isAbsolute(rel)) throw new Error("路径越界");
     return current;
   }
@@ -104,7 +108,7 @@ export class FileStore {
     }
     const temp = path + "." + randomUUID() + ".tmp";
     await writeFile(temp, text, { encoding: "utf8", flag: "wx" });
-    await rename(temp, path);
+    await replaceFile(temp, path);
   }
   async list(prefix = "") {
     const result: string[] = [];
@@ -120,5 +124,13 @@ export class FileStore {
     };
     await visit(prefix ? await this.path(prefix) : this.root, prefix);
     return result.sort();
+  }
+  /** 管理器恢复整份资料时使用；删除前留存历史，路径仍经过同一边界检查。 */
+  async remove(name: string) {
+    const path = await this.path(name);
+    if (!(await this.exists(name))) return;
+    await this.read(name, 2 * 1024 * 1024);
+    const history = await this.path(`.history/${Date.now()}-${randomUUID()}/${name}`, true);
+    await copyFile(path, history); await unlink(path);
   }
 }

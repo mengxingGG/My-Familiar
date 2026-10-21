@@ -23,6 +23,32 @@ const summary: ContextSummary = {
   uncertainties: ["午餐待确认"],
   artifacts: ["plan.md；用户消息 u0"],
 };
+
+test("并发工具归档保留完整 Unicode 原文，排除原生私有块，重启可分页回查且按会话清理",async()=>{
+  const h=await fixture();
+  try {
+    const messages=[{role:'assistant',content:'',calls:[{id:'tool',name:'write',arguments:JSON.stringify({value:'中'.repeat(11000)})}],native:{scope:'private',items:[{secret:'隐藏思考不得出现在原文'}]}},{role:'tool',toolCallId:'tool',toolName:'write',content:'😀'.repeat(18000)+'尾部证据'}];
+    const [a,b]=await Promise.all(['first','second'].map(label=>h.service.archiveTools!({sessionId:'tool-session',messages:[...messages,{role:'assistant',content:label}],signal:new AbortController().signal})));
+    assert.notEqual(a.id,b.id);let source='',offset=0;
+    for(;;){const page=await h.service.read(a.id,offset,'',301);source+=page.text;assert(!/[\uD800-\uDBFF]$/.test(page.text));if(page.nextOffset===null)break;offset=page.nextOffset;}
+    assert.equal(source.length,a.totalCharacters);assert(source.includes('尾部证据'));assert(!source.includes('隐藏思考'));assert.equal(JSON.parse(source.split('\n')[1]).content,messages[1].content);
+    await assert.rejects(h.service.read(a.id,0,'',0),/无效/);await assert.rejects(h.service.read(a.id,0,'',16001),/无效/);
+    await h.k.dispose();const restart=await fixture(h.store);
+    try{assert.equal((await restart.service.read(b.id)).totalCharacters,b.totalCharacters);await restart.service.forget('tool-session');for(const ref of [a.id,b.id])await assert.rejects(restart.service.read(ref),/不存在/);}finally{await restart.k.dispose();}
+  }finally{await h.k.dispose();}
+});
+
+test("取消排队归档并删除会话后，迟到的原文和索引都不能复活",async()=>{
+  const h=await fixture(),store=h.k.resolve('storage.local'),write=store.write;
+  let release!:()=>void,entered!:()=>void;const hold=new Promise<void>(r=>release=r),ready=new Promise<void>(r=>entered=r);let first=true;
+  store.write=async(key,value)=>{if(first&&key.startsWith('context-index-')){first=false;entered();await hold;}await write(key,value);};
+  const controller=new AbortController(),request={sessionId:'removed-session',messages:[{role:'tool',content:'不应复活的原文'}],signal:controller.signal};
+  try{
+    const a=assert.rejects(h.service.archiveTools!(request),/cancelled/);await ready;
+    const b=assert.rejects(h.service.archiveTools!(request),/cancelled/);controller.abort(Error('cancelled'));const removed=h.service.forget(request.sessionId);release();
+    await Promise.all([a,b,removed]);assert([...h.store.values()].every(value=>value===null||Array.isArray(value)&&value.length===0));assert.equal(h.calls.length,0);
+  }finally{release();await h.k.dispose();}
+});
 async function fixture(
   store = new Map<string, any>(),
   output = JSON.stringify(summary),

@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="app.familiar.releaseprobe">
+  <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="36" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <application android:label="Familiar isolated release acceptance" />
+  <instrumentation android:name=".ReleaseProbe" android:targetPackage="app.familiar.mobile" android:targetProcesses="app.familiar.mobile" android:label="Familiar signed release acceptance" />
+</manifest>

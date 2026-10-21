@@ -290,6 +290,18 @@ export const memoryFiles = definePlugin({
       list: async () => (await files.list()).filter((p) => p.endsWith(".md")),
       read,
       write: (p, t, r) => serial(() => write(p, t, r)),
+      restore: (incoming, replace = false) => serial(async () => {
+        if (!Array.isArray(incoming) || incoming.length > 5000 || new Set(incoming.map(f => f.path)).size !== incoming.length) throw Error("INVALID_BACKUP");
+        for (const f of incoming) {
+          if (!f || typeof f.path !== "string" || typeof f.text !== "string" || !f.path.endsWith(".md") || f.path.split("/").some(p => !p || p.startsWith(".")) || /[\\:\x00-\x1f]/.test(f.path) || Buffer.byteLength(f.text) > 2 * 1024 * 1024) throw Error("INVALID_BACKUP");
+          await files.path(path(f.path), true);
+          if (f.path.toLowerCase() === "core.md" && (f.path !== "CORE.md" || characters(f.text) > memoryLimits.core)) throw Error("LIMIT");
+        }
+        if (incoming.reduce((n, f) => n + Buffer.byteLength(f.text), 0) > 20 * 1024 * 1024) throw Error("LIMIT");
+        for (const f of incoming) await files.write(f.path, f.text);
+        if (replace) for (const old of await files.list()) if (old.endsWith(".md") && !incoming.some(f => f.path === old)) await files.remove(old);
+        measureCore(await load("CORE.md")); changed("user", "CORE.md");
+      }),
       status: () => ({
         root,
         lastError: warning ?? lastError ?? judgeError,

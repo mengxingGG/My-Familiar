@@ -14,6 +14,7 @@ export class WorkspaceFiles {
   constructor(
     readonly root: string,
     readonly home: string,
+    private readonly confined = false,
   ) {}
   async init() {
     await mkdir(this.root, { recursive: true });
@@ -26,14 +27,26 @@ export class WorkspaceFiles {
       input.length > 2048
     )
       throw new Error("文件路径无效");
-    const target = resolve(this.root, input);
+    const target = await this.canonical(resolve(this.root, input));
+    if (this.confined) {
+      const r = relative(await realpath(this.root), target);
+      if (
+        r === ".." ||
+        r.startsWith(".." + (process.platform === "win32" ? "\\" : "/")) ||
+        isAbsolute(r)
+      )
+        throw new Error("只能访问灵伴工作目录中的文件");
+    }
+    return target;
+  }
+  private async canonical(target: string): Promise<string> {
     try {
       return await realpath(target);
     } catch (e: any) {
       if (e.code !== "ENOENT") throw e;
       const parent = dirname(target);
       if (parent === target) throw e;
-      return join(await this.path(parent), relative(parent, target));
+      return join(await this.canonical(parent), relative(parent, target));
     }
   }
   async internal(path: string) {
@@ -43,7 +56,7 @@ export class WorkspaceFiles {
   async read(path: string) {
     const p = await this.path(path);
     if ((await stat(p)).size > 1024 * 1024)
-      throw new Error("文件超过 1 MB，请用 Shell 分段读取");
+      throw new Error("文件超过 1 MB，请先拆分后读取");
     return readFile(p, "utf8");
   }
   async write(path: string, text: string, expected?: string) {

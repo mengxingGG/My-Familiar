@@ -1,0 +1,18 @@
+import { mkdir } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { resolve } from "node:path";
+const root = resolve(".artifacts/android-fixture");
+const sdk = process.env.ANDROID_HOME ?? "C:/AndroidSDK";
+const java = process.env.JAVA_HOME ?? "C:/Program Files/Java/jdk-17.0.2";
+const build = `${sdk}/build-tools/36.0.0`;
+const run = (file, args) => execFileSync(file, args, { stdio: "inherit", windowsHide: true });
+await mkdir(`${root}/classes`, { recursive: true });
+await mkdir(`${root}/dex`, { recursive: true });
+const names = ["FixtureActivity", "VaultFixtureCleanup", "NoteFixtureActivity", "GestureFixtureActivity", "GesturePad", "SpeechFixtureActivity", "ClipboardFixtureProvider", "ClipboardFixtureActivity"];
+run(`${java}/bin/javac.exe`, ["-encoding", "UTF-8", "-source", "8", "-target", "8", "-classpath", `${sdk}/platforms/android-36/android.jar`, "-d", `${root}/classes`, ...names.map(n => `tests/android-fixture/${n}.java`)]);
+run(`${java}/bin/java.exe`, ["-cp", `${build}/lib/d8.jar`, "com.android.tools.r8.D8", "--lib", `${sdk}/platforms/android-36/android.jar`, "--min-api", "28", "--output", `${root}/dex`, ...names.map(n => `${root}/classes/app/familiar/fixture/${n}.class`)]);
+run(`${build}/aapt2.exe`, ["link", "-I", `${sdk}/platforms/android-36/android.jar`, "--manifest", "tests/android-fixture/AndroidManifest.xml", "-o", `${root}/unsigned.apk`]);
+run(`${java}/bin/jar.exe`, ["uf", `${root}/unsigned.apk`, "-C", `${root}/dex`, "classes.dex"]);
+run(`${build}/zipalign.exe`, ["-f", "4", `${root}/unsigned.apk`, `${root}/aligned.apk`]);
+run(`${java}/bin/java.exe`, ["-jar", `${build}/lib/apksigner.jar`, "sign", "--ks", `${process.env.USERPROFILE}/.android/debug.keystore`, "--ks-pass", "pass:android", "--out", `${root}/fixture.apk`, `${root}/aligned.apk`]);
+console.log(`${root}/fixture.apk`);

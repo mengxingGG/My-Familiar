@@ -9,3 +9,19 @@ release/
 .env
 .env.*
 !.env.example
+
+# Android 可重建的工具、编译缓存和本机 SDK 路径。
+**/target/
+**/.gradle/
+**/.cxx/
+**/build/
+**/local.properties
+**/key.properties
+*.jks
+*.keystore
+.release-keys/
+**/gen/android/.kotlin/
+**/gen/android/app/tauri.properties
+
+**/gen/android/tauri.settings.gradle
+**/gen/android/app/tauri.build.gradle.kts

@@ -34,6 +34,8 @@ declare module "../kernel/index.ts" {
   interface Services {
     "context.compaction": {
       forget(sessionId: string): Promise<void>;
+      /** 完整已执行工具轮次归档；只缩短后续请求，不重放或删除审计记录。 */
+      archiveTools?(input: { sessionId: string; messages: PromptMessage[]; signal: AbortSignal }): Promise<{ id: string; totalCharacters: number; sha256: string }>;
       prepare(input: ContextInput): Promise<{
         messages: PromptMessage[];
         checkpoint?: ContextCheckpoint;
@@ -46,6 +48,7 @@ declare module "../kernel/index.ts" {
         id: string,
         offset?: number,
         query?: string,
+        limit?: number,
       ): Promise<{
         text: string;
         nextOffset: number | null;

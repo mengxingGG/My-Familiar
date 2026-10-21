@@ -1,0 +1,3 @@
+<resources>
+    <string name="familiar_accessibility_description">允许灵伴读取当前屏幕的界面内容，并在你批准任务后采集当前应用画面交给所选模型，或代为点击、输入和返回。不持续录屏，不会自动批准系统权限。可随时在此关闭服务。</string>
+</resources>

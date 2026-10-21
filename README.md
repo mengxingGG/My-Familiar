@@ -2,9 +2,9 @@
 
 ![Familiar 灵伴：桌面小狐狸用头顶气泡陪你聊天](docs/images/cover.png)
 
-一个住在桌面上的小伙伴。双击它就能说话，回复在头顶冒泡；也可以叫它的名字，直接用声音聊。选一个喜欢的形象和性格，接上你自己的模型，它会慢慢记住你们之间的约定和重要的小事。
+一个住在 Windows 桌面和 Android 手机上的小伙伴。点开宠物就能在气泡里连续聊天，也可以接入语音。选一个喜欢的形象和性格，连接你自己的模型，它会慢慢记住你们之间的约定和重要的小事。
 
-[它能做什么](#它能做什么) · [下载使用](#下载使用) · [从源码运行](#从源码运行) · [控制器](#控制器) · [语音与图片](#语音与图片) · [记忆](#记忆) · [开发文档](docs/README.md)
+[它能做什么](#它能做什么) · [下载使用](#下载使用) · [Android](#android) · [从源码运行](#从源码运行) · [控制器](#控制器) · [语音与图片](#语音与图片) · [记忆](#记忆) · [开发文档](docs/README.md)
 
 > 图片是真实应用窗口，使用演示数据；外围背景和标题是展示排版。
 
@@ -17,20 +17,38 @@
 | 叫名字，用声音聊 | 本机识别名字唤醒，唤醒后持续对话；它说话时你开口就能打断；有自己的原创声音 |
 | 看图、看文件 | 输入框里可以添加图片、PDF、Word，或者按需截一张屏 |
 | 分层的记忆 | 核心规则随身带着；日记、教训和项目约定按需翻看，全是你能直接编辑的文件 |
-| 工具与扩展 | 读写文件、执行命令、Skills、MCP、飞书、GitHub；每类操作由你决定允许、先问还是禁止 |
+| 工具与扩展 | 读写文件、执行命令、Skills、MCP、飞书、GitHub；全自动、有限执行、审批制度或全部拒绝由你决定 |
 | 主动关怀 | 在合适的时候问候一句，或按你设定的时间提醒 |
 | 自己选模型 | OpenAI 兼容、OpenAI、DeepSeek、Gemini、Claude、OpenRouter 和本地 llama.cpp |
 
 ## 下载使用
 
-从 [GitHub Releases](https://github.com/mengxingGG/My-Familiar/releases) 下载 Windows x64 发行版：
+**v1.0.0 正式版已接入 Android。** 从 [GitHub Releases](https://github.com/mengxingGG/My-Familiar/releases/tag/v1.0.0) 下载对应平台：
 
-- 安装程序：运行 `Familiar-0.3.0-Setup-x64.exe`，完成后从开始菜单启动 Familiar。
-- 免安装版：解压 `Familiar-0.3.0-win-x64.zip`，运行其中的 `Familiar.exe`，保留整个文件夹。
+- [Windows x64 安装程序](https://github.com/mengxingGG/My-Familiar/releases/download/v1.0.0/Familiar-1.0.0-Setup-x64.exe)：安装后从开始菜单启动 Familiar。
+- [Windows x64 免安装版](https://github.com/mengxingGG/My-Familiar/releases/download/v1.0.0/Familiar-1.0.0-win-x64.zip)：解压后运行 `Familiar.exe`，保留整个文件夹。
+- [Android ARM64 APK](https://github.com/mengxingGG/My-Familiar/releases/download/v1.0.0/Familiar-1.0.0-arm64.apk)：支持 Android 9 及以上的 ARM64 设备，安装后打开 Familiar 配置模型。
+- [SHA-256 校验和](https://github.com/mengxingGG/My-Familiar/releases/download/v1.0.0/SHA256SUMS.txt)。
 
-发行版已包含运行环境，不需要安装 Node.js 或 Windows SDK。首次使用从宠物旁的“设置”打开控制器，在“模型连接”里配置模型和 API Key，然后双击宠物开始聊天。
+发行包已包含运行环境，使用时不需要安装 Node.js 或开发 SDK。首次打开后在“模型连接”配置自己的模型和 API Key。Windows 双击宠物输入，Android 轻点完整宠物即可打开原生气泡输入。
 
-当前发行版是 v0.3.0 预览版，未代码签名。本版带来图片与语音、分层记忆和新的控制器界面；完整变更和从 v0.2.0 升级的步骤见[本版说明](docs/releases/v0.3.0.md)。
+Android 正式包使用独立发行签名，关闭调试；Windows 暂无 Authenticode 签名。完整变更、升级方法与验证范围见 [v1.0.0 发行说明](docs/releases/v1.0.0.md)。旧版本继续保留在 Releases。
+
+## Android
+
+Android 已接入项目的共享 Kernel、Provider、会话、记忆、Skills 和 Agent 工具。控制页与常驻宠物分别运行，关闭控制页后仍可在悬浮宠物的气泡里输入、流式接收回复和继续聊天。
+
+- **常驻与气泡**：开启“小窝 → 常驻伙伴”，按系统页面允许悬浮窗和运行通知。奶油色回复与浅绿输入直接浮在桌面上，支持长回复滚动、多行输入和停止生成，使用设备自带输入法。
+- **边角停靠**：可单独开启自动吸附和闲置收起。拖到边缘或角落后，向外滑动或闲置一段时间会收成小脑袋；轻点或向内拖展开，再点完整宠物聊天。
+- **手机操作与权限**：在系统无障碍设置中启用“灵伴手机操作”。工具遵循全自动、有限执行、审批制度、全部拒绝四种模式；审批可添加精确白名单、允许一次、允许当前会话全部或拒绝。联网搜索、内部日记与记忆始终允许。目标变化或拒绝后不执行旧操作；受保护页面需手动交接。
+- **日历与时钟**：日历支持本地日历管理、日程增删改查、全天/重复/单次安排、参会人、提醒、忙闲与私密级别。时钟接入标准闹钟、重复、铃声/振动、稍后提醒和倒计时；已有闹钟的完整读取、永久编辑/删除及计时器暂停等通过显示时钟后使用无障碍完成，按接收应用能力验证结果。外部笔记使用兼容应用入口，也可写灵伴本地笔记。
+- **加密迁移**：“设置 → 数据迁移”提供密码保护的单文件导出、旧配置预览导入和恢复点；模型密钥可选，导入后重新存入新版 Keystore。
+- **图片、文件与语音**：图片/PDF/Word 通过系统选择器导入，选择后仍须发送；识别、朗读和 Live 各自配置服务。麦克风授权后也不会自动录音。
+- **连接与凭据**：支持 HTTP MCP、GitHub 接入和飞书私聊/办公，相关账号按需配置。模型密钥由 Android Keystore 加密，发行包不包含开发者或用户密钥。Android 暂不支持桌面的 stdio/npm MCP。
+
+首次 Android 验收使用用户指定的模拟器，已用真实 DeepSeek 从原生气泡验证连续聊天、应用启动、无障碍观察/点击、日程写入及审批拒绝。模拟器通过 ARM64 转译运行；真 ARM 手机、HyperOS 后台策略、真实软键盘和长期功耗仍需设备验证。飞书、高德、GitHub 和云语音的账号业务应在配置后按需验证。详见 [Android 验收核对](docs/20_Familiar_Android验收核对.md)。
+
+正式包包名为 `app.familiar.mobile`；先前开发包为 `app.familiar.mobile.debug`，二者可并存。旧版请先覆盖安装 [0.3.1 加密迁移版](https://github.com/mengxingGG/My-Familiar/releases/tag/v0.3.1-migration)，在设置中导出 `.familiar` 文件，再由正式版选择文件、输入密码、核对记忆冲突和模型地址后导入。迁移核心记忆、日记、教训、扩展记忆、模型连接及可选模型密钥、昵称/性格和宠物设置；聊天原文、附件、第三方登录和系统权限不在本次迁移范围。验证新版可用后再决定是否卸载旧版。详见 [迁移步骤](docs/releases/v0.3.1-migration.md)。
 
 ## 从源码运行
 

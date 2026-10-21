@@ -1,0 +1,14 @@
+import {execFileSync} from 'node:child_process';
+import {readFile,mkdir,readdir} from 'node:fs/promises';
+import {resolve} from 'node:path';
+const debug=process.argv.includes('--debug');
+const out=resolve('.artifacts/android-1.0/release-probe'+(debug?'-debug':'')),java='C:/Program Files/Java/jdk-17.0.2',sdk='C:/AndroidSDK',build=sdk+'/build-tools/36.0.0';
+const run=(file,args,env=process.env)=>execFileSync(file,args,{env,windowsHide:true,stdio:'inherit'});
+let manifest=await readFile('tests/android-release-probe/AndroidManifest.xml','utf8');if(debug)manifest=manifest.replaceAll('="app.familiar.mobile"','="app.familiar.mobile.debug"');await mkdir(out,{recursive:true});await (await import('node:fs/promises')).writeFile(out+'/AndroidManifest.xml',manifest);
+await mkdir(out+'/classes',{recursive:true});await mkdir(out+'/dex',{recursive:true});
+run(java+'/bin/javac.exe',['-encoding','UTF-8','-source','8','-target','8','-classpath',sdk+'/platforms/android-36/android.jar','-d',out+'/classes','tests/android-release-probe/ReleaseProbe.java']);
+const classes=await readdir(out+'/classes/app/familiar/releaseprobe');
+run(java+'/bin/java.exe',['-cp',build+'/lib/d8.jar','com.android.tools.r8.D8','--lib',sdk+'/platforms/android-36/android.jar','--min-api','28','--output',out+'/dex',...classes.filter(f=>f.endsWith('.class')).map(f=>out+'/classes/app/familiar/releaseprobe/'+f)]);
+run(build+'/aapt2.exe',['link','-I',sdk+'/platforms/android-36/android.jar','--manifest',out+'/AndroidManifest.xml','-o',out+'/unsigned.apk']);run(java+'/bin/jar.exe',['uf',out+'/unsigned.apk','-C',out+'/dex','classes.dex']);run(build+'/zipalign.exe',['-f','4',out+'/unsigned.apk',out+'/aligned.apk']);
+const keys=debug?{password:'android',alias:'androiddebugkey',keystore:resolve(process.env.USERPROFILE,'.android/debug.keystore')}:JSON.parse(await readFile('.release-keys/android-signing.json','utf8')),env={...process.env,FAMILIAR_ANDROID_SIGNING_PASSWORD:keys.password};
+run(java+'/bin/java.exe',['-jar',build+'/lib/apksigner.jar','sign','--ks',debug?keys.keystore:resolve('.release-keys',keys.keystore),'--ks-key-alias',keys.alias,'--ks-pass','env:FAMILIAR_ANDROID_SIGNING_PASSWORD','--out',out+'/probe.apk',out+'/aligned.apk'],env);console.log('Signed isolated release probe built; never include it in release assets.');

@@ -13,6 +13,7 @@ import {
   type Attachment,
 } from "../../packages/contracts/index.ts";
 import { MAX_ATTACHMENT_BYTES } from "../media-assets/index.ts";
+import { PDF_MIME, DOCX_MIME } from "../document-text/index.ts";
 
 export const platformMedia = definePlugin({
   manifest: {
@@ -20,7 +21,7 @@ export const platformMedia = definePlugin({
     id: "familiar.platform-media",
     version: "0.3.0",
     provides: ["platform.media"],
-    requires: ["media.assets"],
+    requires: ["media.assets", "document.text"],
     permissions: ["desktop.capture", "files.picker"],
   },
   start(ctx) {
@@ -98,39 +99,11 @@ export const platformMedia = definePlugin({
             files.push(await addImage(basename(path), bytes, "file"));
           else {
             let text: string;
-            if (ext === ".docx") {
-              const mammoth = await import("mammoth");
-              text = (await mammoth.extractRawText({ buffer: bytes })).value;
-            } else if (ext === ".pdf") {
-              const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-              const doc = await pdfjs.getDocument({
-                data: new Uint8Array(bytes),
-                isEvalSupported: false,
-                useSystemFonts: false,
-              }).promise;
-              try {
-                if (doc.numPages > 100)
-                  throw new Error("PDF 超过 100 页，请拆分后添加");
-                const pages: string[] = [];
-                for (let n = 1; n <= doc.numPages; n++) {
-                  const page = await doc.getPage(n),
-                    content = await page.getTextContent();
-                  pages.push(
-                    `[第 ${n} 页]\n` +
-                      content.items
-                        .map((v) => ("str" in v ? v.str : ""))
-                        .join(" "),
-                  );
-                  if (pages.join("").length > 200000)
-                    throw new Error("PDF 文字过多，请拆分后添加");
-                }
-                text = pages.join("\n\n");
-                if (!text.replace(/\[第 \d+ 页\]/g, "").trim())
-                  throw new Error(
-                    "此 PDF 没有可提取文字，请将需要的页面作为图片添加",
-                  );
-              } finally {
-                await doc.destroy();
+            if (ext === ".docx" || ext === ".pdf") {
+              try { text = await ctx.use("document.text").extract(bytes, ext === ".pdf" ? PDF_MIME : DOCX_MIME); }
+              catch (error) {
+                const messages: Record<string, string> = { DOCUMENT_EMPTY: "文档没有可提取文字，请将需要的页面作为图片添加", DOCUMENT_PASSWORD: "请先解锁文档后再添加", DOCUMENT_TIMEOUT: "文档解析超时，请拆分后再添加", LIMIT: "文档超过解析上限（PDF 100 页、文字 40 万字节），请拆分后再添加", BUSY: "已有文档正在解析，请稍后重试", CANCELLED: "文档解析已停止" };
+                throw Error(messages[error instanceof Error ? error.message : ""] ?? "文档无法解析，请检查 PDF 或 DOCX 文件");
               }
             } else {
               if (bytes.includes(0))

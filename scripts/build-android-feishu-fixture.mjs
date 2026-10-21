@@ -1,0 +1,21 @@
+import {mkdir,copyFile,readFile} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
+import {resolve} from 'node:path';
+const root=resolve('.artifacts/android-feishu/fixture'), source=resolve('tests/android-feishu-fixture');
+const sdk=process.env.ANDROID_HOME??'C:/AndroidSDK',java=process.env.JAVA_HOME??'C:/Program Files/Java/jdk-17.0.2',build=`${sdk}/build-tools/36.0.0`;
+const run=(file,args)=>execFileSync(file,args,{stdio:'inherit',windowsHide:true});
+const metadata=JSON.parse((await readFile(process.env.FAMILIAR_CLI_PROBE_MANIFEST??'.artifacts/android-feishu/managed-build.json','utf8')).replace(/^\uFEFF/,''));
+const binary=await readFile(metadata.binary);
+if(createHash('sha256').update(binary).digest('hex')!==metadata.sha256)throw Error('CLI build manifest mismatch');
+for(const folder of ['classes','dex','lib/arm64-v8a','assets'])await mkdir(`${root}/${folder}`,{recursive:true});
+await copyFile(metadata.binary,`${root}/lib/arm64-v8a/libfamiliar_lark.so`);
+const activities=['ProbeActivity','UnicodeProbeActivity'];
+try{await copyFile('.artifacts/android-unicode/cases.json',`${root}/assets/unicode-cases.json`);}catch(error){if(error.code!=='ENOENT')throw error;}
+run(`${java}/bin/javac.exe`,['-encoding','UTF-8','-source','8','-target','8','-classpath',`${sdk}/platforms/android-36/android.jar`,'-d',`${root}/classes`,...activities.map(name=>`${source}/${name}.java`)]);
+run(`${java}/bin/java.exe`,['-cp',`${build}/lib/d8.jar`,'com.android.tools.r8.D8','--lib',`${sdk}/platforms/android-36/android.jar`,'--min-api','28','--output',`${root}/dex`,...activities.map(name=>`${root}/classes/app/familiar/cliprobe/${name}.class`)]);
+run(`${build}/aapt2.exe`,['link','-I',`${sdk}/platforms/android-36/android.jar`,'--manifest',`${source}/AndroidManifest.xml`,'-o',`${root}/unsigned.apk`]);
+run(`${java}/bin/jar.exe`,['uf',`${root}/unsigned.apk`,'-C',`${root}/dex`,'classes.dex','-C',root,'lib','-C',root,'assets']);
+run(`${build}/zipalign.exe`,['-f','-P','16','4',`${root}/unsigned.apk`,`${root}/aligned.apk`]);
+run(`${java}/bin/java.exe`,['-jar',`${build}/lib/apksigner.jar`,'sign','--ks',`${process.env.USERPROFILE}/.android/debug.keystore`,'--ks-pass','pass:android','--out',`${root}/probe.apk`,`${root}/aligned.apk`]);
+console.log(`${root}/probe.apk`);

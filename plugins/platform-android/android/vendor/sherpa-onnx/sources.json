@@ -1,0 +1,30 @@
+{
+  "version": "1.13.8",
+  "source": "https://github.com/k2-fsa/sherpa-onnx/tree/v1.13.8/sherpa-onnx/kotlin-api",
+  "files": [
+    {
+      "file": "kotlin/FeatureConfig.kt",
+      "sha256": "829c7adc4db1324f21b9a9cbf5bf10eacf759714fe50956f48317c1ffef044f6"
+    },
+    {
+      "file": "kotlin/HomophoneReplacerConfig.kt",
+      "sha256": "fe926b6413f4d87e67c41feb21b8363923a67cbd3a5eb687b76390a5f1f7db60"
+    },
+    {
+      "file": "kotlin/KeywordSpotter.kt",
+      "sha256": "6d8387534b942a979424a1d6721fd285f85df8bfca0ea392860f11fe06f31d06"
+    },
+    {
+      "file": "kotlin/OnlineRecognizer.kt",
+      "sha256": "3204ff816361d99d94dda1e8c26681f6d4a5ad749a68d8fee93b4e8bb2b21d17"
+    },
+    {
+      "file": "kotlin/OnlineStream.kt",
+      "sha256": "6b9f8de317e6a0bb51f0f29d940617b781cb31b190e1c725dd438231836c06ab"
+    },
+    {
+      "file": "kotlin/QnnConfig.kt",
+      "sha256": "86c963f27677f690eb0d6639735052eba5e60d9f81ccd4c1df0aa831fd680d6f"
+    }
+  ]
+}

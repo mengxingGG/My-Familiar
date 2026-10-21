@@ -48,6 +48,7 @@ export const amapCare = definePlugin({
     const mcp = ctx.use("mcp.manager");
     ctx.provide("companion.places", {
       async nearby(location, signal) {
+        if (location.mock) throw new Error('模拟位置不用于真实附近建议');
         const config = (await mcp.list()).find(
           (c) => c.enabled && c.url === "https://mcp.amap.com/mcp",
         );
@@ -84,7 +85,7 @@ export const amapCare = definePlugin({
           await mcp.callReadOnly(
             config.id,
             "maps_around_search",
-            { location: origin, keywords: "餐厅", radius: "1500" },
+            { location: origin, keywords: "餐厅", radius: String(Math.min(10000,Math.max(1500,Math.ceil(location.accuracy*2)))) },
             signal,
           ),
         );
@@ -113,6 +114,7 @@ export const amapCare = definePlugin({
           }
           const destination = detail.location ?? poi.location;
           if (
+            location.accuracy <= 500 &&
             typeof destination === "string" &&
             /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(destination)
           ) {
@@ -131,7 +133,7 @@ export const amapCare = definePlugin({
           }
           lines.push(restaurantLine(poi, detail, route));
         }
-        return "高德刚查到的附近选择：\n" + lines.join("\n");
+        return (location.accuracy > 500 ? `按大致位置查询（误差约 ${Math.ceil(location.accuracy)} 米，未估算步行时间）：\n` : "高德刚查到的附近选择：\n") + lines.join("\n");
       },
     });
   },

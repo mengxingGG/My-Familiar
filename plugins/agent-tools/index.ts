@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Ajv } from "ajv";
+import { deferredToolCatalog } from "./catalog.ts";
 import {
   definePlugin,
   type ToolEntry,
@@ -7,9 +8,10 @@ import {
   type ToolPolicy,
   type PermissionIntent,
   type ApprovalChoice,
+  type ToolCall,
 } from "../../packages/contracts/index.ts";
 export const defaultPolicy: ToolPolicy = {
-  mode: "custom",
+  mode: "limited",
   defaults: {
     read: "allow",
     search: "allow",
@@ -24,7 +26,7 @@ export const defaultPolicy: ToolPolicy = {
 export function validatePolicy(value: ToolPolicy): ToolPolicy {
   if (
     !value ||
-    !["custom", "auto"].includes(value.mode) ||
+    !["custom", "limited", "approval", "deny", "auto"].includes(value.mode) ||
     !value.defaults ||
     !Array.isArray(value.whitelist) ||
     value.whitelist.length > 200
@@ -44,9 +46,9 @@ export function validatePolicy(value: ToolPolicy): ToolPolicy {
     )
   )
     throw new Error("白名单规则无效");
-  return structuredClone(value);
+  return { ...structuredClone(value), mode: value.mode === "custom" ? "limited" : value.mode };
 }
-export const agentTools = definePlugin({
+export const createAgentTools = (options: { adaptiveCatalog?: boolean } = {}) => definePlugin({
   manifest: {
     manifestVersion: 1,
     id: "familiar.agent-tools",
@@ -62,6 +64,10 @@ export const agentTools = definePlugin({
     let sessionGeneration = 0;
     const sessionRules = new Set<string>();
     const tools = new Map<string, ToolEntry>();
+    let compactCatalog: ReturnType<typeof deferredToolCatalog> | undefined;
+    let compactEntries: ToolEntry[] = [];
+    let disposeCompact: (() => void) | undefined;
+    ctx.effect(() => disposeCompact?.());
     const pending = new Map<
       string,
       {
@@ -91,7 +97,7 @@ export const agentTools = definePlugin({
         .update(JSON.stringify([intent.tool, intent.category, intent.scope]))
         .digest("hex");
     const sessionKey = (intent: PermissionIntent) =>
-      (intent.session ?? "desktop") + ":" + intent.tool + ":" + intent.category;
+      intent.session ?? "desktop";
     const publish = () =>
       ctx.active &&
       ctx.emit(
@@ -105,12 +111,16 @@ export const agentTools = definePlugin({
       intent?: PermissionIntent,
     ) => {
       signal.throwIfAborted();
+      if (policy.mode === "auto") return;
+      if (!intent && policy.mode === "deny") throw new Error("全部拒绝模式已禁止此工具");
       if (intent) {
+        // 固定白名单只来自注册工具的实现，不能由模型参数声明。
+        if (intent.alwaysAllowed || intent.category === "search") return;
+        if (policy.mode === "deny") throw new Error("全部拒绝模式已禁止此工具");
         const decision = policy.defaults[intent.category];
-        if (policy.mode === "auto") return;
-        if (decision === "deny") throw new Error("此类工具已在权限设置中禁止");
+        if (policy.mode === "limited" && decision === "deny") throw new Error("此类工具已在权限设置中禁止");
         if (
-          decision === "allow" ||
+          (policy.mode === "limited" && decision === "allow") ||
           sessionRules.has(sessionKey(intent)) ||
           policy.whitelist.some((r) => r.key === ruleKey(intent))
         )
@@ -140,6 +150,7 @@ export const agentTools = definePlugin({
             time: Date.now(),
             category: intent?.category,
             rule: intent ? intent.scope : undefined,
+            choices: intent ? ["once", "session", "whitelist"] : ["once"],
           },
           intent,
           generation: sessionGeneration,
@@ -159,7 +170,13 @@ export const agentTools = definePlugin({
     ctx.on("conversation.session", resetSession);
     ctx.provide("agent.policy", {
       get: () => structuredClone(policy),
-      set: (value) => save(() => value),
+      async set(value) {
+        const next = await save(() => value);
+        resetSession();
+        for (const item of [...pending.values()]) item.finish(false);
+        ctx.emit("agent.policy", next);
+        return next;
+      },
       resetSession,
     });
     ctx.provide("agent.approvals", {
@@ -174,7 +191,9 @@ export const agentTools = definePlugin({
           throw new Error("此操作仅支持本次确认");
         if (allow && choice === "whitelist") {
           const intent = item.intent!;
-          await save(() => ({
+          await save(() => {
+            if (pending.get(id) !== item || item.generation !== sessionGeneration) throw new Error("确认已结束");
+            return ({
             ...policy,
             whitelist: [
               ...policy.whitelist.filter((r) => r.key !== ruleKey(intent)),
@@ -183,7 +202,7 @@ export const agentTools = definePlugin({
                 label: (item.view.title + "：" + intent.scope).slice(0, 10000),
               },
             ],
-          }));
+          }); });
         }
         // 持久化期间若操作取消或会话切换，不再执行，也不扩大会话授权。
         if (pending.get(id) !== item) return;
@@ -207,11 +226,48 @@ export const agentTools = definePlugin({
         };
       },
       list: () =>
-        [...tools.values()].map(({ name, description, parameters }) => ({
+        [...tools.values()].filter(t => t.advertised !== false).map(({ name, description, parameters }) => ({
           name,
           description,
           parameters,
         })),
+      denialKey(call) {
+        try {
+          const key = tools.get(call.name)?.denialKey?.(JSON.parse(call.arguments || "{}"));
+          return key || call.name;
+        } catch { return call.name; }
+      },
+      ...(options.adaptiveCatalog ? { compactList() {
+        const entries = [...tools.values()].filter(tool => !tool.catalogRoute);
+        if (!compactCatalog) compactCatalog = deferredToolCatalog(ctx.use("agent.tools"), "familiar", false);
+        if (!disposeCompact || entries.length !== compactEntries.length || entries.some((entry, i) => entry !== compactEntries[i])) {
+          disposeCompact?.();
+          disposeCompact = compactCatalog.add("available", "当前可用工具", entries.map(tool => ({ name: tool.name, tool })));
+          compactEntries = entries;
+        }
+        return compactCatalog.names.map(name => {
+          const { description, parameters } = tools.get(name)!;
+          return { name, description, parameters };
+        });
+      } } : {}),
+      compactResults(messages) {
+        const calls = new Map(messages.flatMap(m => (m.calls ?? []).map(call => [call.id, call] as const)));
+        const completed: ToolCall[] = [];
+        // 只允许注册工具自己的策略替换文本。保留调用配对、附件和原始消息对象。
+        return messages.toReversed().map(message => {
+          if (message.role !== "tool" || !message.toolCallId) return message;
+          const call = calls.get(message.toolCallId);
+          if (!call || call.name !== message.toolName) return message;
+          let content: string | undefined;
+          if (!message.attachments?.length && !message.images?.length && !message.native) {
+            try { content = tools.get(call.name)?.compactResult?.(call, message.content, completed); }
+            catch { /* 查询资料不符合预期时保留原文。 */ }
+          }
+          completed.push(call);
+          return typeof content === "string" && Buffer.byteLength(content) < Buffer.byteLength(message.content)
+            ? { ...message, content } : message;
+        }).reverse();
+      },
       async run(call, signal, options) {
         return (await ctx.use("agent.tools").runRich!(call, signal, options))
           .text;
@@ -220,6 +276,7 @@ export const agentTools = definePlugin({
         signal.throwIfAborted();
         const tool = tools.get(call.name);
         if (!tool) throw new Error("工具未启用或不存在");
+        if (options?.expectedTool && options.expectedTool !== tool) throw new Error("工具连接已变化，请重新检索目录");
         if (call.arguments.length > 65536) throw new Error("工具参数过大");
         const args = JSON.parse(call.arguments || "{}");
         if (!ajv.validate(tool.parameters, args))
@@ -227,6 +284,7 @@ export const agentTools = definePlugin({
         const intent = {
           tool: tool.name,
           session: options?.session,
+          alwaysAllowed: tool.alwaysAllowed === true,
           ...(tool.permission
             ? await tool.permission(args)
             : {
@@ -235,12 +293,13 @@ export const agentTools = definePlugin({
               }),
         } as PermissionIntent;
         await request(
-          tool.description,
+          (options?.label ? options.label.slice(0, 100) + " · " : "") + tool.description,
           JSON.stringify({ tool: tool.name, arguments: args }, null, 2),
           signal,
           intent,
         );
         signal.throwIfAborted();
+        if (tools.get(call.name) !== tool) throw new Error("工具连接已变化，请重新检索目录");
         if (!options?.silent)
           ctx.emit(
             "agent.activity",
@@ -249,6 +308,7 @@ export const agentTools = definePlugin({
         const value = await tool.execute(args, {
           signal,
           session: options?.session,
+          label: options?.label,
         });
         if (
           value &&
@@ -265,17 +325,14 @@ export const agentTools = definePlugin({
           )
             throw new Error("图片工具结果格式无效");
           return {
-            text: rich.text.slice(0, 32000),
+            text: rich.text,
             attachments: rich.attachments,
           };
         }
         const text =
           typeof value === "string" ? value : (JSON.stringify(value) ?? "null");
         return {
-          text:
-            text.length > 32000
-              ? text.slice(0, 32000) + "\n[结果已截断]"
-              : text,
+          text,
         };
       },
     });
@@ -286,3 +343,4 @@ export const agentTools = definePlugin({
     });
   },
 });
+export const agentTools = createAgentTools();

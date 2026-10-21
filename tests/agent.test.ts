@@ -334,6 +334,21 @@ test("文件之家拒绝越界和链接，写入检查版本并保留原文", as
   await symlink(outside, join(store.root, "link"), "junction");
   await assert.rejects(store.read("link/secret"), /链接/);
 });
+test("文件之家支持 Android 同类的祖先目录别名，仍拒绝根内链接", async () => {
+  const root = await temporary();
+  const actual = join(root, "actual");
+  const alias = join(root, "alias");
+  await mkdir(join(actual, "skills"), { recursive: true });
+  await symlink(actual, alias, "junction");
+  const store = new FileStore(join(alias, "skills"));
+  await store.init();
+  assert.equal(await store.exists("new-skill/SKILL.md"), false);
+  await store.write("new-skill/SKILL.md", "first install");
+  assert.equal(await store.read("new-skill/SKILL.md"), "first install");
+  await symlink(root, join(actual, "skills", "outside"), "junction");
+  await assert.rejects(store.read("outside/secret"), /链接/);
+});
+
 test("核心规则超限拒绝保存，日记同日追加、去重、重启和检索", async () => {
   const root = await temporary(),
     k = await harness(root);
@@ -769,6 +784,27 @@ test("取消写入查重不会在后台继续改写记忆，长日记保留末�
     await k.dispose();
   }
 });
+test("目录代理拒绝只作用于目标工具，同一轮新注册工具下一轮可见", async () => {
+  let round = 0; const executed: string[] = [];
+  const k = await harness(await temporary(), async function* (input) {
+    if (round++ === 0) input.onTools?.(["A", "B", "A"].map((ref,i) => ({ id: `route-${i}`, name: "route_fixture", arguments: JSON.stringify({ref}) })));
+    else if (round === 2) {
+      assert(input.tools?.some(t => t.name === "late_fixture"));
+      input.onTools?.([{id:"late",name:"late_fixture",arguments:"{}"}]);
+    } else yield "完成";
+  });
+  const tools = k.resolve("agent.tools"), approvals = k.resolve("agent.approvals");
+  tools.register({name:"route_fixture",description:"目录调用夹具",category:"mcp",denialKey: args => String(args.ref),
+    parameters:{type:"object",properties:{ref:{type:"string",enum:["A","B"]}},required:["ref"]},
+    execute:async({ref})=>{executed.push(ref);tools.register({name:"late_fixture",description:"新工具",category:"read",parameters:{type:"object"},execute:async()=>{executed.push("late");return "ok";}});return "ok";}});
+  try {
+    const chat=k.resolve("conversation");await chat.send("验证独立工具拒绝与动态目录");
+    await waitFor(()=>approvals.list().length===1);assert(approvals.list()[0].detail.includes('"A"'));await approvals.decide(approvals.list()[0].id,false,"once");
+    await waitFor(()=>approvals.list().length===1);assert(approvals.list()[0].detail.includes('"B"'));await approvals.decide(approvals.list()[0].id,true,"once");
+    await waitFor(()=>!chat.state().busy);assert.equal(chat.state().error,undefined);assert.deepEqual(executed,["B","late"]);assert.equal(approvals.list().length,0);
+  } finally {await k.dispose();}
+});
+
 test("运行中的子程序收到取消后停止，不阻塞下一轮", async () => {
   const abort = new AbortController(),
     started = Date.now();

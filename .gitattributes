@@ -1,2 +1,4 @@
 * text=auto eol=lf
 *.md whitespace=-blank-at-eol
+# 保留测试 PDF 的字节偏移和加密内容，不进行文本换行转换。
+*.pdf binary

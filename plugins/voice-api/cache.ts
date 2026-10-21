@@ -3,12 +3,12 @@ import {
   mkdir,
   readFile,
   writeFile,
-  rename,
   readdir,
   stat,
   unlink,
 } from "node:fs/promises";
 import { join } from "node:path";
+import { replaceFile } from "../storage-local/rename.ts";
 export const audioKey = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
 export class AudioCache {
@@ -58,7 +58,7 @@ export class AudioCache {
           data: Buffer.from(data).toString("base64"),
         }),
       );
-      await rename(temporary, target);
+      await replaceFile(temporary, target);
     } finally {
       await unlink(temporary).catch(() => {});
     }

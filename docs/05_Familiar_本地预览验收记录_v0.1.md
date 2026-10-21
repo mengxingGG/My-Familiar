@@ -251,3 +251,44 @@
 - 用本地留存的 v0.2.0 免安装包创建隔离演示数据，再切换到本版：配置、性格、手填上下文、可用的旧加密密钥、超过新上限的旧核心（原样保留并提示整理）、旧日记、旧格式教训、自定义 Skill 与会话保持。结果 `.artifacts/upgrade-smoke-1791721155552/report.json`。`upgrade-smoke.mjs` 现在按旧版协议号区分 v0.1.0 与 v0.2.0 起点。没有运行安装器，也没有操作用户真实数据。
 - app.asar 共 3026 项，含七个角色与七个声音文件，未发现用户运行数据；ZIP 中的 `Familiar.exe` 与 `app.asar` 与已测目录一致，`.artifacts/v0.3.0/asar-audit.json`。
 - 附件 SHA-256：安装包 `b3799a067f1875611ce288b2d24e61054c7a72fc7aa4cdcc263973199ba197db`；ZIP `92eeca0c1982583bc97f734277a978457c9b0852010065a7c523998546283b43`。
+
+## 2026-10-19：Android M0 开工核查与系统能力研究
+
+- 用户确定 Claude Code 负责沿用桌面风格的 Android UI，Codex 负责核心；首轮用模拟器，并参考 AutoGLM、Cherry Studio 与自己的 Hermes Android。具体切片和证据见 [Android 开工方案](18_Familiar_Android开工与系统能力方案.md)。
+- 现有产品源码未修改。`npm run check` 通过类型检查、105 项测试和 Windows 构建：`.artifacts/android-start/desktop-check-native.log`。首次在沙箱执行因本地 HTTP 与临时文件操作受限失败，正常本机权限复测通过；未将环境失败当成产品缺陷。
+- 14 个模块入口完成静态依赖与 browser bundle 调查，结果 `.artifacts/android-start/portability.json`。Kernel、契约等通过；协议/会话/模型路由仍有 Node 依赖；HTTP/兼容 Provider/Agent 可打包但存在 Buffer 隐式依赖。这里只是迁移筛查，未运行 Android WebView。
+- 查到 SDK/NDK 和模拟器程序；Rust 尚未在 PATH/默认目录找到，未找到已配置 AVD 或完整系统镜像。未安装工具链或创建 APK，M0 不能标记完成。
+- GitHub 只读核查 `mengxingGG/hermes-android` 的 README、Keystore 实现、后台服务和审批文档；参考架构但未复制代码或修改该仓库。AutoGLM、Cherry 与 Android 官方资料用于设计，不作为本项目已实现证据。
+- 初次 Claude Code 2.1.280 设计调用返回 `401 身份验证失败`，结果 `.artifacts/android-start/claude-result.json`；当时只交付任务书。此项已在下方同日补测中定位并修复，不再是当前阻塞。未修改用户的全局服务地址/认证配置。
+- 文档链接、格式和内容一致性完成检查。未验证模拟器运行、Android 中文输入、系统权限、日历/笔记写入、无障碍任务、手机音频、后台或耗电；未操作用户真实日历/笔记。
+
+## 2026-10-19：Claude Android 前端源码交付与浏览器验收
+
+- 用户进一步明确：由 Claude 在桌面风格内自主设计并完整开发前端，Codex 负责核心与原生能力；不将静态设计任务书当作完成。
+- 已核实系统 CMD/PowerShell 入口均指向 Claude Code 2.1.280。旧 401 来源是 Codex 子进程继承的 API 地址/认证覆盖；仅清理当前子进程覆盖后，使用现有 Claude 登录完成实际请求。用户全局配置未改变。
+- 实际 Claude CLI 首轮 18 次交互、后续修订 19 次交互均返回成功、无工具权限拒绝。源码为 `apps/tauri/ui/index.html`、`app.ts`、`style.css` 和 `DESIGN.md`；视觉和前端修复均由 Claude 完成。新增接口/任务书已取得外发授权，未向 Claude 提供 Hermes 私有源码。
+- Codex 新增移动契约与传输桥、独立内存预览、生产启动入口、构建/预览和 UI 验收脚本。传输桥不自动重试变更，拒绝凭据回填，过滤内部字段，保护快照顺序，清理待处理请求和订阅。消息明确绑定发送时的会话。
+- `npm run check` 通过：TypeScript、113/113 测试和现有 Windows 构建。证据：`.artifacts/android-frontend/final-check.log`。
+- `npm run smoke:mobile` 的 17 项检查通过，覆盖 360/390/430/768 宽度与 48px 触控、角色互动与设置、模型密钥不回填、中文组字/Enter、流式输入保留与停止、短视口输入区、历史选择/删除确认、系统任务待用户完成、能力不可用、无宿主生产错误页、会话草稿隔离、迟到发送失败和保存结果不确定。
+- 已人工查看首页、聊天、角色/模型表单、任务卡和删除弹层截图。证据：`.artifacts/android-frontend/final-smoke.log`、`smoke-result.json`、`screenshots/`。主源码验证时 SHA-256：`CC42DFE6BAF2F5E46315845665F293FA37C5387AE9EAB7225DAC168A8D607397`。
+- 生产入口未包含预览适配器；没有原生传输时明确显示未连接。浏览器缩短视口、组合键事件和后退行为只证明 Web UI，不代表 Android 输入法、系统返回或生命周期验收。
+- **仍未完成**：Rust/Kotlin/Tauri Android 宿主、模拟器 APK、共享真实会话/Provider 的可移植化、原生存储/Keystore、真实日历/笔记与无障碍执行。未调用 Familiar 用户配置的真实聊天 Provider，未修改用户日历/笔记，未提交或发布 Git。
+
+## 2026-10-19：ARM64 APK 与真实共享核心、常驻设备闭环
+
+- 本机 Claude Code 继续完成常驻状态、权限分组、无障碍披露和任务审批 UI；18 个浏览器场景通过。Codex 实现 Tauri/Kotlin/C++ 宿主、独立 `:runtime` 服务进程及共享核心装配。
+- APK 只含 ARM64 四个原生库，依赖完整，ELF 与 ZIP 16 KB 对齐；在用户已运行的 API 34 模拟器安装成功，`primaryCpuAbi=arm64-v8a`。该模拟器实际通过 Houdini 转译 ARM，不是真实 ARM 手机。
+- 设备夹具验证 Keystore 写入且不回填、真实 Provider 流式/取消、Home 后继续回复、销毁并重建控制页时运行进程 PID 不变且同一回复继续完成、进程中断后的检查点恢复、停止常驻取消回复。无障碍逐项批准的节点读取/Home/回读也完成设备测试。最终清单与证据见 `.artifacts/android-device/device-smoke.json`。
+- 通过系统设置授权后，桌面可见原始角色 SVG 悬浮动画；截图 `.artifacts/android-device/overlay-home.png`。已另测真实通知停止、悬浮窗撤回释放和熄屏/亮屏保持进程；锁屏、OEM 长时后台与功耗矩阵仍需完善。
+- 真正设备运行发现并修复：Gradle Tauri 入口路径、原生运行库漏打包、JSON 请求解析为空、Android 私有目录别名误判、流式内容不落盘，以及控制页关闭连带退出核心。没有把服务被系统重启误报为生成不中断。
+- TypeScript 检查、115/115 测试和 Windows 构建通过；新增目录别名与流式检查点回归。证据 `.artifacts/android-device/core-tests.log`。
+- 仍未完成 Windows 功能对齐：日历/笔记执行、语音/媒体/关怀、完整角色/Provider/记忆管理、跨应用审批体验、真实云模型、真实 ARM 手机性能与耗电。当前包只作为开发验收包，没有 Git 提交/推送或正式发布。
+
+## 2026-10-19：七类模型、七伙伴、共享工具与系统日历
+
+- 本机 Claude Code 2.1.303 完成模型类型/独立档案、七角色布局、已授权能力系统设置入口；61 轮交互成功、无权限拒绝，只读既有授权资料和自身 UI 文件。未向其发送新增角色素材或 Hermes 源码。
+- Codex 接通共享 Provider/角色配置、按类型和 URL 分离凭据；复用 tools-basic/skills-local 的移动装配，注册工作文件、记忆与 Skill 工具，排除未支持的 Shell/MCP 进程，文件路径限定 workspace 并检查链接越界。
+- CalendarProvider 已实现可见日历、31 天内实例查询、定时日程创建和所有提交字段回读；操作号账本防止重复写入和中断重放，同编号不同内容拒绝。工具批准和 Android 日历权限分开，均在执行前检查。
+- 116 项共享测试、TypeScript 检查和 Windows 构建通过；19 项浏览器场景通过。新增设备 5 项：七类配置与密钥隔离、七角色保存/同步、文件笔记/记忆检索/Skill 读取、拒绝后不写入、批准写入回读及重复/冲突防重。证据 `.artifacts/android-device/parity-smoke.json` 和 `core-tests-parity.log`。
+- 日历测试使用唯一名称的临时 LOCAL 日历，结束核对 ID/名称后删除；本机模型夹具不访问真实云服务，测试密钥与笔记清理。APK 仍仅 ARM64，4 个原生库与 16 KB ELF/ZIP 对齐通过。
+- 修复 Windows PowerShell 5 对无 BOM UTF-8 中文脚本的解析问题及 SHA256 模块依赖，npm 构建入口现在可复现。完整功能缺口与最终包哈希统一见文档 19。

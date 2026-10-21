@@ -1,5 +1,6 @@
 import { buildLocation } from "./build-location.mjs";
 import { buildSpeech } from "./build-speech.mjs";
+import { buildDocumentText } from "./build-document-text.mjs";
 import { build } from "esbuild";
 import { mkdir, cp, rm, open } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
@@ -43,5 +44,6 @@ for (const name of [
   await cp(`plugins/${name}/ui`, `dist/ui/${name}`, { recursive: true });
 await buildLocation();
 await buildSpeech();
+await buildDocumentText("dist/documents");
 await cp("characters", "dist/characters", { recursive: true });
 console.log("Familiar 已构建：独立 Runtime / Controller + 官方插件");

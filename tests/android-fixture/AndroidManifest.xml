@@ -1,0 +1,19 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="app.familiar.fixture">
+  <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34" />
+  <instrumentation android:name=".VaultFixtureCleanup" android:targetPackage="app.familiar.mobile.debug" android:label="Remove isolated fixture credentials" />
+  <application android:label="Familiar Test Fixture" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+    <provider android:name=".ClipboardFixtureProvider" android:authorities="app.familiar.fixture.clipboard" android:exported="false" android:grantUriPermissions="true" />
+    <activity android:name=".ClipboardFixtureActivity" android:exported="true" android:launchMode="singleTop" />
+    <activity android:name=".SpeechFixtureActivity" android:exported="true" android:label="Familiar Speech Fixture">
+      <intent-filter><action android:name="android.speech.action.RECOGNIZE_SPEECH"/><category android:name="android.intent.category.DEFAULT"/></intent-filter>
+    </activity>
+    <activity android:name=".GestureFixtureActivity" android:exported="true" />
+    <activity android:name=".FixtureActivity" android:exported="true">
+      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+    </activity>
+    <activity android:name=".NoteFixtureActivity" android:exported="true" android:label="Familiar Note Fixture">
+      <intent-filter><action android:name="com.google.android.gms.actions.CREATE_NOTE"/><category android:name="android.intent.category.DEFAULT"/><data android:mimeType="text/plain"/></intent-filter>
+      <intent-filter><action android:name="android.intent.action.CREATE_NOTE"/><category android:name="android.intent.category.DEFAULT"/></intent-filter>
+    </activity>
+  </application>
+</manifest>

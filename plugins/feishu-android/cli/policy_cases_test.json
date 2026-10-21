@@ -1,0 +1,17 @@
+[
+  { "name": "empty", "unit": "", "repeat": 0, "suffix": "", "utf16Units": 0, "accepted": true },
+  { "name": "ascii-limit", "unit": "a", "repeat": 32000, "suffix": "", "utf16Units": 32000, "accepted": true },
+  { "name": "ascii-over", "unit": "a", "repeat": 32000, "suffix": "a", "utf16Units": 32001, "accepted": false },
+  { "name": "chinese-limit", "unit": "中", "repeat": 32000, "suffix": "", "utf16Units": 32000, "accepted": true },
+  { "name": "chinese-over", "unit": "中", "repeat": 32000, "suffix": "a", "utf16Units": 32001, "accepted": false },
+  { "name": "emoji-limit", "unit": "😀", "repeat": 16000, "suffix": "", "utf16Units": 32000, "accepted": true },
+  { "name": "emoji-over", "unit": "😀", "repeat": 16000, "suffix": "a", "utf16Units": 32001, "accepted": false },
+  { "name": "mixed-limit", "unit": "a😀中", "repeat": 8000, "suffix": "", "utf16Units": 32000, "accepted": true },
+  { "name": "mixed-over", "unit": "a😀中", "repeat": 8000, "suffix": "a", "utf16Units": 32001, "accepted": false },
+  { "name": "combining-limit", "unit": "é", "repeat": 16000, "suffix": "", "utf16Units": 32000, "accepted": true },
+  { "name": "combining-over", "unit": "é", "repeat": 16000, "suffix": "a", "utf16Units": 32001, "accepted": false },
+  { "name": "joined-emoji-limit", "unit": "👩‍💻", "repeat": 6400, "suffix": "", "utf16Units": 32000, "accepted": true },
+  { "name": "joined-emoji-over", "unit": "👩‍💻", "repeat": 6400, "suffix": "a", "utf16Units": 32001, "accepted": false },
+  { "name": "nul", "unit": "内容", "repeat": 1, "suffix": "\u0000", "utf16Units": 3, "accepted": false },
+  { "name": "identity-override", "unit": "", "repeat": 0, "suffix": "--as=bot", "utf16Units": 8, "accepted": false }
+]

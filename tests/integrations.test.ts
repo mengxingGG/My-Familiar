@@ -453,6 +453,7 @@ test("GitHub Token 加密范围符合契约；读写模式切换保留 Token，�
             token = key;
           },
           connect: async () => ({ tools: ["get_me"] }),
+          disconnect: async () => {},
           callReadOnly: async () => ({}),
           remove: async () => {},
           installPackage: async () => {},

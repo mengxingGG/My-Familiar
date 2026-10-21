@@ -16,7 +16,7 @@ export function asksAboutScreen(text: string) {
     text,
   );
 }
-export const mediaInput = definePlugin({
+export function createMediaInput(options: { desktopCapture?: boolean } = {}) { return definePlugin({
   manifest: {
     manifestVersion: 1,
     id: "familiar.media-input",
@@ -97,7 +97,7 @@ export const mediaInput = definePlugin({
       },
     };
     ctx.provide("media.input", service);
-    ctx.effect(
+    if (options.desktopCapture !== false) ctx.effect(
       ctx.use("agent.tools").register({
         name: "desktop_snapshot",
         description:
@@ -132,4 +132,5 @@ export const mediaInput = definePlugin({
     }))
       ctx.effect(ctx.use("commands").register(name, run));
   },
-});
+}); }
+export const mediaInput = createMediaInput();

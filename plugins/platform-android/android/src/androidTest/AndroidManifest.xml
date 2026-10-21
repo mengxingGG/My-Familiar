@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <activity android:name="app.familiar.platform.WakeReplayActivity" android:exported="true" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity>
+        <!-- 独立测试 APK 在检测器所在进程运行语音服务，主 APK 的 :runtime 配置不受影响。 -->
+        <service android:name="app.familiar.platform.VoiceService" android:process="app.familiar.platform.test" tools:replace="android:process" />
+    </application>
+</manifest>

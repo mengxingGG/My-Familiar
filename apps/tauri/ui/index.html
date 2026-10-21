@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#f6f4ec" />
+    <meta name="color-scheme" content="light" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>灵伴 · Familiar</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <!-- mountApp() 会接管这个根节点；挂载前显示启动画面。桥不可用时由启动器负责提示。 -->
+    <div id="familiar-root" class="app" data-ready="false">
+      <div class="boot" role="status">
+        <span class="brand" aria-hidden="true">f.</span>
+        <p>灵伴正在醒来…</p>
+      </div>
+    </div>
+  </body>
+</html>

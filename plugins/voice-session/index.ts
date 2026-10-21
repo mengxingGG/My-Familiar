@@ -280,7 +280,7 @@ export function voiceSession(samples: string) {
       const play = (
         clip: { data: string; mimeType: string },
         signal: AbortSignal,
-      ) => waitPlayback(signal, (id) => host({ type: "play", id, ...clip }));
+      ) => waitPlayback(signal, (id) => host({ type: "play", ...clip, id }));
       const queueFor = (signal: AbortSignal) =>
         new SpeechQueue(
           async (part: string) =>

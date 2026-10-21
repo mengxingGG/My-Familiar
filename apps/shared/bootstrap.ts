@@ -55,6 +55,7 @@ import { mcpClient } from "../../plugins/mcp-client/index.ts";
 import { toolsBasic } from "../../plugins/tools-basic/index.ts";
 import { companionControls } from "../../plugins/companion-controls/index.ts";
 import { mediaAssets } from "../../plugins/media-assets/index.ts";
+import { createDocumentText } from "../../plugins/document-text/index.ts";
 import { mediaInput } from "../../plugins/media-input/index.ts";
 import { platformMedia } from "../../plugins/platform-media/index.ts";
 import { voiceWindows } from "../../plugins/voice-windows/index.ts";
@@ -167,6 +168,7 @@ export async function bootstrap(role: "runtime" | "controller") {
           storageLocal(join(directory, "data")),
           platform,
           mediaAssets,
+          createDocumentText(join(root.replace("app.asar", "app.asar.unpacked"), "documents", "document-worker.cjs")),
           platformMedia,
           mediaInput,
           voiceWindows(

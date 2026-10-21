@@ -10,6 +10,7 @@ import {
   cliEnvironment,
 } from "../cli-dependencies/index.ts";
 import { jobs } from "../cli-dependencies/jobs.ts";
+import { githubConfig } from "./config.ts";
 export function githubIntegration(
   openExternal: (url: string) => Promise<void> = async () => {},
 ) {
@@ -110,20 +111,7 @@ export function githubIntegration(
                   ? "请先完成浏览器登录"
                   : "请填写 GitHub Token",
               );
-            const entry = {
-              id: "github",
-              name: "GitHub 官方",
-              transport: "http" as const,
-              url:
-                "https://api.githubcopilot.com/mcp/" +
-                (input.readOnly ? "readonly" : ""),
-              enabled: false,
-              auth: {
-                kind: "header" as const,
-                name: "Authorization",
-                prefix: "Bearer ",
-              },
-            };
+            const entry = githubConfig(input.readOnly);
             // 固定官方地址；同步对应凭据，不把 Token 返回界面。
             await mcp.save(entry);
             await mcp.setKey(

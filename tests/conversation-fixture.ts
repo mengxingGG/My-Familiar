@@ -34,6 +34,7 @@ export const conversationFixture = definePlugin({
       list: async () => [],
       read: async () => ({ text: "", revision: "" }),
       write: async () => {},
+      restore: async () => {},
       remember: async () => ({
         path: "CORE.md",
         action: "add",

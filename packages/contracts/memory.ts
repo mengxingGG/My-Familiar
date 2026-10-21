@@ -82,6 +82,8 @@ declare module "../kernel/index.ts" {
       read(path: string): Promise<{ text: string; revision: string }>;
       /** 用户或管理器的整文件编辑；核心规则超限时拒绝。 */
       write(path: string, text: string, revision?: string): Promise<void>;
+      /** 显式导入/恢复，由资料所有者串行执行；默认保留不重名的当前文件。 */
+      restore(files: { path: string; text: string }[], replace?: boolean): Promise<void>;
       /** 实时生成的身份、核心规则与索引；会话快照由调用方冻结。 */
       context(): Promise<string>;
       remember(

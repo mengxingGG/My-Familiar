@@ -25,6 +25,7 @@ export interface DeviceLocation {
   accuracy: number;
   source: string;
   time: number;
+  mock?: boolean;
 }
 declare module "../kernel/index.ts" {
   interface Services {
@@ -69,6 +70,7 @@ declare module "../kernel/index.ts" {
       set(value: CareSettings): Promise<CareSettings>;
       locate(): Promise<DeviceLocation>;
       preview(): Promise<string>;
+      stop(): void;
     };
   }
 }

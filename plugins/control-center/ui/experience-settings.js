@@ -21,11 +21,11 @@ export function createExperienceSettings(api, toast) {
     </div>`;
   $("permissions").innerHTML = `
     <div class="group"><h3>处理方式</h3><div class="panel panel-form">
-      <label class="field">运行模式<select id="policy-mode"><option value="custom">按下面每类操作的设置处理</option><option value="auto">全自动：所有工具操作直接允许</option></select></label>
+      <label class="field">运行模式<select id="policy-mode"><option value="auto">全自动：所有工具直接执行</option><option value="limited">有限执行：按安全类别与规则处理</option><option value="approval">审批制度：逐项确认</option><option value="deny">全部拒绝</option></select></label>
       <p id="policy-auto-note" class="notice-text" hidden>全自动会直接允许 Shell、写入、安装和外部工具，拥有当前 Windows 用户能访问的全部权限。位置授权仍需单独开启。</p>
     </div></div>
     <div class="group"><h3>每类操作的默认选择</h3><div id="policy-defaults" class="panel"></div>
-      <p class="group-note" style="margin-top:10px">工作目录是默认位置，也可以使用绝对路径。白名单精确匹配文件目标，或命令及其参数。本会话授权只对同一工具、同一类操作有效，换会话或重启后失效。</p></div>
+      <p class="group-note" style="margin-top:10px">工作目录是默认位置，也可以使用绝对路径。白名单精确匹配文件目标，或命令及其参数。本会话授权允许当前会话全部工具，换会话、重启或更改策略后失效。联网搜索、内部日记和记忆始终放行；全部拒绝覆盖用户白名单。类别设置仅在有限执行模式下生效。</p></div>
     <div class="group"><h3>已记住的白名单</h3><div id="policy-rules" class="panel list"></div></div>
     <div class="page-actions"><button id="policy-revoke-session" class="quiet">撤销本会话的授权</button><button id="policy-save" class="primary">保存权限设置</button></div>`;
   $("care").innerHTML = `

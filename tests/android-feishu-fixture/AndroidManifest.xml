@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="app.familiar.cliprobe">
+  <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="36" />
+  <application android:label="Familiar CLI Probe" android:debuggable="true" android:extractNativeLibs="true" android:allowBackup="false" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+    <activity android:name=".ProbeActivity" android:exported="true" />
+    <activity android:name=".UnicodeProbeActivity" android:exported="true" />
+  </application>
+</manifest>

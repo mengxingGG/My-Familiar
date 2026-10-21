@@ -77,6 +77,14 @@ export const mediaAssets = definePlugin({
           [...new Set(ids)].map(async (id) => (await read(id)).attachment),
         );
       },
+      async text(id, maxBytes) {
+        if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 400000) throw Error("INVALID_INPUT");
+        const { attachment, data } = await read(id);
+        if (attachment.kind !== "text") throw Error("INVALID_DOCUMENT");
+        const bytes = Buffer.from(data, "base64");
+        if (bytes.length > maxBytes) throw Error("LIMIT");
+        return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      },
       async resolve(messages) {
         return Promise.all(
           messages.map(async (message): Promise<PromptMessage> => {
