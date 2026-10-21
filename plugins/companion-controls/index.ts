@@ -3,7 +3,9 @@ import { integrationCommands } from "../integration-controls/index.ts";
 import { definePlugin } from "../../packages/contracts/index.ts";
 import { mediaCommands } from "../media-input/index.ts";
 import { voiceCommands } from "../voice-session/index.ts";
+import { updateCommands } from "../../packages/contracts/updates.ts";
 export const companionCommands = [
+  ...updateCommands,
   ...mediaCommands,
   ...voiceCommands,
   ...integrationCommands,

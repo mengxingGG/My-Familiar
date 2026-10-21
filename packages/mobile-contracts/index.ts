@@ -3,6 +3,8 @@ import type { MobileLibraryCommands } from "./library.ts";
 import type { MobileMcpCommands } from "./mcp.ts";
 import type { MobileGithubCommands } from "./github.ts";
 import type { MobileBackupCommands } from "./backup.ts";
+import type { UpdateState } from "../contracts/updates.ts";
+export type { UpdateState } from "../contracts/updates.ts";
 export * from "./backup.ts";
 import type { ToolPolicy, ApprovalChoice } from "../contracts/agent.ts";
 export type { ToolPolicy, ApprovalChoice } from "../contracts/agent.ts";
@@ -168,6 +170,7 @@ export interface MobileApprovalBridge {
   close(): void;
 }
 export interface MobileSnapshot {
+  update?: UpdateState;
   protocolVersion: 1;
   revision: number;
   mode: "preview" | "live";
@@ -206,6 +209,11 @@ export interface MobileSnapshot {
   };
 }
 export interface MobileCommands extends MobileLibraryCommands, MobileModelCommands, MobileMcpCommands, MobileCareCommands, MobileFeishuCommands, MobileGithubCommands, MobileBackupCommands {
+  "updates.state": {params: undefined; result: UpdateState};
+  "updates.check": {params: undefined; result: UpdateState};
+  "updates.download": {params: undefined; result: UpdateState};
+  "updates.cancel": {params: undefined; result: UpdateState};
+  "updates.open": {params: undefined; result: UpdateState};
   "policy.get": { params: undefined; result: ToolPolicy };
   "policy.set": { params: ToolPolicy; result: ToolPolicy };
   "policy.resetSession": { params: undefined; result: void };

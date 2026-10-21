@@ -61,6 +61,8 @@ import { platformMedia } from "../../plugins/platform-media/index.ts";
 import { voiceWindows } from "../../plugins/voice-windows/index.ts";
 import { voiceApi } from "../../plugins/voice-api/index.ts";
 import { voiceSession } from "../../plugins/voice-session/index.ts";
+import { appUpdates } from "../../plugins/app-updates/index.ts";
+import { FAMILIAR_VERSION } from "../../packages/contracts/updates.ts";
 
 // 宿主只做环境引导和官方插件组合，不实现产品业务。
 export async function bootstrap(role: "runtime" | "controller") {
@@ -102,6 +104,7 @@ export async function bootstrap(role: "runtime" | "controller") {
       "familiar.voice-windows": ["device.microphone"],
       "familiar.voice-api": ["network.voice"],
       "familiar.voice-session": ["device.microphone", "network.voice"],
+      "familiar.app-updates": ["network.updates", "files.updates"],
     },
     log: ({ plugin, message }) => console.error(`[${plugin}] ${message}`),
   });
@@ -167,6 +170,7 @@ export async function bootstrap(role: "runtime" | "controller") {
           providerLlamacpp,
           storageLocal(join(directory, "data")),
           platform,
+          appUpdates({currentVersion: FAMILIAR_VERSION, platform: 'windows-x64', directory: join(app.getPath('downloads'), 'Familiar'), open: async path => {shell.showItemInFolder(path);}, notify: state => {kernel.resolve('platform.surface').send('pet', 'familiar:update', state);}}),
           mediaAssets,
           createDocumentText(join(root.replace("app.asar", "app.asar.unpacked"), "documents", "document-worker.cjs")),
           platformMedia,

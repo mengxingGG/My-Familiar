@@ -12,7 +12,7 @@ import android.widget.*
 import org.json.JSONObject
 
 /** 原生文本气泡不执行 HTML/链接；具体聊天与收起规则来自共享 bubble-chat。 */
-class PetBubble(private val context: Context, private val event: (String) -> Unit) {
+class PetBubble(private val context: Context, private val reserveChat: (Int, android.graphics.Rect?) -> Unit, private val event: (String) -> Unit) {
     private val window = context.getSystemService(WindowManager::class.java)
     private var root: LinearLayout? = null
     private var title: TextView? = null
@@ -27,7 +27,7 @@ class PetBubble(private val context: Context, private val event: (String) -> Uni
     private var lastSpeech = ""
     private var lastComposer = false
     private var lastAnchor: WindowManager.LayoutParams? = null
-    private val chat = PetBubbleChat(context) { hiddenLocally = true; event("close") }
+    private val chat = PetBubbleChat(context, reserveChat) { hiddenLocally = true; event("close") }
     val chatOpen get() = chat.opened
     private fun dp(value: Int) = (value * context.resources.displayMetrics.density).toInt()
     private fun pending() = JSONObject(PendingApprovals.snapshot()).getJSONArray("tasks").length() > 0
@@ -122,5 +122,6 @@ class PetBubble(private val context: Context, private val event: (String) -> Uni
     }
     fun hide() { root?.let { try { window.removeView(it) } catch (_: Exception) {} }; root = null; title = null; text = null; stop = null; params = null; speechPaper = null; speechScroll = null }
     fun dismissMenu() { menu = false; hide(); chat.hide() }
+    fun collapseForDock() { menu = false; hiddenLocally = true; chat.close(); hide(); lastComposer = false }
     fun destroy() { dismissMenu(); chat.destroy() }
 }

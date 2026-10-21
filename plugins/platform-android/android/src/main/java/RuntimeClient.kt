@@ -16,13 +16,23 @@ import java.util.concurrent.TimeUnit
 object RuntimeClient {
     @Volatile private var ready = CompletableFuture<Unit>()
     private var bound = false
+    private var owner: Context? = null
     private val connection = object: ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) { ready.complete(Unit) }
         override fun onServiceDisconnected(name: ComponentName?) { ready = CompletableFuture() }
         override fun onNullBinding(name: ComponentName?) { ready.completeExceptionally(IllegalStateException("UNAVAILABLE")) }
+        override fun onBindingDied(name: ComponentName?) {
+            synchronized(this@RuntimeClient) {
+                ready.completeExceptionally(IllegalStateException("UNAVAILABLE"))
+                owner?.let { try {it.unbindService(this)} catch (_:Exception) {} }
+                bound = false; ready = CompletableFuture()
+                owner?.let { bind(it) }
+            }
+        }
     }
     @Synchronized private fun bind(context: Context): CompletableFuture<Unit> {
         if (!bound) {
+            owner = context.applicationContext
             bound = context.applicationContext.bindService(Intent(context, RuntimeService::class.java), connection, Context.BIND_AUTO_CREATE)
             if (!bound) throw IllegalStateException("UNAVAILABLE")
         }

@@ -23,23 +23,25 @@
 
 ## 下载使用
 
-**v1.0.0 正式版已接入 Android。** 从 [GitHub Releases](https://github.com/mengxingGG/My-Familiar/releases/tag/v1.0.0) 下载对应平台：
+**v1.1.0 修复 Android 后台手机操作，新增 GitHub 更新提醒。** 从 [GitHub Releases](https://github.com/mengxingGG/My-Familiar/releases/tag/v1.1.0) 下载对应平台：
 
-- [Windows x64 安装程序](https://github.com/mengxingGG/My-Familiar/releases/download/v1.0.0/Familiar-1.0.0-Setup-x64.exe)：安装后从开始菜单启动 Familiar。
-- [Windows x64 免安装版](https://github.com/mengxingGG/My-Familiar/releases/download/v1.0.0/Familiar-1.0.0-win-x64.zip)：解压后运行 `Familiar.exe`，保留整个文件夹。
-- [Android ARM64 APK](https://github.com/mengxingGG/My-Familiar/releases/download/v1.0.0/Familiar-1.0.0-arm64.apk)：支持 Android 9 及以上的 ARM64 设备，安装后打开 Familiar 配置模型。
-- [SHA-256 校验和](https://github.com/mengxingGG/My-Familiar/releases/download/v1.0.0/SHA256SUMS.txt)。
+- [Windows x64 安装程序](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-Setup-x64.exe)：安装后从开始菜单启动 Familiar。
+- [Windows x64 免安装版](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-win-x64.zip)：解压后运行 `Familiar.exe`，保留整个文件夹。
+- [Android ARM64 APK](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-arm64.apk)：支持 Android 9 及以上的 ARM64 设备，安装后打开 Familiar 配置模型。
+- [SHA-256 校验和](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/SHA256SUMS.txt)。
 
 发行包已包含运行环境，使用时不需要安装 Node.js 或开发 SDK。首次打开后在“模型连接”配置自己的模型和 API Key。Windows 双击宠物输入，Android 轻点完整宠物即可打开原生气泡输入。
 
-Android 正式包使用独立发行签名，关闭调试；Windows 暂无 Authenticode 签名。完整变更、升级方法与验证范围见 [v1.0.0 发行说明](docs/releases/v1.0.0.md)。旧版本继续保留在 Releases。
+Android 正式包使用独立发行签名，关闭调试；Windows 暂无 Authenticode 签名。完整变更、升级方法与验证范围见 [v1.1.0 发行说明](docs/releases/v1.1.0.md)。旧版本继续保留在 Releases。
+
+1.0.0 请先手动安装本次更新。自 1.1.0 起，宠物和控制器会提醒 GitHub 新正式版，点击自动下载本机安装包，并验证完整性。Android 安装由系统确认；Windows 点击打开安装包所在位置。
 
 ## Android
 
 Android 已接入项目的共享 Kernel、Provider、会话、记忆、Skills 和 Agent 工具。控制页与常驻宠物分别运行，关闭控制页后仍可在悬浮宠物的气泡里输入、流式接收回复和继续聊天。
 
-- **常驻与气泡**：开启“小窝 → 常驻伙伴”，按系统页面允许悬浮窗和运行通知。奶油色回复与浅绿输入直接浮在桌面上，支持长回复滚动、多行输入和停止生成，使用设备自带输入法。
-- **边角停靠**：可单独开启自动吸附和闲置收起。拖到边缘或角落后，向外滑动或闲置一段时间会收成小脑袋；轻点或向内拖展开，再点完整宠物聊天。
+- **常驻与气泡**：开启“小窝 → 常驻伙伴”，按系统页面允许悬浮窗和运行通知。奶油色回复与浅绿输入直接浮在桌面上，默认宠物在上、回复在中、输入在下；长回复内部滚动。使用设备自带输入法，回车直接发送，Shift＋回车换行，支持停止生成。
+- **边角停靠**：可单独开启自动吸附和闲置收起。启用后停靠最近边缘，向外划动或闲置一段时间只露出半个小脑袋；轻点或向内拖展开，再点完整宠物聊天。
 - **手机操作与权限**：在系统无障碍设置中启用“灵伴手机操作”。工具遵循全自动、有限执行、审批制度、全部拒绝四种模式；审批可添加精确白名单、允许一次、允许当前会话全部或拒绝。联网搜索、内部日记与记忆始终允许。目标变化或拒绝后不执行旧操作；受保护页面需手动交接。
 - **日历与时钟**：日历支持本地日历管理、日程增删改查、全天/重复/单次安排、参会人、提醒、忙闲与私密级别。时钟接入标准闹钟、重复、铃声/振动、稍后提醒和倒计时；已有闹钟的完整读取、永久编辑/删除及计时器暂停等通过显示时钟后使用无障碍完成，按接收应用能力验证结果。外部笔记使用兼容应用入口，也可写灵伴本地笔记。
 - **加密迁移**：“设置 → 数据迁移”提供密码保护的单文件导出、旧配置预览导入和恢复点；模型密钥可选，导入后重新存入新版 Keystore。

@@ -82,6 +82,8 @@ object NativeCapabilities {
 
     fun call(context: Context, method: String, params: JSONObject): Any {
         return when (method) {
+            "updates.present" -> PetUpdates.present(params)
+            "updates.open" -> PetUpdates.open(context, params)
             "pet.present" -> PetPresentation.present(context, params)
             "pet.reset" -> PetPresentation.resetPosition(context)
             "pet.open" -> { PetPresentation.main.post { PetPresentation.open(context) }; JSONObject.NULL }

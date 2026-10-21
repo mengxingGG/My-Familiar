@@ -5,7 +5,7 @@ async function wait(fn){for(const end=Date.now()+20000;Date.now()<end;){const v=
 const before=await call('snapshot.get');
 if(before.capabilities.find(c=>c.id==='accessibility')?.state==='disconnected'){
  adb('shell','am','start','-W','-n','com.android.settings/.Settings\\$AccessibilitySettingsActivity');
- const title=await wait(async()=>{const nodes=await controls(),titles=nodes.filter(n=>n.packageName==='com.android.settings'&&n.text==='灵伴手机操作');const candidates=titles.filter(t=>nodes.some(n=>['已开启','无法正常运行'].includes(n.text)&&n.y>t.y&&n.y-t.y<200));return candidates.length===1?candidates[0]:null;});tap(title);
+ const title=await wait(async()=>{const nodes=await controls();if(nodes.some(n=>n.resourceId==='com.android.settings:id/switch_text'&&n.text==='使用“灵伴手机操作”'))return {details:true};const titles=nodes.filter(n=>n.packageName==='com.android.settings'&&n.text==='灵伴手机操作');const candidates=titles.filter(t=>nodes.some(n=>(n.text==='已开启'||n.text.startsWith('无法运行'))&&n.y>t.y&&n.y-t.y<200));return candidates.length===1?candidates[0]:null;});if(!title.details)tap(title);
  const toggle=await wait(async()=>{const nodes=await controls();return nodes.some(n=>n.resourceId==='android:id/switch_widget'&&n.checked)?nodes.find(n=>n.resourceId==='com.android.settings:id/main_switch_bar'):null;});tap(toggle);
  tap(await wait(async()=>(await controls()).find(n=>n.text==='停止'&&n.resourceId==='android:id/button1'&&n.clickable)));
  const disabled=await wait(async()=>{const nodes=await controls();return nodes.some(n=>n.resourceId==='android:id/switch_widget'&&!n.checked)?nodes.find(n=>n.resourceId==='com.android.settings:id/main_switch_bar'):null;});tap(disabled);

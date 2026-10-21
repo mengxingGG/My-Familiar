@@ -28,6 +28,7 @@ import { CareView } from './care.ts';
 import { FeishuView } from './feishu.ts';
 import { BackupView } from './backup.ts';
 import { PermissionsView } from './permissions.ts';
+import { UpdateView } from './updates.ts';
 import type { ApprovalChoice } from '../../../packages/mobile-contracts/index.ts';
 
 type Tab = 'home' | 'abilities' | 'settings';
@@ -864,6 +865,8 @@ class FamiliarApp {
   private setCompanionSub!: HTMLElement;
   private setModelText!: HTMLElement;
   private setModeText!: HTMLElement;
+  private updateView!: UpdateView;
+  private homeUpdateView!: UpdateView;
   private setResidentBlock!: HTMLElement;
   private setResidentText!: HTMLElement;
 
@@ -1219,6 +1222,7 @@ class FamiliarApp {
   }
 
   private buildHome(): HTMLElement {
+    this.homeUpdateView = new UpdateView(this.bridge);
     this.homeStage = this.buildStage('home');
     this.petBubble = h('p', { class: 'pet-bubble', role: 'status', hidden: true });
     this.homePetBtn = h('button', {
@@ -1316,6 +1320,7 @@ class FamiliarApp {
       'section',
       { class: 'view view-home', 'aria-label': '小窝' },
       top,
+      this.homeUpdateView.root,
       h(
         'div',
         { class: 'home-grid' },
@@ -1451,6 +1456,7 @@ class FamiliarApp {
     this.setCompanionSub = h('small', { text: '形象、昵称和性格' });
     this.setModelText = h('small', { text: '正在读取…' });
     this.setModeText = h('p');
+    this.updateView = new UpdateView(this.bridge);
     const companionRow = h(
       'button',
       { type: 'button', class: 'row-link', 'data-needs': 'snap', disabled: true, on: { click: () => this.openPage('companion') } },
@@ -1504,6 +1510,7 @@ class FamiliarApp {
       this.buildPetSettings(),
       h('section', { class: 'block' }, h('h2', { class: 'block-title', text: '对话' }), h('div', { class: 'panel rows' }, modelRow, this.libraryRow, this.careRow, this.mcpRow, this.feishuRow, this.permissionRow, this.backupRow)),
       this.buildVoiceSettings(),
+      this.updateView.root,
       h(
         'section',
         { class: 'block' },
@@ -2732,6 +2739,9 @@ class FamiliarApp {
   }
 
   private renderSettings(s: MobileSnapshot): void {
+    this.updateView.sync(s.update);
+    this.homeUpdateView.sync(s.update);
+    this.homeUpdateView.root.hidden = !s.update?.assetName;
     this.renderPet(s);
     show(this.permissionRow, Boolean(s.permissionManagement));
     show(this.backupRow, Boolean(s.backupManagement));

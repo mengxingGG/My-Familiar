@@ -26,6 +26,7 @@ import { mobileMcp } from "./mobile-mcp.ts";
 import { mobileGithub } from './mobile-github.ts';
 import { mobileBackup } from './mobile-backup.ts';
 import { validatePolicy } from '../../../plugins/agent-tools/index.ts';
+import { updateCommands } from '../../../packages/contracts/updates.ts';
 import { mobileCare } from "./mobile-care.ts";
 import { mobileFeishu } from "./mobile-feishu.ts";
 import { mobileModel, advancedProfile, mergeAdvanced } from "./mobile-model.ts";
@@ -101,6 +102,7 @@ export function mobileApi(kernel: Kernel, native: AndroidNative) {
       native.call<MobileSnapshot["startup"]>("runtime.startup.get"),
     ]);
     return {
+      ...(() => {try {return {update: kernel.resolve('app.updates').state()};} catch {return {};}})(),
       protocolVersion: 1,
       revision: ++revision,
       mode: "live",
@@ -164,6 +166,10 @@ export function mobileApi(kernel: Kernel, native: AndroidNative) {
         request.id.length <= 100,
     );
     const p = request.params as Record<string, unknown> | undefined;
+    if (request.method.startsWith('updates.')) {
+      input((updateCommands as readonly string[]).includes(request.method) && (p === undefined || p === null));
+      return kernel.resolve('commands').call(request.method);
+    }
     if (request.method.startsWith("backup.")) return (backup ??= mobileBackup(kernel,native))(request.method,p);
     if (request.method.startsWith("library.")) return library(request.method, p);
     if (request.method.startsWith("mcp.")) return mcp(request.method, p);
@@ -396,7 +402,7 @@ export function mobileApi(kernel: Kernel, native: AndroidNative) {
   }
   return (request: MobileRequest): Promise<MobileResponse> => {
     // 资料各自拥有写入串行队列；下载 Skill 不得阻塞停止录音/回复和主快照。
-    const independent = request.method === "media.import" || request.method === "voice.host" || request.method === "voice.wake.host" || request.method.startsWith("library.") || request.method.startsWith("mcp.") || request.method.startsWith('github.auth.') || request.method.startsWith('care.') || request.method.startsWith('feishu.') || modelMethods.has(request.method);
+    const independent = request.method.startsWith('updates.') || request.method === "media.import" || request.method === "voice.host" || request.method === "voice.wake.host" || request.method.startsWith("library.") || request.method.startsWith("mcp.") || request.method.startsWith('github.auth.') || request.method.startsWith('care.') || request.method.startsWith('feishu.') || modelMethods.has(request.method);
     const operation = independent ? run(request) : queue.then(() => run(request));
     if (!independent) queue = operation.catch(() => {});
     return operation.then(

@@ -10,6 +10,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 import android.os.Build
+import android.content.Intent
+import android.view.Display
+import android.view.accessibility.AccessibilityWindowInfo
 import android.graphics.Bitmap
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
@@ -27,13 +30,29 @@ class FamiliarAccessibility: AccessibilityService() {
     private var snapshotTime = 0L
     private val fingerprints = mutableMapOf<String, String>()
     private val nodes = mutableMapOf<String, AccessibilityNodeInfo>()
-    override fun onServiceConnected() { instance = this }
-    // 自身无焦点审批窗出现不等于下层页面变更；执行时仍核对真实窗口及节点。
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.packageName?.toString() != packageName) clear()
-    }
+    override fun onServiceConnected() { super.onServiceConnected(); clear(); instance = this; NativeRuntime.ensure(applicationContext) }
+    // 不在系统主线程争用读取节点的锁；事件可能先于快照 Binder 回调送达。
+    // 每次执行通过窗口、有效期及节点指纹核对，不把审批窗/输入法切换误当作目标消失。
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
+    override fun onUnbind(intent: Intent?): Boolean { if (instance === this) instance = null; clear(); NativeGesture.unavailable(this); return super.onUnbind(intent) }
     override fun onInterrupt() { clear(); NativeGesture.unavailable(this) }
-    override fun onDestroy() { instance = null; clear(); NativeGesture.unavailable(this); super.onDestroy() }
+    override fun onDestroy() { if (instance === this) instance = null; clear(); NativeGesture.unavailable(this); super.onDestroy() }
+    /** 气泡输入、审批和键盘可能成为 active window；操作对象始终是可见的前台应用。 */
+    fun applicationRoot(): AccessibilityNodeInfo? {
+        if (instance !== this) return null
+        if (Build.VERSION.SDK_INT >= 33) clearCache()
+        val visible = windows
+        try {
+            val applications = visible.filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION && (Build.VERSION.SDK_INT < 30 || it.displayId == Display.DEFAULT_DISPLAY) }.sortedByDescending { it.layer }
+            for (window in applications) {
+                val root = window.root ?: continue
+                if (root.packageName?.toString() == packageName) { @Suppress("DEPRECATION") root.recycle(); return null }
+                if (root.isVisibleToUser && root.refresh()) return root
+                @Suppress("DEPRECATION") root.recycle()
+            }
+            return null
+        } finally { visible.forEach { @Suppress("DEPRECATION") it.recycle() } }
+    }
     @Synchronized private fun clear() {
         nodes.values.forEach { @Suppress("DEPRECATION") it.recycle() }
         nodes.clear(); fingerprints.clear(); snapshotId = ""; snapshotPackage = ""; snapshotWindow = -1; snapshotTime = 0L
@@ -47,7 +66,7 @@ class FamiliarAccessibility: AccessibilityService() {
     @Synchronized private fun captureWindow(id: String): Int {
         check(Build.VERSION.SDK_INT >= 34 && instance === this && !getSystemService(KeyguardManager::class.java).isKeyguardLocked)
         require(id.isNotEmpty() && id == snapshotId)
-        val root = rootInActiveWindow ?: throw IllegalStateException("UNAVAILABLE")
+        val root = applicationRoot() ?: throw IllegalStateException("UNAVAILABLE")
         try {
             val target = root.packageName?.toString() ?: ""
             require(target.isNotEmpty() && target == snapshotPackage && root.windowId == snapshotWindow)
@@ -86,7 +105,7 @@ class FamiliarAccessibility: AccessibilityService() {
     @Synchronized fun snapshot(): JSONObject {
         clear()
         check(!getSystemService(KeyguardManager::class.java).isKeyguardLocked)
-        val root = rootInActiveWindow ?: throw IllegalStateException("UNAVAILABLE")
+        val root = applicationRoot() ?: throw IllegalStateException("UNAVAILABLE")
         val output = JSONArray()
         snapshotId = UUID.randomUUID().toString()
         snapshotPackage = root.packageName?.toString() ?: ""
@@ -116,7 +135,7 @@ class FamiliarAccessibility: AccessibilityService() {
     @Synchronized fun consumeGesture(id: String, nodeId: String): GestureTarget {
         check(instance === this && NativeLocation.interactive(this)) { "UNAVAILABLE" }
         require(id.isNotEmpty() && id == snapshotId && android.os.SystemClock.elapsedRealtime() - snapshotTime in 0..120000) { "CONFLICT" }
-        val root = rootInActiveWindow ?: throw IllegalStateException("UNAVAILABLE")
+        val root = applicationRoot() ?: throw IllegalStateException("UNAVAILABLE")
         try {
             val target = root.packageName?.toString() ?: ""
             require(target.isNotEmpty() && target == snapshotPackage && root.windowId == snapshotWindow) { "CONFLICT" }
@@ -140,7 +159,8 @@ class FamiliarAccessibility: AccessibilityService() {
     @Synchronized fun action(params: JSONObject): JSONObject {
         check(!getSystemService(KeyguardManager::class.java).isKeyguardLocked)
         require(snapshotId.isNotEmpty() && params.getString("snapshotId") == snapshotId)
-        val root = rootInActiveWindow ?: throw IllegalStateException("UNAVAILABLE")
+        require(android.os.SystemClock.elapsedRealtime() - snapshotTime in 0..120000) { "CONFLICT" }
+        val root = applicationRoot() ?: throw IllegalStateException("UNAVAILABLE")
         val packageId = root.packageName?.toString() ?: ""
         val windowId = root.windowId
         @Suppress("DEPRECATION") root.recycle()

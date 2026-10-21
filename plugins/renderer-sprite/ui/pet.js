@@ -98,3 +98,16 @@ canvas.addEventListener("dblclick", () => call("chat.open"));
 document.querySelector("#chat").onclick = () => call("chat.open");
 document.querySelector("#settings").onclick = () => call("controller.open");
 call("pet.ready");
+const updateButton = document.querySelector('#update');
+let updateState;
+function renderUpdate(state) {
+  updateState = state;
+  const active = !!state.latestVersion && state.latestVersion !== state.currentVersion && !!state.assetName;
+  updateButton.hidden = !active;
+  updateButton.textContent = state.phase === 'downloading' ? `更新下载中 ${Math.floor(state.downloadedBytes / state.totalBytes * 100)}%` : state.phase === 'ready' ? '更新已下载 · 打开安装包' : `发现 ${state.latestVersion} · 点击更新`;
+  updateButton.title = state.error || '从 GitHub 下载适用于 Windows 的正式版';
+  updateButton.disabled = state.phase === 'downloading' || state.phase === 'checking';
+}
+api.on('familiar:update', renderUpdate);
+void api.request('updates.state').then(renderUpdate).catch(() => {});
+updateButton.onclick = () => api.request(updateState?.phase === 'ready' ? 'updates.open' : 'updates.download').then(renderUpdate).catch(() => {});

@@ -25,12 +25,16 @@ class PetService: Service() {
     private lateinit var window: WindowManager
     private lateinit var approvals: ApprovalOverlay
     private lateinit var bubble: PetBubble
+    private lateinit var updates: PetUpdateOverlay
     private var view: PetView? = null
     private var params: WindowManager.LayoutParams? = null
     private var area = Rect()
     private var fullSize = 1
     private var x = 0; private var y = 0
     private var edge = ""
+    private var manualPeek = false
+    private var chatHeight = 0
+    private var chatArea: Rect? = null
     private var dragging = false
     private var touching = false
     private var held = false
@@ -54,8 +58,8 @@ class PetService: Service() {
     private val animate = object: Runnable {
         override fun run() {
             if (!running) return
-            if (PetPresentation.inputBusy) { removeOverlay(); bubble.dismissMenu(); bubble.refresh(null); approvals.refresh(); return }
-            if (!interactive()) { removeOverlay(); bubble.dismissMenu(); approvals.refresh(); return }
+            if (PetPresentation.inputBusy) { removeOverlay(); bubble.dismissMenu(); bubble.refresh(null); updates.hide(); approvals.refresh(); handler.postDelayed(this, 500); return }
+            if (!interactive()) { removeOverlay(); bubble.dismissMenu(); bubble.refresh(null); updates.hide(); approvals.refresh(); handler.postDelayed(this, 1000); return }
             if (!Settings.canDrawOverlays(this@PetService) || !PetPresentation.visible) { removeOverlay(); bubble.dismissMenu() }
             else {
                 updateGeometry()
@@ -64,7 +68,7 @@ class PetService: Service() {
                 loadFrames(action)
                 val now = SystemClock.uptimeMillis()
                 val prefs = PetDock.prefs(this@PetService)
-                if (PetPresentation.speechVisible || PetPresentation.speech.optBoolean("busy") || bubble.chatOpen || pending()) {
+                if ((!manualPeek && (PetPresentation.speechVisible || PetPresentation.speech.optBoolean("busy") || bubble.chatOpen)) || pending()) {
                     lastTouch = now
                     if (PetDock.tucked) expand()
                 }
@@ -78,16 +82,20 @@ class PetService: Service() {
                 view?.contentDescription = if (PetDock.tucked) "灵伴小脑袋，点击展开，向内拖动展开" else "灵伴：${mapOf("idle" to "陪伴中", "think" to "思考中", "sleep" to "休息中", "happy" to "开心", "greet" to "打招呼", "drag" to "移动中")[action]}，拖动移动，点击气泡聊天，长按菜单"
                 bubble.refresh(if (PetDock.tucked) null else params)
             }
+            updates.refresh(if (overlayVisible && !bubble.chatOpen && !bubble.menuOpen && !PetPresentation.speechVisible) params else null)
             approvals.refresh(); handler.postDelayed(this, minOf(500, 1000 / fps).toLong())
         }
     }
     private fun pending() = JSONObject(PendingApprovals.snapshot()).getJSONArray("tasks").length() > 0
     override fun onCreate() {
         super.onCreate(); window = getSystemService(WindowManager::class.java)
-        approvals = ApprovalOverlay(this); bubble = PetBubble(this) { lastTouch = SystemClock.uptimeMillis(); event(it) }
+        approvals = ApprovalOverlay(this); bubble = PetBubble(this, { height, bounds ->
+            if (chatHeight != height || chatArea != bounds) { chatHeight = height; chatArea = bounds?.let { Rect(it) }; layout() }
+        }) { lastTouch = SystemClock.uptimeMillis(); event(it) }
+        updates = PetUpdateOverlay(this); PetUpdates.changed = { refresh() }
         PetPresentation.listener = { refresh() }
         PetPresentation.reset = { PetDock.tucked = false; edge = ""; lastTouch = SystemClock.uptimeMillis(); updateGeometry(true); refresh() }
-        PetDock.changed = { PetDock.tucked = false; lastTouch = SystemClock.uptimeMillis(); if (!PetDock.prefs(this).getBoolean("snapToEdge", false)) edge = ""; layout(); refresh() }
+        PetDock.changed = { PetDock.tucked = false; manualPeek = false; lastTouch = SystemClock.uptimeMillis(); updateGeometry(true); if (PetDock.prefs(this).getBoolean("snapToEdge", false)) { snap(); savePosition() } else edge = ""; layout(); refresh() }
         PendingApprovals.listener = { if (pending()) { expand(); bubble.dismissMenu() }; approvals.refresh(); refresh() }
         getSystemService(NotificationManager::class.java).createNotificationChannel(NotificationChannel("companion", "常驻伙伴", NotificationManager.IMPORTANCE_LOW))
         val filter = IntentFilter().apply { addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_SCREEN_OFF); addAction(Intent.ACTION_USER_PRESENT) }
@@ -138,8 +146,8 @@ class PetService: Service() {
         val prefs = PetDock.prefs(this)
         x = area.left + ((area.width() - size) * prefs.getFloat("x", 1f)).toInt()
         y = area.top + ((area.height() - size) * prefs.getFloat("y", .5f)).toInt()
-        edge = if (prefs.getBoolean("snapToEdge", false)) prefs.getString("edge", "") ?: "" else ""
-        clamp(); layout()
+        edge = if (prefs.getBoolean("snapToEdge", false) || PetDock.tucked) prefs.getString("edge", "") ?: "" else ""
+        clamp(); if (prefs.getBoolean("snapToEdge", false) && edge.isEmpty()) { snap(); savePosition() }; layout()
     }
     private fun clamp() { x = x.coerceIn(area.left, area.right - fullSize); y = y.coerceIn(area.top, area.bottom - fullSize) }
     private fun nearest() = listOf("left" to x - area.left, "right" to area.right - fullSize - x, "top" to y - area.top, "bottom" to area.bottom - fullSize - y).minBy { it.second }.first
@@ -152,41 +160,59 @@ class PetService: Service() {
         if (area.bottom - fullSize - y < dp(32)) y = area.bottom - fullSize
     }
     private fun savePosition() { PetDock.prefs(this).edit().putFloat("x", (x - area.left).toFloat() / (area.width() - fullSize).coerceAtLeast(1)).putFloat("y", (y - area.top).toFloat() / (area.height() - fullSize).coerceAtLeast(1)).putString("edge", edge).apply() }
-    private fun tuck() { if (PetDock.tucked || edge.isEmpty()) return; PetDock.tucked = true; bubble.dismissMenu(); layout() }
-    private fun expand() { PetDock.tucked = false; lastTouch = SystemClock.uptimeMillis(); layout() }
+    private fun tuck(manual: Boolean = false) { if (PetDock.tucked || edge.isEmpty()) return; manualPeek = manual; PetDock.tucked = true; bubble.collapseForDock(); PetPresentation.dismissForDock(); event("close"); layout() }
+    private fun expand() { PetDock.tucked = false; manualPeek = false; lastTouch = SystemClock.uptimeMillis(); layout() }
+    private fun outward(side: String, dx: Float, dy: Float): Boolean {
+        val distance = maxOf(dp(12), ViewConfiguration.get(this).scaledTouchSlop * 2)
+        return when (side) { "left" -> -dx >= distance && -dx >= abs(dy) * .75; "right" -> dx >= distance && dx >= abs(dy) * .75; "top" -> -dy >= distance && -dy >= abs(dx) * .75; "bottom" -> dy >= distance && dy >= abs(dx) * .75; else -> false }
+    }
     private fun layout() {
         val p = params ?: return; val size = if (PetDock.tucked) minOf(dp(48), fullSize) else fullSize
-        p.width = size; p.height = size
-        p.x = if (!PetDock.tucked) x else if (edge == "left" || x == area.left) area.left else if (edge == "right" || x == area.right - fullSize) area.right - size else x + (fullSize - size) / 2
-        p.y = if (!PetDock.tucked) y else if (edge == "top" || y == area.top) area.top else if (edge == "bottom" || y == area.bottom - fullSize) area.bottom - size else y + (fullSize - size) / 2
+        val peek = (size * .55f).toInt().coerceAtLeast(1)
+        p.width = if (PetDock.tucked && edge in setOf("left", "right")) peek else size
+        p.height = if (PetDock.tucked && edge in setOf("top", "bottom")) peek else size
+        p.x = if (!PetDock.tucked) x else if (edge == "left") area.left - dp(8) else if (edge == "right") area.right + dp(8) - p.width else (x + (fullSize - size) / 2).coerceIn(area.left, area.right - size)
+        p.y = if (!PetDock.tucked) y else if (edge == "top") area.top else if (edge == "bottom") area.bottom - p.height else (y + (fullSize - size) / 2).coerceIn(area.top, area.bottom - size)
+        if (!PetDock.tucked && chatHeight > 0) chatArea?.let { bounds ->
+            val last = bounds.bottom - p.height - chatHeight - dp(6)
+            if (last >= bounds.top) p.y = y.coerceIn(bounds.top, last)
+        }
         try { view?.let { window.updateViewLayout(it, p); it.invalidate() } } catch (_: Exception) { removeOverlay() }
     }
     private fun addOverlay() {
         val p = OverlayGeometry.params(fullSize, fullSize).apply { title = "FamiliarPet"; x = this@PetService.x; y = this@PetService.y }
         val v = PetView()
-        var downX = 0f; var downY = 0f; var startX = 0; var startY = 0; var wasTucked = false; var startEdge = ""
+        var downX = 0f; var downY = 0f; var startX = 0; var startY = 0; var wasTucked = false; var startEdge = ""; var swipeTucked = false
         val slop = ViewConfiguration.get(this).scaledTouchSlop
         v.setOnTouchListener { _, e ->
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    touching = true; held = false; downX = e.rawX; downY = e.rawY; startX = x; startY = y; wasTucked = PetDock.tucked; startEdge = edge
+                    touching = true; held = false; swipeTucked = false; downX = e.rawX; downY = e.rawY; startX = if (PetDock.tucked) x else params?.x ?: x; startY = if (PetDock.tucked) y else params?.y ?: y; wasTucked = PetDock.tucked; startEdge = edge
+                    if (startEdge.isEmpty()) { val close = minOf(x - area.left, area.right - fullSize - x, y - area.top, area.bottom - fullSize - y); if (close <= dp(32)) startEdge = nearest() }
                     lastTouch = SystemClock.uptimeMillis()
                     longPress = Runnable { if (touching && !dragging) { held = true; expand(); bubble.menu(params) } }.also { handler.postDelayed(it, ViewConfiguration.getLongPressTimeout().toLong()) }
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    if (swipeTucked) { refresh(); return@setOnTouchListener true }
                     val dx = e.rawX - downX; val dy = e.rawY - downY
+                    if (wasTucked && outward(startEdge, dx, dy)) { cancelLong(); return@setOnTouchListener true }
                     if (!dragging && (abs(dx) > slop || abs(dy) > slop)) { cancelLong(); dragging = true; held = false; expand(); bubble.dismissMenu(); event("drag-start") }
                     if (dragging) { x = startX + dx.toInt(); y = startY + dy.toInt(); clamp(); layout() }
+                    // 先在移动阶段识别，再到屏外触发 CANCEL 也不会把它重新展开。
+                    if (dragging && !wasTucked && outward(startEdge, dx, dy)) {
+                        edge = startEdge; dragging = false; held = true; swipeTucked = true; cancelLong(); tuck(true); savePosition(); event("drag-end")
+                    }
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     touching = false; cancelLong(); lastTouch = SystemClock.uptimeMillis()
-                    if (dragging) {
+                    if (swipeTucked) { savePosition(); layout() }
+                    else if (dragging) {
                         dragging = false
                         if (e.actionMasked == MotionEvent.ACTION_UP) { x = startX + (e.rawX - downX).toInt(); y = startY + (e.rawY - downY).toInt(); clamp() }
                         if (e.actionMasked == MotionEvent.ACTION_UP && PetDock.prefs(this).getBoolean("snapToEdge", false)) {
                             val dx = e.rawX - downX; val dy = e.rawY - downY
-                            val outward = !wasTucked && when (startEdge) { "left" -> dx < -dp(24) && abs(dx) > abs(dy); "right" -> dx > dp(24) && abs(dx) > abs(dy); "top" -> dy < -dp(24) && abs(dy) > abs(dx); "bottom" -> dy > dp(24) && abs(dy) > abs(dx); else -> false }
-                            snap(); if (outward && edge == startEdge) tuck()
+                            val fold = !wasTucked && outward(startEdge, dx, dy)
+                            snap(); if (fold && edge == startEdge) tuck(true)
                         } else edge = ""
                         savePosition(); layout(); event("drag-end")
                     } else if (e.actionMasked == MotionEvent.ACTION_UP && !held) {
@@ -204,10 +230,11 @@ class PetService: Service() {
         override fun onDraw(canvas: Canvas) {
             val pic = picture ?: return; val w = width.toFloat(); val h = height.toFloat()
             if (PetDock.tucked) {
-                // 缩成可点按的小头像，窗口也随之缩小，隐藏的身体不会挡住其它应用。
-                canvas.drawOval(0f, 0f, w, h, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(249, 247, 235) })
-                canvas.save(); canvas.clipPath(Path().apply { addOval(1f, 1f, w - 1, h - 1, Path.Direction.CW) })
-                canvas.translate(-w * .45f, -h * .48f); canvas.scale(w * 1.9f / pic.width, h * 1.9f / pic.height); canvas.drawPicture(pic); canvas.restore()
+                // 只露出半个头像；透明且狭窄的真实窗口不会遮住隐藏身体所在区域。
+                val head = minOf(dp(48), fullSize).toFloat()
+                val sx = head / (pic.width * .6f); val sy = head / (pic.height * .6f)
+                val ox = if (edge == "left") w - head else 0f; val oy = if (edge == "top") h - head else 0f
+                canvas.save(); canvas.clipRect(0f,0f,w,h); canvas.translate(ox - pic.width * .2f * sx, oy - pic.height * .2f * sy); canvas.scale(sx,sy); canvas.drawPicture(pic); canvas.restore()
             } else {
                 val scale = minOf(w / pic.width, h / pic.height); canvas.save(); canvas.translate((w - pic.width * scale) / 2, (h - pic.height * scale) / 2); canvas.scale(scale, scale); canvas.drawPicture(pic); canvas.restore()
             }
@@ -217,6 +244,7 @@ class PetService: Service() {
     private fun cancelLong() { longPress?.let { handler.removeCallbacks(it) }; longPress = null }
     private fun removeOverlay() { cancelLong(); touching = false; if (dragging) { dragging = false; event("drag-end") }; view?.let { try { window.removeView(it) } catch (_: Exception) {} }; view = null; params = null; overlayVisible = false }
     override fun onDestroy() {
+        PetUpdates.changed = null; updates.destroy()
         running = false; PendingApprovals.listener = null; PetPresentation.listener = null; PetPresentation.reset = null; PetDock.changed = null; PetDock.tucked = false
         approvals.destroy(); bubble.destroy(); unregisterReceiver(screenEvents); handler.removeCallbacksAndMessages(null); removeOverlay(); io.shutdown(); frames = emptyList(); cache.clear(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy()
     }

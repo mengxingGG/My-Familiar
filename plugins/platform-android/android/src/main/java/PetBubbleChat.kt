@@ -12,12 +12,16 @@ import android.text.Editable
 import android.text.InputType
 import android.view.*
 import android.view.inputmethod.InputMethodManager
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputConnectionWrapper
+import android.view.inputmethod.BaseInputConnection
 import android.widget.*
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
 /** 悬浮输入只持有短期草稿；会话、历史、生成和工具审批仍使用同一 Runtime。 */
-class PetBubbleChat(private val context: Context, private val closed: () -> Unit) {
+class PetBubbleChat(private val context: Context, private val reserveChat: (Int, android.graphics.Rect?) -> Unit, private val closed: () -> Unit) {
     private val window = context.getSystemService(WindowManager::class.java)
     private val main = Handler(Looper.getMainLooper())
     private val io = Executors.newFixedThreadPool(2)
@@ -48,6 +52,8 @@ class PetBubbleChat(private val context: Context, private val closed: () -> Unit
     private var focused = false
     private var focusRequested = false
     private var imeBottom = 0
+    private var placement = ""
+    private var placementArea = ""
     private var conflict = false
     private val drafts = linkedMapOf<String, String>()
     private var draft = ""
@@ -59,7 +65,7 @@ class PetBubbleChat(private val context: Context, private val closed: () -> Unit
     }
     fun open(value: WindowManager.LayoutParams?) {
         if (!alive) return
-        if (!opened) { generation++; opened = true; conflict = false; conversation = null; state = JSONObject(); draft = ""; lastPoll = 0 }
+        if (!opened) { generation++; opened = true; conflict = false; conversation = null; state = JSONObject(); draft = ""; lastPoll = 0; placement = ""; placementArea = "" }
         focusRequested = true; refresh(value)
     }
     fun refresh(value: WindowManager.LayoutParams?) {
@@ -119,6 +125,32 @@ class PetBubbleChat(private val context: Context, private val closed: () -> Unit
         closeButton = PetBubbleStyle.icon(context, "close", "收起") { close(); closed() }
         surface.addView(closeButton, FrameLayout.LayoutParams(dp(48), dp(48), Gravity.TOP or Gravity.RIGHT).apply { rightMargin = dp(2); topMargin = dp(2) })
         input = object: EditText(context) {
+            override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
+                val connection = super.onCreateInputConnection(outAttrs) ?: return null
+                outAttrs.imeOptions = (outAttrs.imeOptions and EditorInfo.IME_MASK_ACTION.inv() and EditorInfo.IME_FLAG_NO_ENTER_ACTION.inv()) or EditorInfo.IME_ACTION_SEND
+                return object: InputConnectionWrapper(connection, false) {
+                    override fun performEditorAction(editorAction: Int): Boolean {
+                        if (editorAction in setOf(EditorInfo.IME_ACTION_SEND, EditorInfo.IME_ACTION_DONE, EditorInfo.IME_NULL)) { main.post { submit() }; return true }
+                        return super.performEditorAction(editorAction)
+                    }
+                    override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
+                        // 部分输入法不触发 IME_ACTION_SEND，而是提交单独的换行。
+                        if ((text?.toString() == "\n" || text?.toString() == "\r\n") && BaseInputConnection.getComposingSpanStart(editableText) < 0) { submit(); return true }
+                        return super.commitText(text, newCursorPosition)
+                    }
+                }
+            }
+            override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+                if (keyCode == KeyEvent.KEYCODE_ENTER && !event.isShiftPressed && BaseInputConnection.getComposingSpanStart(editableText) < 0) {
+                    if (event.repeatCount == 0) submit()
+                    return true
+                }
+                return super.onKeyDown(keyCode, event)
+            }
+            override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+                if (keyCode == KeyEvent.KEYCODE_ENTER && !event.isShiftPressed) return true
+                return super.onKeyUp(keyCode, event)
+            }
             override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
                 super.onWindowFocusChanged(hasWindowFocus)
                 if (hasWindowFocus && focused && !conflict) post { if (focused && !conflict && isAttachedToWindow) { requestFocus(); context.getSystemService(InputMethodManager::class.java).showSoftInput(this, InputMethodManager.SHOW_IMPLICIT) } }
@@ -133,6 +165,10 @@ class PetBubbleChat(private val context: Context, private val closed: () -> Unit
             background = null; includeFontPadding = false; highlightColor = Color.rgb(202, 217, 184)
             if (Build.VERSION.SDK_INT >= 29) textCursorDrawable?.setTint(PetBubbleStyle.sage)
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            imeOptions = EditorInfo.IME_ACTION_SEND
+            setOnEditorActionListener { _, actionId, event ->
+                if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_NULL && event == null || event?.let { it.keyCode == KeyEvent.KEYCODE_ENTER && !it.isShiftPressed } == true) { if (event == null || event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) submit(); true } else false
+            }
             minLines = 1; maxLines = 3; minHeight = dp(48); gravity = Gravity.CENTER_VERTICAL
             filters = arrayOf(InputFilter.LengthFilter(8000)); setPadding(dp(18), dp(10), 0, dp(10))
             addTextChangedListener(object: TextWatcher {
@@ -185,8 +221,8 @@ class PetBubbleChat(private val context: Context, private val closed: () -> Unit
         if (imeBottom > 0) area.bottom = minOf(area.bottom, bottom - imeBottom - dp(8)).coerceAtLeast(area.top + dp(100))
         val available = area.height(); val width = minOf(dp(292), area.width())
         val onRight = target.x + target.width / 2 > area.centerX()
-        val desired = reply?.let { kotlin.math.ceil(android.text.Layout.getDesiredWidth(it.text, it.paint).toDouble()).toInt() } ?: 0
-        val replyWidth = (desired + dp(68)).coerceIn(minOf(dp(164), width), width)
+        // 回复宽度固定，长内容在内部滚动，流式生成不把气泡撑到另一侧。
+        val replyWidth = width
         val inputDesired = input?.let { kotlin.math.ceil(android.text.Layout.getDesiredWidth(it.text.ifEmpty { it.hint }, it.paint).toDouble()).toInt() } ?: 0
         val composerWidth = (inputDesired + dp(81)).coerceIn(minOf(dp(184), width), minOf(dp(260), width))
         replySurface?.layoutParams = LinearLayout.LayoutParams(replyWidth, -2).apply { gravity = if (onRight) Gravity.RIGHT else Gravity.LEFT }
@@ -196,29 +232,40 @@ class PetBubbleChat(private val context: Context, private val closed: () -> Unit
         reply?.measure(View.MeasureSpec.makeMeasureSpec(textWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
         notice?.measure(View.MeasureSpec.makeMeasureSpec(textWidth, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
         val extra = (inputRow?.measuredHeight ?: dp(69)) + dp(47) + (if (notice?.visibility == View.VISIBLE) notice?.measuredHeight ?: 0 else 0) + (if (conflict) dp(48) else 0)
-        val replyLimit = minOf(dp(168), (available - extra).coerceAtLeast(dp(22)))
+        val minimumStack = minOf(available, extra + dp(22))
+        val room = available - target.height - dp(6)
+        // 一次预留长回复空间，避免每个流式片段都推动宠物；仅改变显示位置。
+        val reserved = if (room >= minimumStack) minOf(room, extra + dp(144)) else 0
+        reserveChat(reserved, if (reserved > 0) area else null)
+        val belowSpace = (area.bottom - target.y - target.height - dp(6)).coerceIn(0, available)
+        val aboveSpace = (target.y - area.top - dp(6)).coerceIn(0, available)
+        val geometry = "${area.flattenToString()}:${target.x}:${target.y}:${target.width}:${target.height}"
+        if (placement.isEmpty() || geometry != placementArea) {
+            placement = if (reserved > 0 || belowSpace >= minimumStack || belowSpace >= aboveSpace) "below" else "above"
+            placementArea = geometry
+        }
+        val above = placement == "above"
+        val stackLimit = minOf(available, maxOf(minimumStack, if (above) aboveSpace else belowSpace))
+        val replyLimit = minOf(dp(144), (stackLimit - extra).coerceAtLeast(dp(22)))
         replyScroll?.layoutParams = LinearLayout.LayoutParams(-1, (reply?.measuredHeight ?: dp(22)).coerceIn(minOf(dp(22), replyLimit), replyLimit))
         // 尾巴随实际放置方向翻转；透明根布局不绘制外框，也不占满空白回复高度。
         replyContent?.setPadding(dp(20), dp(18), dp(48), dp(29))
-        box.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(available, View.MeasureSpec.AT_MOST))
+        box.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(stackLimit, View.MeasureSpec.AT_MOST))
         val p = params ?: OverlayGeometry.params(width, box.measuredHeight).apply { title = "FamiliarChat"; params = this }
         p.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or (if (focused) 0 else WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
         p.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         p.width = width; p.height = minOf(box.measuredHeight, available)
         p.x = (target.x + target.width / 2 - width / 2).coerceIn(area.left, (area.right - width).coerceAtLeast(area.left))
-        val above = target.y - p.height - dp(6) >= area.top || target.y + target.height + p.height > area.bottom
-        // 回复始终贴近宠物，输入气泡错位放在外侧，避免尾巴指向输入区。
-        val last = if (above) replySurface else inputRow
-        if (box.getChildAt(box.childCount - 1) !== last && last != null) box.bringChildToFront(last)
+        // 无论气泡位于宠物上方还是下方，都保持回复在上、输入在下。
         p.y = (if (above) target.y - p.height - dp(6) else target.y + target.height + dp(6)).coerceIn(area.top, (area.bottom - p.height).coerceAtLeast(area.top))
         paper?.tailBelow = above
         paper?.tailPointsRight = onRight
         paper?.tailX = (target.x + target.width / 2 - p.x - (if (onRight) width - replyWidth else 0)).toFloat()
-        inputPaper?.tailBelow = above
+        inputPaper?.tailBelow = false
         inputPaper?.tailPointsRight = !onRight
         inputPaper?.tailX = if (onRight) dp(34).toFloat() else (composerWidth - dp(34)).toFloat()
         replyContent?.setPadding(dp(20), dp(if (above) 18 else 29), dp(48), dp(if (above) 29 else 18))
-        inputRow?.setPadding(dp(4), dp(if (above) 5 else 16), dp(7), dp(if (above) 16 else 5))
+        inputRow?.setPadding(dp(4), dp(16), dp(7), dp(5))
         closeButton?.translationY = if (above) 0f else dp(11).toFloat()
         try { if (box.parent == null) window.addView(box, p) else window.updateViewLayout(box, p) } catch (_: Exception) { hide() }
     }
@@ -242,7 +289,8 @@ class PetBubbleChat(private val context: Context, private val closed: () -> Unit
     }
     private fun submit() {
         val id = conversation ?: return; if (submitting || conflict || state.optBoolean("busy") || draft.isBlank()) return
-        val value = draft; val version = generation; submitting = true; showNotice(""); updateSend()
+        if ((input?.editableText?.let { BaseInputConnection.getComposingSpanStart(it) } ?: -1) >= 0) return
+        val value = draft; val version = generation; submitting = true; blur(); showNotice(""); updateSend()
         io.execute {
             val result = try { call("pet.chat.send", JSONObject().put("conversationId", id).put("text", value)) } catch (_: Exception) { null }
             main.post {
@@ -275,6 +323,7 @@ class PetBubbleChat(private val context: Context, private val closed: () -> Unit
         }
     }
     fun hide() {
+        reserveChat(0, null)
         focused = false; focusRequested = false; imeBottom = 0
         input?.let { context.getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(it.windowToken, 0) }
         root?.let { try { window.removeView(it) } catch (_: Exception) {} }

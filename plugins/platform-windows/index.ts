@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { definePlugin, type Settings } from "../../packages/contracts/index.ts";
 import { clampRect } from "./geometry.ts";
 import { companionCommands } from "../companion-controls/index.ts";
+import { updateCommands } from "../../packages/contracts/updates.ts";
 export function platformWindows(options: {
   root: string;
   role: "runtime" | "controller";
@@ -64,6 +65,7 @@ export function platformWindows(options: {
         const shared = ["runtime.status"];
         const own: Record<string, string[]> = {
           pet: [
+            ...updateCommands,
             "pet.click",
             "pet.drag-start",
             "pet.drag-end",

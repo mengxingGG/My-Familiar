@@ -62,3 +62,5 @@ button {
   overflow: hidden;
   pointer-events: none;
 }
+#update { position: absolute; top: 3%; left: 5%; width: 90%; z-index: 3; padding: 9px 10px; border: none; border-radius: 18px 18px 18px 4px; box-shadow: 0 3px 14px #2e362320; background: #f8f7df; color: #4a6034; line-height: 1.5; }
+#update[hidden] { display: none; }

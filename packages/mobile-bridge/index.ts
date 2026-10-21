@@ -11,6 +11,7 @@ import {
   type MobileMediaPreview,
 } from "../mobile-contracts/index.ts";
 import { projectBackup } from "./backup.ts";
+import { validUpdate, projectUpdate } from './updates.ts';
 import { projectPolicy } from "./policy.ts";
 import { projectLibraryResult } from "./library.ts";
 import { projectMcpResult } from "./mcp.ts";
@@ -80,6 +81,7 @@ const voiceProfile = (v: unknown, local = false) => object(v) && oneOf(v.kind, l
 
 /** 拒绝不兼容的宿主数据，避免半更新页面和意外原始错误泄露。 */
 export function isMobileSnapshot(v: unknown): v is MobileSnapshot {
+  if (object(v) && v.update !== undefined && !validUpdate(v.update)) return false;
   if (
     !object(v) ||
     v.protocolVersion !== 1 ||
@@ -281,6 +283,7 @@ const messages: Record<string, string> = {
 // 只投影协议字段；宿主额外的内部字段不能沿快照进入界面。
 function projectSnapshot(s: MobileSnapshot): MobileSnapshot {
   return {
+    ...(s.update ? {update: projectUpdate(s.update)} : {}),
     protocolVersion: 1,
     ...(s.startup ? { startup: projectStartup(s.startup) } : {}),
     ...(s.library ? { library: { memory: s.library.memory, skills: s.library.skills } } : {}),
@@ -528,6 +531,7 @@ export function createMobileBridge(
         if (method.startsWith('care.')) return projectCareResult(method,response.result) as MobileCommands[K]['result'];
         if (method.startsWith('feishu.')) return projectFeishuResult(response.result) as MobileCommands[K]['result'];
         if (method.startsWith('backup.')) return projectBackup(method,response.result) as MobileCommands[K]['result'];
+        if (method.startsWith('updates.')) return projectUpdate(response.result) as MobileCommands[K]['result'];
         if (method === 'policy.get' || method === 'policy.set') return projectPolicy(response.result) as MobileCommands[K]['result'];
         if (method === 'runtime.startup.save') return projectStartup(response.result) as MobileCommands[K]['result'];
         if (['provider.models', 'provider.inspect', 'provider.test', 'provider.test.cancel', 'conversation.context', 'context.archive'].includes(method)) return projectModelResult(method, response.result, params) as MobileCommands[K]['result'];

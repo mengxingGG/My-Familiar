@@ -18,7 +18,7 @@ class FamiliarPlugin(private val activity: Activity): Plugin(activity) {
     private var choosing = false
     private var exportingBackup: String? = null
     private var camera: CameraCapture.Pending? = null
-    private val modelMethods = setOf("provider.models", "provider.inspect", "provider.test", "provider.test.cancel", "conversation.context", "context.archive")
+    private val modelMethods = setOf("provider.models", "provider.inspect", "provider.test", "provider.test.cancel", "conversation.context", "context.archive", "updates.state", "updates.check", "updates.download", "updates.cancel", "updates.open")
     private val mcpMethods = setOf("mcp.list", "mcp.save", "mcp.github.save", "mcp.connect", "mcp.connect.cancel", "mcp.disconnect", "mcp.remove", "github.auth.status", "github.auth.configure", "github.auth.begin", "github.auth.open", "github.auth.cancel", "github.auth.forget", "github.auth.apply")
     private val careMethods = setOf("care.get", "care.save", "care.preview", "care.stop", "care.locate", "care.locate.cancel")
     private val feishuMethods = setOf("feishu.status", "feishu.save", "feishu.pair", "feishu.stop", "feishu.office.save", "feishu.office.check", "feishu.auth.begin", "feishu.auth.open", "feishu.auth.cancel", "feishu.auth.forget")

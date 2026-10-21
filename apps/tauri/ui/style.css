@@ -3106,3 +3106,7 @@ html[data-surface="approval"] body {
 .res-startup { border-top:1px solid var(--line-strong); padding-top:12px; }
 .res-startup .voice-check { min-height:48px; }
 .res-startup .block-hint { margin:8px 0; }
+
+.update-panel { margin: 12px 0; padding: 20px; }
+.update-panel p { color: var(--muted, #70775f); line-height: 1.65; margin: 8px 0 14px; overflow-wrap: anywhere; }
+.update-actions { display: flex; flex-wrap: wrap; gap: 10px; }

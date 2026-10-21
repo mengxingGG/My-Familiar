@@ -20,6 +20,7 @@ object PetPresentation {
     var inputBusy = false; private set
     // 触摸注入期间让自己的窗口短暂让开，偏好与停靠位置保持不变。
     fun inputBusy(value: Boolean) { check(Looper.myLooper() == Looper.getMainLooper()); inputBusy = value; listener?.invoke() }
+    fun dismissForDock() { check(Looper.myLooper() == Looper.getMainLooper()); speechVisible = false; composerVisible = false; listener?.invoke() }
     var speechVisible = false; private set
     var composerVisible = false; private set
     var speech = JSONObject().put("text", "").put("busy", false).put("name", "灵伴"); private set

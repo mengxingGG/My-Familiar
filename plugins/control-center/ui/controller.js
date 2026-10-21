@@ -203,6 +203,7 @@ async function refresh(force = false) {
     if (data.apiVersion !== 4)
       throw new Error("宠物仍在运行旧版本。请退出宠物和控制器后重新启动");
     snapshot = data;
+    void api.request('updates.state').then(renderUpdate).catch(() => {});
     if (!petWriting && !Object.keys(petPending).length)
       document.body.dataset.character = data.settings.pet.character;
     if (epoch === autostartEpoch && !$("autostart").dataset.pending) {
@@ -269,6 +270,20 @@ async function refresh(force = false) {
     polling = false;
   }
 }
+let updateState;
+function renderUpdate(state) {
+  updateState = state;
+  const available = !!state.assetName && !!state.latestVersion && state.latestVersion !== state.currentVersion;
+  $('update-title').textContent = available ? `发现新版本 ${state.latestVersion}` : `Familiar ${state.currentVersion}`;
+  $('update-detail').textContent = state.error || (state.phase === 'downloading' ? `正在下载 ${state.assetName} · ${Math.floor(state.downloadedBytes / state.totalBytes * 100)}%` : state.phase === 'ready' ? '安装包已校验，点击打开文件位置。' : state.phase === 'checking' ? '正在检查 GitHub 正式版…' : available ? '点击即可下载 Windows 安装包，模型设置和记忆会保留。' : state.phase === 'current' ? '已经是最新正式版。' : '启动后自动检查 GitHub 正式版。');
+  $('update-check').disabled = ['checking', 'downloading'].includes(state.phase);
+  $('update-action').hidden = !available || ['checking', 'downloading'].includes(state.phase);
+  $('update-action').textContent = state.phase === 'ready' ? '打开安装包位置' : state.phase === 'error' ? '重试下载' : '下载更新';
+  $('update-cancel').hidden = state.phase !== 'downloading';
+}
+$('update-check').onclick = () => action($('update-check'), 'updates.check', undefined).then(s => s && renderUpdate(s));
+$('update-action').onclick = () => action($('update-action'), updateState?.phase === 'ready' ? 'updates.open' : 'updates.download', undefined).then(s => s && renderUpdate(s));
+$('update-cancel').onclick = () => action($('update-cancel'), 'updates.cancel', undefined).then(s => s && renderUpdate(s));
 for (const input of document.querySelectorAll(
   "#persona input,#persona textarea,#persona select,#model input:not(#api-key):not(#model-search),#model select",
 ))

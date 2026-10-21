@@ -70,7 +70,7 @@ object AppAccess {
         return entry.target
     }
     private fun visible(service: FamiliarAccessibility, packageName: String): Boolean {
-        val root = service.rootInActiveWindow ?: return false
+        val root = service.applicationRoot() ?: return false
         return try { root.packageName?.toString() == packageName } finally { @Suppress("DEPRECATION") root.recycle() }
     }
     fun open(context: Context, p: JSONObject): JSONObject {

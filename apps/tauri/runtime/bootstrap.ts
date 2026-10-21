@@ -52,6 +52,8 @@ import { androidFeishuOffice, type AndroidFeishuOfficeOptions } from "../../../p
 import { androidFeishuAuth, type AndroidFeishuAuthOptions } from "../../../plugins/feishu-android/auth.ts";
 import { githubDeviceAuth, type GithubDeviceOptions } from "../../../plugins/github-integration/device-auth.ts";
 import { amapCare } from "../../../plugins/amap-care/index.ts";
+import { appUpdates } from "../../../plugins/app-updates/index.ts";
+import { FAMILIAR_VERSION } from "../../../packages/contracts/updates.ts";
 import {
   androidSecrets,
   androidTools,
@@ -75,6 +77,7 @@ export async function bootstrapAndroid(
       "familiar.character-pack": ["assets.read"],
       "familiar.home-files": ["storage.app"],
       "familiar.secrets-android": ["secrets.model"],
+      "familiar.app-updates": ["network.updates", "files.updates"],
       "familiar.github-device-auth": ["network.github"],
       "familiar.tools-android": ["device.accessibility", "device.calendar", "device.notes"],
       "familiar.mcp-client": ["network.mcp"],
@@ -101,6 +104,7 @@ export async function bootstrapAndroid(
   const plugins = [
     commands,
     storageLocal(join(root, "data")),
+    appUpdates({currentVersion: FAMILIAR_VERSION, platform: 'android-arm64', directory: join(root, 'updates'), open: async (_path, asset) => {await native.call('updates.open', {name: asset.name});}, notify: state => native.call('updates.present', {...state}).then(() => {})}),
     characterPack(join(assets, "characters")),
     petConfig,
     personaConfig,
