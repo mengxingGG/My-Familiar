@@ -43,7 +43,10 @@ class PetService: Service() {
     private var frame = 0; private var lastDraw = 0L; private var fps = 2
     private var loadedKey = ""
     private var frames = emptyList<Picture>()
-    private val cache = mutableMapOf<String, Pair<List<Picture>, Int>>()
+    private data class Animation(val frames: List<Picture>, val fps: Int, val timings: List<Int>, val loop: Boolean)
+    private var timings = emptyList<Int>()
+    private var loop = true
+    private val cache = linkedMapOf<String, Animation>()
     private fun dp(n: Int) = (n * resources.displayMetrics.density).toInt()
     private fun interactive() = getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
     private fun event(action: String) {
@@ -76,14 +79,15 @@ class PetService: Service() {
                 if (!touching && !bubble.menuOpen && !bubble.chatOpen && edge.isNotEmpty() && prefs.getBoolean("snapToEdge", false) && prefs.getBoolean("hideWhenIdle", true)
                     && !PetPresentation.speechVisible && !PetPresentation.speech.optBoolean("busy") && !pending()
                     && now - lastTouch >= prefs.getInt("delaySeconds", 30) * 1000L) tuck()
-                if (frames.isNotEmpty() && (now - lastDraw >= 1000 / fps || lastDraw == 0L)) {
-                    view?.picture = frames[(frame++) % frames.size]; lastDraw = now; view?.invalidate()
+                if (frames.isNotEmpty() && (now - lastDraw >= (timings.getOrNull(frame) ?: (1000 / fps)) || lastDraw == 0L)) {
+                    if (lastDraw != 0L) frame = if (frame + 1 < frames.size) frame + 1 else if (loop) 0 else frame
+                    view?.picture = frames[frame]; lastDraw = now; view?.invalidate()
                 }
-                view?.contentDescription = if (PetDock.tucked) "灵伴小脑袋，点击展开，向内拖动展开" else "灵伴：${mapOf("idle" to "陪伴中", "think" to "思考中", "sleep" to "休息中", "happy" to "开心", "greet" to "打招呼", "drag" to "移动中")[action]}，拖动移动，点击气泡聊天，长按菜单"
+                view?.contentDescription = if (PetDock.tucked) "灵伴小脑袋，点击展开，向内拖动展开" else "灵伴：${mapOf("idle" to "陪伴中", "think" to "思考中", "sleep" to "休息中", "happy" to "开心", "greet" to "打招呼", "drag" to "移动中", "walk" to "散步中", "eat" to "吃饭中", "full" to "吃饱了", "play" to "玩耍中", "drowsy" to "困了", "hungry" to "饿了", "weak" to "有些虚弱", "dejected" to "需要照料", "recover" to "恢复精神")[action] ?: "陪伴中"}，拖动移动，点击气泡聊天，长按菜单"
                 bubble.refresh(if (PetDock.tucked) null else params)
             }
             updates.refresh(if (overlayVisible && !bubble.chatOpen && !bubble.menuOpen && !PetPresentation.speechVisible) params else null)
-            approvals.refresh(); handler.postDelayed(this, minOf(500, 1000 / fps).toLong())
+            approvals.refresh(); handler.postDelayed(this, minOf(500, timings.getOrNull(frame) ?: (1000 / fps)).toLong())
         }
     }
     private fun pending() = JSONObject(PendingApprovals.snapshot()).getJSONArray("tasks").length() > 0
@@ -128,15 +132,28 @@ class PetService: Service() {
         val character = PetPresentation.character; val key = "$character/$action"
         if (loadedKey == key) return
         cache.keys.filter { !it.startsWith("$character/") }.forEach { cache.remove(it) }
+        if (cache.size >= 4 && !cache.containsKey(key)) cache.remove(cache.keys.first())
         val entry = cache.getOrPut(key) {
             try {
                 val sprite = assets.open("characters/$character/character.json").bufferedReader().use { JSONObject(it.readText()) }.getJSONObject("representations").getJSONObject("sprite")
-                val all = sprite.getJSONObject("frames"); val list = all.optJSONArray(action) ?: all.getJSONArray("idle")
+                val all = sprite.getJSONObject("frames"); val selected = if (all.has(action)) action else "idle"; val list = all.getJSONArray(selected)
                 require(list.length() in 1..60)
-                (0 until list.length()).map { i -> val name = list.getString(i); require(name.matches(Regex("[a-z0-9-]+\\.svg"))); assets.open("characters/$character/$name").use { SVG.getFromInputStream(it).renderToPicture() } } to sprite.optInt("fps", 2).coerceIn(1, 12)
-            } catch (_: Exception) { emptyList<Picture>() to 2 }
+                val pictures = (0 until list.length()).map { i ->
+                    val name = list.getString(i); require(name.matches(Regex("[a-z0-9-]+\\.(svg|png|webp)")))
+                    assets.open("characters/$character/$name").use { stream ->
+                        if (name.endsWith(".svg")) SVG.getFromInputStream(stream).renderToPicture()
+                        else {
+                            val bitmap = requireNotNull(BitmapFactory.decodeStream(stream)); require(bitmap.width in 1..1024 && bitmap.height in 1..1024)
+                            Picture().apply { val canvas = beginRecording(bitmap.width, bitmap.height); canvas.drawBitmap(bitmap, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)); endRecording() }
+                        }
+                    }
+                }
+                val rate = sprite.optInt("fps", 6).coerceIn(1, 30)
+                val timing = sprite.optJSONObject("timings")?.optJSONArray(selected)
+                Animation(pictures, rate, pictures.indices.map { timing?.optInt(it, 1000 / rate)?.coerceIn(33, 10000) ?: (1000 / rate) }, sprite.optJSONObject("loops")?.optBoolean(selected, true) ?: true)
+            } catch (_: Exception) { Animation(emptyList(), 6, emptyList(), true) }
         }
-        frames = entry.first; fps = entry.second; loadedKey = key; frame = 0; lastDraw = 0
+        frames = entry.frames; fps = entry.fps; timings = entry.timings; loop = entry.loop; loadedKey = key; frame = 0; lastDraw = 0
     }
     private fun updateGeometry(force: Boolean = false) {
         val next = OverlayGeometry.area(this, window)

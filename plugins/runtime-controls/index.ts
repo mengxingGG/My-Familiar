@@ -1,4 +1,4 @@
-import { definePlugin } from "../../packages/contracts/index.ts";
+import { definePlugin, type SpriteRepresentation } from "../../packages/contracts/index.ts";
 import { credentialScope, validateProfile } from "../llm-shared/config.ts";
 export const runtimeControls = definePlugin({
   manifest: {
@@ -39,7 +39,7 @@ export const runtimeControls = definePlugin({
         autostartUnavailable: ctx.use("platform.autostart").unavailable(),
         characters: ctx
           .use("character.catalog")
-          .list()
+          .list({metadataOnly:true})
           .map(
             ({
               id,
@@ -52,6 +52,10 @@ export const runtimeControls = definePlugin({
               name,
               description,
               recommendedPersona,
+              animation: (() => {
+                const sprite = representations.sprite as SpriteRepresentation;
+                return {fps:sprite.fps, frames:Object.fromEntries(Object.entries(sprite.files??{}).map(([action,files])=>[action, files.map(file=>`../../characters/${id}/${file}`)])),timings:sprite.timings,loops:sprite.loops,size:sprite.size,anchor:sprite.anchor};
+              })(),
               preview: (
                 representations.sprite as { frames: Record<string, string[]> }
               ).frames.idle[0],

@@ -27,6 +27,8 @@ import { mobileGithub } from './mobile-github.ts';
 import { mobileBackup } from './mobile-backup.ts';
 import { validatePolicy } from '../../../plugins/agent-tools/index.ts';
 import { updateCommands } from '../../../packages/contracts/updates.ts';
+import { lifeCommands } from '../../../packages/contracts/life.ts';
+import type { SpriteRepresentation } from '../../../packages/contracts/index.ts';
 import { mobileCare } from "./mobile-care.ts";
 import { mobileFeishu } from "./mobile-feishu.ts";
 import { mobileModel, advancedProfile, mergeAdvanced } from "./mobile-model.ts";
@@ -102,6 +104,7 @@ export function mobileApi(kernel: Kernel, native: AndroidNative) {
       native.call<MobileSnapshot["startup"]>("runtime.startup.get"),
     ]);
     return {
+      ...(() => {try {return {life: kernel.resolve('pet.life').snapshot()};} catch {return {};}})(),
       ...(() => {try {return {update: kernel.resolve('app.updates').state()};} catch {return {};}})(),
       protocolVersion: 1,
       revision: ++revision,
@@ -121,14 +124,18 @@ export function mobileApi(kernel: Kernel, native: AndroidNative) {
       media: { paste: true, documents: true, camera: capabilities.some(c => c.id === "camera" && c.state === "granted"), choose: capabilities.some(c => c.id === "files" && c.state === "granted"), maxAttachments: 8, maxBytes: 12 * 1024 * 1024, maxTextBytes: 400000 },
       characters: kernel
         .resolve("character.catalog")
-        .list()
+        .list({metadataOnly:true})
         .filter((c) => characterIds.includes(c.id))
-        .map((c) => ({
+        .map((c) => {
+          const sprite = c.representations.sprite as SpriteRepresentation;
+          const frames = Object.fromEntries(Object.entries(sprite.files ?? {}).map(([action, files]) => [action, files.map(file => `./characters/${c.id}/${file}`)]));
+          return {
           id: c.id as CharacterId,
           name: c.name,
           description: c.description,
-          image: `./characters/${c.id}/idle-0.svg`,
-        })),
+          image: frames.idle?.[0] ?? `./characters/${c.id}/idle-0.svg`,
+          animation: {fps: sprite.fps, frames, timings: sprite.timings, loops: sprite.loops, size: sprite.size, anchor: sprite.anchor},
+        };}),
       companion: {
         characterId: config.pet.character as CharacterId,
         nickname: config.persona.name,
@@ -166,6 +173,11 @@ export function mobileApi(kernel: Kernel, native: AndroidNative) {
         request.id.length <= 100,
     );
     const p = request.params as Record<string, unknown> | undefined;
+    if (request.method.startsWith('life.')) {
+      input((lifeCommands as readonly string[]).includes(request.method));
+      if (request.method === 'life.get') input(p === undefined || p === null);
+      return kernel.resolve('commands').call(request.method, p);
+    }
     if (request.method.startsWith('updates.')) {
       input((updateCommands as readonly string[]).includes(request.method) && (p === undefined || p === null));
       return kernel.resolve('commands').call(request.method);
@@ -225,7 +237,7 @@ export function mobileApi(kernel: Kernel, native: AndroidNative) {
         const action = String(p?.action);
         const allowed = request.method === "pet.host" ? ["click", "sleep", "drag-start", "drag-end", "recall", "close", "cancel", "open", "compose"] : ["click", "sleep", "recall", "reset-position"];
         input(allowed.includes(action));
-        if (["click", "sleep", "drag-start", "drag-end"].includes(action)) kernel.resolve("behavior.pet").interact(action as "click" | "sleep" | "drag-start" | "drag-end");
+        if (["click", "sleep", "drag-start", "drag-end"].includes(action)) await kernel.resolve("behavior.pet").interact(action as "click" | "sleep" | "drag-start" | "drag-end");
         if (action === "reset-position") await native.call("pet.reset");
         if (action === "recall") await kernel.resolve("commands").call("speech.recall");
         if (action === "compose") await kernel.resolve("commands").call("chat.open");
@@ -412,7 +424,7 @@ export function mobileApi(kernel: Kernel, native: AndroidNative) {
         id: request.id,
         ok: false,
         error: {
-          code: ["INVALID_INPUT", "BUSY", "PROVIDER", "UNAVAILABLE", "NOT_FOUND", "CONFLICT", "LIMIT", "INVALID_DOCUMENT", "CANCELLED", "DOCUMENT_EMPTY", "DOCUMENT_PASSWORD", "DOCUMENT_TIMEOUT", "INVALID_BACKUP", "BACKUP_PASSWORD", "BACKUP_DECRYPT", "BACKUP_RECOVERY"].includes(
+          code: request.method.startsWith('life.') && ['INVALID_INPUT','CONFLICT'].includes(error?.code) ? error.code : ["INVALID_INPUT", "BUSY", "PROVIDER", "UNAVAILABLE", "NOT_FOUND", "CONFLICT", "LIMIT", "INVALID_DOCUMENT", "CANCELLED", "DOCUMENT_EMPTY", "DOCUMENT_PASSWORD", "DOCUMENT_TIMEOUT", "INVALID_BACKUP", "BACKUP_PASSWORD", "BACKUP_DECRYPT", "BACKUP_RECOVERY"].includes(
             error?.message,
           )
             ? error.message

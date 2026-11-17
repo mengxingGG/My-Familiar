@@ -1,4 +1,4 @@
-import { definePlugin, type Settings } from "../../packages/contracts/index.ts";
+import { definePlugin, type Settings, type PetAction } from "../../packages/contracts/index.ts";
 export const rendererSprite = definePlugin({
   manifest: {
     manifestVersion: 1,
@@ -13,7 +13,11 @@ export const rendererSprite = definePlugin({
       settings = ctx.use("settings"),
       commands = ctx.use("commands");
     let character = catalog.get(settings.get().pet.character);
-    const send = () => surface.send("pet", "familiar:character", character);
+    let action: PetAction = 'idle';
+    const send = () => {
+      surface.send("pet", "familiar:character", character);
+      surface.send("pet", "familiar:action", character.actions.includes(action) ? action : 'idle');
+    };
     ctx.provide("renderer.pet", {
       async setCharacter(id) {
         const next = catalog.get(id);
@@ -22,7 +26,8 @@ export const rendererSprite = definePlugin({
         character = next;
         send();
       },
-      act(action) {
+      act(nextAction) {
+        action = nextAction;
         surface.send(
           "pet",
           "familiar:action",
@@ -45,7 +50,7 @@ export const rendererSprite = definePlugin({
     }))
       ctx.effect(commands.register(name, handler));
     ctx.on<Settings>("settings.changed", async (config) => {
-      await ctx.use("renderer.pet").setCharacter(config.pet.character);
+      if (character.id !== config.pet.character) await ctx.use("renderer.pet").setCharacter(config.pet.character);
     });
     ctx.effect(() => surface.close("pet"));
     await surface.create("pet", "ui/renderer-sprite/index.html");

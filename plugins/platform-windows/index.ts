@@ -12,6 +12,7 @@ import { definePlugin, type Settings } from "../../packages/contracts/index.ts";
 import { clampRect } from "./geometry.ts";
 import { companionCommands } from "../companion-controls/index.ts";
 import { updateCommands } from "../../packages/contracts/updates.ts";
+import { lifeCommands } from '../../packages/contracts/life.ts';
 export function platformWindows(options: {
   root: string;
   role: "runtime" | "controller";
@@ -103,6 +104,7 @@ export function platformWindows(options: {
             "voice.state",
           ],
           controller: [
+            ...lifeCommands,
             ...companionCommands,
             "runtime.start",
             "settings.apply",
@@ -139,6 +141,7 @@ export function platformWindows(options: {
             return {
               ok: false,
               error: e instanceof Error ? e.message : "操作失败",
+              code: ['INVALID_INPUT','CONFLICT'].includes((e as any)?.code) ? (e as any).code : undefined,
             };
           }
         },

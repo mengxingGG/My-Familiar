@@ -1,7 +1,8 @@
 const api = window.familiar,
   canvas = document.querySelector("#pet"),
   context = canvas.getContext("2d", { willReadFrequently: true });
-let frames = {},
+let sprite = {frames:{},fps:6},
+  frames = {},
   action = "idle",
   current = [],
   index = 0,
@@ -10,39 +11,43 @@ let frames = {},
   hit = false,
   down,
   dragging = false,
-  generation = 0;
+  generation = 0,
+  playGeneration = 0,
+  playingAction = 'idle';
 const call = (method, params) => api.request(method, params).catch(() => {});
 function draw() {
   context.clearRect(0, 0, 260, 300);
-  const image = current[index++ % Math.max(1, current.length)];
+  const image = current[index];
   if (image) context.drawImage(image, 20, 72, 220, 205);
 }
-function play() {
-  clearInterval(timer);
-  current = frames[action] || frames.idle || [];
-  index = 0;
-  draw();
-  if (current.length > 1 && !document.hidden)
-    timer = setInterval(draw, 1000 / fps);
-}
-api.on("familiar:character", async (character) => {
-  const version = ++generation,
-    sprite = character.representations.sprite,
-    loaded = {};
-  for (const [name, sources] of Object.entries(sprite.frames)) {
-    loaded[name] = await Promise.all(
-      sources.map(
-        (src) =>
-          new Promise((resolve) => {
-            const image = new Image();
-            image.onload = () => resolve(image);
-            image.src = src;
-          }),
-      ),
-    );
+async function play() {
+  clearTimeout(timer);
+  const version = ++playGeneration;
+  playingAction = sprite.frames[action]?.length ? action : 'idle';
+  const name = playingAction;
+  if (!frames[name]) {
+    const loaded = await Promise.all((sprite.frames[name] || []).map(src => new Promise(resolve => {
+      const image = new Image();image.onload = () => resolve(image);image.onerror = () => resolve(null);image.src = src;
+    })));
+    if(version !== playGeneration) return;
+    frames[name] = loaded;
   }
-  if (version !== generation) return;
-  frames = loaded;
+  if(version !== playGeneration) return;
+  current = frames[name];
+  index = 0;
+  const step = () => {
+    if(version !== playGeneration || document.hidden) return;
+    draw();
+    const ms = sprite.timings?.[name]?.[index] ?? 1000 / fps;
+    if(current.length <= 1 || sprite.loops?.[name] === false && index === current.length - 1) return;
+    timer = setTimeout(() => {index = (index + 1) % current.length;step();}, ms);
+  };
+  step();
+}
+api.on("familiar:character", (character) => {
+  generation++;
+  sprite = character.representations.sprite;
+  frames = {};
   fps = sprite.fps;
   play();
   document.body.dataset.character = character.id;
@@ -54,7 +59,7 @@ api.on("familiar:action", (value) => {
   play();
 });
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) clearInterval(timer);
+  if (document.hidden) {clearTimeout(timer);playGeneration++;}
   else play();
 });
 document.addEventListener("mousemove", (event) => {

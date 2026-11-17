@@ -1441,6 +1441,176 @@ details > .panel-form {
     left: 50%;
   }
 }
+/* ---------- 2.0 小窝：房间、需求、背包、商店与成长 ----------
+   与 Android 小窝同一结构。固定 2.5D 视角：CSS 墙面与梯形地板，家具 png 按 1000×700 房间坐标定位；
+   角色按落地点参与前后遮挡。操作目标至少 48px，窄到 320px 也不横向溢出。 */
+.life { --honey-ink: #6b5426; --brick-line: #e2b9a9; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.life button { touch-action: manipulation; }
+.life .primary, .life .quiet { min-height: 48px; white-space: normal; }
+.life-body, .life-panel, .life-room-col, .life-side-col, .life-notes { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.life-notes:not(:has(> :not([hidden]))) { display: none; }
+.life-hint { margin: 0; color: var(--ink-3); font-size: 13px; line-height: 1.6; }
+.life-hint:empty { display: none; }
+.life-section-title { margin: 2px 2px 0; color: var(--ink-2); font-size: 15px; font-weight: 600; }
+.life-subtitle { margin: 0; color: var(--ink-2); font-size: 13px; font-weight: 600; }
+.life-empty { margin: 0; padding: 16px; border: 1.5px dashed var(--line-strong); border-radius: var(--radius-m); color: var(--ink-3); font-size: 14px; }
+.life-feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 14px; border: 1.5px solid #d6dfc4; border-radius: var(--radius-m); background: #eef2e4; color: var(--sage-dark); font-size: 14px; }
+.life-feedback[data-tone="bad"] { border-color: var(--brick-line); background: var(--brick-soft); color: #7c4434; }
+.life-feedback[data-tone="info"] { border-color: var(--line-strong); background: var(--panel); color: var(--ink-2); }
+.life-feedback-text { flex: 1 1 200px; min-width: 0; margin: 0; }
+.life-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 14px; border: 1.5px solid var(--honey-line); border-radius: var(--radius-m); background: var(--honey); color: var(--honey-ink); }
+.life-note > p, .life-note > b { flex: 1 1 200px; min-width: 0; margin: 0; font-size: 14px; }
+.life-note-bad { border-color: var(--brick-line); background: var(--brick-soft); color: #7c4434; }
+.life-note-ok { border-color: #b9caa1; background: var(--sage-soft); color: var(--sage-dark); }
+.life-unavailable { flex-direction: column; align-items: stretch; }
+
+/* 顶部：灵石、签到、等级 */
+.life-top { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 10px 14px; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: var(--radius-m); background: var(--panel); box-shadow: 0 2px 0 var(--lip); }
+.life-stones { display: flex; flex-direction: column; line-height: 1.25; }
+.life-stones small, .life-stat small { color: var(--ink-3); font-size: 12px; }
+.life-stones b { font: 600 22px/1.25 var(--num); font-variant-numeric: tabular-nums; }
+.life-level { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.life-level-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 8px; color: var(--ink-2); font-size: 13px; }
+.life-level-row b { color: var(--ink); font-size: 15px; }
+.life-stale { grid-column: 1 / -1; margin: 0; color: #7a5c22; font-size: 12px; }
+.life-bar { height: 10px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 999px; background: #eceee2; }
+.life-bar > span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--sage); transition: width 0.3s; }
+.life-bar-big { height: 14px; }
+
+/* 分区切换 */
+.life-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; border: 1.5px solid var(--line); border-radius: 18px; background: var(--panel); }
+.life-tabs button { min-width: 0; min-height: 48px; padding: 4px 2px; border: 0; border-radius: 14px; background: none; color: var(--ink-2); font-size: 14px; }
+.life-tabs button:hover:not(:disabled) { background: #eef0e4; }
+.life-tabs button[aria-pressed="true"] { background: var(--sage-soft); color: var(--sage-dark); font-weight: 600; }
+.life-tabs button:disabled { opacity: 0.45; cursor: default; }
+.life-subtabs { border-radius: 16px; }
+
+/* 房间舞台 */
+.life-room { position: relative; width: 100%; aspect-ratio: 10 / 7; overflow: hidden; isolation: isolate; border: 1.5px solid var(--orbit); border-radius: var(--radius-l); background: #ebe3cc; box-shadow: 0 2px 0 var(--lip); user-select: none; }
+.life-wall { position: absolute; left: 0; right: 0; top: 0; height: 40%; background: linear-gradient(180deg, var(--sky), #f1ecdc); }
+.life-wall::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 7%; border-top: 1.5px solid #d6cbab; background: #e4d9bc; }
+.life-window { position: absolute; left: 60%; top: 8%; width: 20%; height: 21%; border: 2px solid var(--outline); border-radius: 12px; background: linear-gradient(180deg, #e3eef3, #eef3e1); box-shadow: inset 0 0 0 4px var(--panel); }
+.life-window::before, .life-window::after { content: ""; position: absolute; background: var(--outline); opacity: 0.55; }
+.life-window::before { left: 50%; top: 4px; bottom: 4px; width: 2px; }
+.life-window::after { top: 50%; left: 4px; right: 4px; height: 2px; }
+.life-floor { position: absolute; left: 0; right: 0; top: 40%; bottom: 0; overflow: hidden; clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%); background: repeating-linear-gradient(180deg, #eadfc4 0 15%, #e2d5b5 15% calc(15% + 1.5px)); }
+.life-floor::before { content: ""; position: absolute; left: -30%; right: -30%; top: 0; height: 100%; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1.5px), #dccdaa calc(10% - 1.5px) 10%); transform: perspective(240px) rotateX(38deg); transform-origin: 50% 0; opacity: 0.8; }
+.life-items { position: absolute; inset: 0; }
+/* 物品外框按 512×512 透明画布绘制，不接收指针；hit 区域贴着物体本身。 */
+.life-item { position: absolute; pointer-events: none; }
+.life-art { display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.life-item > .life-art { width: 100%; height: 100%; }
+.life-art img { width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; pointer-events: none; }
+.life-art-fallback { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 2px; overflow: hidden; border: 1.5px dashed var(--outline); border-radius: 10px; background: #fffdf6cc; color: var(--ink-2); font-size: 11px; line-height: 1.2; text-align: center; overflow-wrap: anywhere; }
+.life-item-hit { position: absolute; border-radius: 12px; pointer-events: auto; }
+.life-item-hit:not([role]) { pointer-events: none; }
+.life-item-hit[role="button"] { cursor: pointer; }
+.life[data-edit="true"] .life-item-hit { cursor: grab; touch-action: none; outline: 1.5px dashed #77846888; outline-offset: 1px; }
+.life[data-edit="true"] .life-item-hit:active { cursor: grabbing; }
+.life-item[data-selected="true"] .life-item-hit { outline: 2.5px solid var(--sage) !important; background: #e4ead44d; }
+.life-item[data-selected="true"] .life-item-hit::after { content: ""; position: absolute; left: 6%; right: 6%; bottom: -5%; z-index: -1; height: 12%; border-radius: 50%; background: #62774f40; }
+.life-item-hit:focus-visible { outline: 2.5px solid var(--outline); outline-offset: 2px; }
+.life-fg-layer { pointer-events: none; }
+.life-fg { position: absolute; pointer-events: none; }
+.life-fg img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; }
+.life-pet { position: absolute; display: flex; align-items: flex-end; justify-content: center; padding: 0; border: 0; border-radius: 30%; background: none; cursor: pointer; }
+.life-pet::before { content: ""; position: absolute; left: 18%; right: 18%; bottom: -3%; height: 9%; border-radius: 50%; background: #36412f22; }
+.life-pet[data-action="sleep"]::before { display: none; }
+.life-pet img { position: relative; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; pointer-events: none; }
+.life-pet[data-weak="2"] img, .life-pet[data-weak="3"] img { filter: saturate(0.75); }
+.life[data-edit="true"] .life-pet { opacity: 0.5; pointer-events: none; }
+.life-room-tag { position: absolute; left: 10px; top: 10px; z-index: 5000; padding: 2px 10px; border: 1.5px solid var(--line-strong); border-radius: 999px; background: var(--panel); color: var(--ink-2); font-size: 12px; }
+
+/* 需求与快捷操作 */
+.life-needs { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1.5px solid var(--line); border-radius: var(--radius-m); background: var(--panel); box-shadow: 0 2px 0 var(--lip); }
+.life-need { display: grid; grid-template-columns: 3em minmax(0, 1fr); align-items: center; gap: 2px 10px; font-size: 14px; }
+.life-need b { font-weight: 600; }
+.life-need small { grid-column: 2; color: var(--ink-3); font-size: 12px; }
+.life-need[data-need="fullness"] .life-bar > span { background: #d5a35c; }
+.life-need[data-need="energy"] .life-bar > span { background: #7fa0b3; }
+.life-need[data-need="joy"] .life-bar > span { background: #d69686; }
+.life-need[data-low="true"] small { color: var(--brick); }
+.life-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.life-actions button { min-width: 0; padding-inline: 6px; }
+
+/* 布置面板 */
+.life-editbar { display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1.5px solid #b9caa1; border-radius: var(--radius-m); background: #f3f6e8; }
+.life-edit-selected { display: flex; flex-direction: column; gap: 8px; }
+.life-edit-move { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; }
+.life-edit-move button { min-width: 0; padding-inline: 6px; }
+.life-tray { display: flex; flex-wrap: wrap; gap: 8px; }
+.life-tray:empty { display: none; }
+.life-tray-item { max-width: 100%; justify-content: flex-start; }
+.life-tray-item .life-art { flex: none; width: 34px; height: 34px; }
+.life-tray-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.life-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.life-edit-actions button { flex: 1 1 120px; }
+
+/* 列表：背包、流水、日常 */
+.life-list { display: flex; flex-direction: column; margin: 0; padding: 0; overflow: hidden; border: 1.5px solid var(--line); border-radius: var(--radius-m); background: var(--panel); box-shadow: 0 2px 0 var(--lip); list-style: none; }
+.life-list:empty { display: none; }
+.life-row { display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 8px 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.life-row:last-child, .life-list > li:last-child { border-bottom: 0; }
+.life-row > .life-art { width: 52px; height: 52px; border-radius: 12px; background: #f4f1e6; }
+.life-row-text { display: flex; flex-direction: column; min-width: 0; }
+.life-row-text b { font-weight: 600; overflow-wrap: anywhere; }
+.life-row-text small { color: var(--ink-3); font-size: 12px; overflow-wrap: anywhere; }
+.life-row-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.life-row-actions button { flex: 0 1 auto; }
+.life-switch { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; margin-right: auto; color: var(--ink-2); font-size: 14px; cursor: pointer; }
+.life-switch input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var(--sage); }
+.life-stat { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1.5px solid var(--line); border-radius: var(--radius-m); background: var(--panel); box-shadow: 0 2px 0 var(--lip); }
+.life-stat > b { font: 600 22px/1.3 var(--num); font-variant-numeric: tabular-nums; }
+.life-wallet { display: flex; flex-direction: column; gap: 12px; }
+.life-ledger-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.life-ledger-label { overflow-wrap: anywhere; }
+.life-ledger-delta { color: var(--sage-dark); font-weight: 600; text-align: right; white-space: nowrap; }
+.life-ledger-delta[data-sign="minus"] { color: var(--brick); }
+.life-ledger-row small { grid-column: 1 / -1; color: var(--ink-3); font-size: 12px; }
+.life-checklist li { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 14px; border-bottom: 1px solid var(--line); }
+.life-checklist li > span:nth-child(2) { flex: 1; min-width: 0; }
+.life-checklist small { color: var(--ink-3); font-size: 12px; }
+.life-check { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 22px; height: 22px; border: 1.5px solid var(--line-strong); border-radius: 50%; color: #fffdf2; font-size: 13px; }
+.life-checklist li[data-done="true"] .life-check { border-color: var(--sage-dark); background: var(--sage); }
+.life-checklist li[data-done="true"] small { color: var(--sage-dark); }
+
+/* 商店 */
+.life-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.life-chipbtn { min-height: 48px; padding: 6px 16px; border: 1.5px solid var(--line-strong); border-radius: 999px; background: var(--panel); color: var(--ink-2); font-size: 14px; }
+.life-chipbtn:hover { border-color: #b4baa2; color: var(--ink); }
+.life-chipbtn[aria-pressed="true"] { border-color: #b9caa1; background: var(--sage-soft); color: var(--sage-dark); font-weight: 600; }
+.life-filters select { flex: 1 1 160px; width: auto; min-width: 0; max-width: 100%; min-height: 48px; }
+.life-shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.life-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px; border: 1.5px solid var(--line); border-radius: var(--radius-m); background: var(--panel); box-shadow: 0 2px 0 var(--lip); }
+.life-card > .life-art { width: 100%; height: 96px; border-radius: 12px; background: #f4f1e6; }
+.life-card[data-locked="true"] > .life-art { opacity: 0.6; filter: grayscale(0.6); }
+.life-card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 8px; }
+.life-card-name { min-width: 0; overflow-wrap: anywhere; }
+.life-price { color: var(--sage-dark); font-weight: 600; white-space: nowrap; }
+.life-card-desc { margin: 0; color: var(--ink-2); font-size: 13px; overflow-wrap: anywhere; }
+.life-card-desc:empty { display: none; }
+.life-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.life-tag { display: inline-flex; max-width: 100%; padding: 1px 8px; border: 1.5px solid var(--line-strong); border-radius: 999px; background: var(--panel); color: var(--ink-2); font-size: 12px; overflow-wrap: anywhere; }
+.life-tag[data-tone="ok"] { border-color: #b9caa1; background: var(--sage-soft); color: var(--sage-dark); }
+.life-tag[data-tone="lock"] { background: #f1f1e8; color: var(--ink-3); }
+.life-tag[data-tone="have"] { border-color: var(--honey-line); background: var(--honey); color: #7a5c22; }
+.life-qty { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 6px; }
+.life-qty button { min-width: 0; padding: 0; font-size: 18px; }
+.life-qty input[type="number"] { min-width: 0; min-height: 48px; padding: 6px; text-align: center; }
+.life-card > .primary { width: 100%; }
+.life-reason { color: var(--ink-3); font-size: 12px; }
+.life-reason:empty { display: none; }
+
+@media (max-width: 420px) {
+  .life-top { grid-template-columns: minmax(0, 1fr) auto; }
+  .life-level { grid-column: 1 / -1; }
+  .life-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .life-tabs button { font-size: 13px; }
+}
+@media (min-width: 1180px) {
+  .life-panel-room { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(230px, 1fr); align-items: start; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

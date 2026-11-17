@@ -1,0 +1,245 @@
+{
+  "manifestVersion": 1,
+  "id": "claude",
+  "name": "Claude 小书灵",
+  "description": "橙发、日芒花饰与书本相伴的安静伙伴。",
+  "recommendedPersona": "gentle",
+  "license": "Community-inspired AI-generated adaptation; see NOTICE.md",
+  "actions": [
+    "idle",
+    "greet",
+    "happy",
+    "think",
+    "sleep",
+    "drag",
+    "walk",
+    "eat",
+    "full",
+    "play",
+    "drowsy",
+    "hungry",
+    "weak",
+    "dejected",
+    "recover"
+  ],
+  "representations": {
+    "sprite": {
+      "fps": 6,
+      "frames": {
+        "idle": [
+          "idle-0.webp",
+          "idle-1.webp",
+          "idle-2.webp",
+          "idle-3.webp"
+        ],
+        "greet": [
+          "greet-0.webp",
+          "greet-1.webp",
+          "greet-2.webp",
+          "greet-3.webp"
+        ],
+        "happy": [
+          "happy-0.webp",
+          "happy-1.webp",
+          "happy-2.webp",
+          "happy-3.webp"
+        ],
+        "think": [
+          "think-0.webp",
+          "think-1.webp",
+          "think-2.webp",
+          "think-3.webp"
+        ],
+        "sleep": [
+          "sleep-0.webp",
+          "sleep-1.webp",
+          "sleep-2.webp",
+          "sleep-3.webp"
+        ],
+        "drag": [
+          "drag-0.webp",
+          "drag-1.webp",
+          "drag-2.webp",
+          "drag-3.webp"
+        ],
+        "walk": [
+          "walk-0.webp",
+          "walk-1.webp",
+          "walk-2.webp",
+          "walk-3.webp"
+        ],
+        "eat": [
+          "eat-0.webp",
+          "eat-1.webp",
+          "eat-2.webp",
+          "eat-3.webp",
+          "eat-4.webp",
+          "eat-5.webp",
+          "eat-6.webp",
+          "eat-7.webp"
+        ],
+        "full": [
+          "full-0.webp",
+          "full-1.webp",
+          "full-2.webp",
+          "full-3.webp"
+        ],
+        "play": [
+          "play-0.webp",
+          "play-1.webp",
+          "play-2.webp",
+          "play-3.webp",
+          "play-4.webp",
+          "play-5.webp",
+          "play-6.webp",
+          "play-7.webp"
+        ],
+        "drowsy": [
+          "drowsy-0.webp",
+          "drowsy-1.webp",
+          "drowsy-2.webp",
+          "drowsy-3.webp"
+        ],
+        "hungry": [
+          "hungry-0.webp",
+          "hungry-1.webp",
+          "hungry-2.webp",
+          "hungry-3.webp"
+        ],
+        "weak": [
+          "weak-0.webp",
+          "weak-1.webp",
+          "weak-2.webp",
+          "weak-3.webp"
+        ],
+        "dejected": [
+          "dejected-0.webp",
+          "dejected-1.webp",
+          "dejected-2.webp",
+          "dejected-3.webp"
+        ],
+        "recover": [
+          "recover-0.webp",
+          "recover-1.webp",
+          "recover-2.webp",
+          "recover-3.webp"
+        ]
+      },
+      "timings": {
+        "idle": [
+          1500,
+          180,
+          130,
+          1600
+        ],
+        "greet": [
+          180,
+          140,
+          140,
+          500
+        ],
+        "happy": [
+          200,
+          180,
+          180,
+          500
+        ],
+        "think": [
+          700,
+          600,
+          600,
+          800
+        ],
+        "sleep": [
+          1000,
+          1000,
+          1000,
+          1000
+        ],
+        "drag": [
+          180,
+          160,
+          160,
+          180
+        ],
+        "walk": [
+          150,
+          150,
+          150,
+          150
+        ],
+        "eat": [
+          400,
+          200,
+          240,
+          400,
+          300,
+          240,
+          400,
+          600
+        ],
+        "full": [
+          300,
+          300,
+          400,
+          700
+        ],
+        "play": [
+          240,
+          240,
+          200,
+          220,
+          240,
+          320,
+          400,
+          500
+        ],
+        "drowsy": [
+          500,
+          500,
+          750,
+          650
+        ],
+        "hungry": [
+          750,
+          650,
+          700,
+          900
+        ],
+        "weak": [
+          1000,
+          900,
+          1000,
+          1100
+        ],
+        "dejected": [
+          1300,
+          1300,
+          1300,
+          1300
+        ],
+        "recover": [
+          400,
+          350,
+          650,
+          600
+        ]
+      },
+      "canvas": [
+        220,
+        205
+      ],
+      "anchor": [
+        110,
+        192
+      ]
+    }
+  },
+  "attribution": {
+    "authors": [
+      "ZipZipPipe"
+    ],
+    "reference": "https://selinlee.github.io/ai-moe-atlas/zh/",
+    "generation": "Built-in imagegen; newly generated animation frames, not original author artwork"
+  }
+}

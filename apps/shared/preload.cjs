@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld("familiar", {
       method,
       params,
     );
-    if (!response.ok) throw new Error(response.error);
+    if (!response.ok) throw Object.assign(new Error(response.error), {code: response.code});
     return response.result;
   },
   on(channel, callback) {

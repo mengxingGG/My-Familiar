@@ -7,6 +7,7 @@ import {
   type MobileProviderKind,
   type MobileMediaPreview,
 } from "../../../packages/mobile-contracts/index.ts";
+import { createLifeStore, advanceLife, applyLifeCommand, lifeSnapshot } from '../../../plugins/pet-life/state.ts';
 
 /** 仅由 preview-entry 引入。所有数据在内存中，不读取真实配置、密钥或历史。 */
 export function createPreviewBridge(
@@ -14,11 +15,14 @@ export function createPreviewBridge(
 ): MobileBridge & { dispose(): void } {
   const configuredKeys = new Set<string>();
   const media = new Map<string, MobileMediaPreview>();
+  // 仅预览入口的独立内存档案，使用同一套纯规则；不会进入生产包或真实钱包。
+  const previewLife = createLifeStore(Date.now(),()=>crypto.randomUUID());
   const state: MobileSnapshot = {
     protocolVersion: 1,
     revision: 0,
     mode: "preview",
     media: { choose: true, camera: false, maxAttachments: 8, maxBytes: 12 * 1024 * 1024, maxTextBytes: 400000 },
+    life: lifeSnapshot(previewLife),
     characters: [
       {
         id: "mori",
@@ -51,6 +55,7 @@ export function createPreviewBridge(
         description: "一起发现生活里的小事。",
         image: `./characters/${id}/idle-0.svg`,
       })),
+      ...([['deepseek','鲸鱼娘'],['gpt','小龙娘'],['claude','暖书娘']] as const).map(([id,name])=>({id,name,description:'新的小伙伴，一起慢慢长大。',image:`./characters/${id}/idle-0.webp`})),
     ],
     companion: {
       characterId: "mori",
@@ -197,6 +202,13 @@ export function createPreviewBridge(
     state.revision++;
     for (const listener of listeners) listener(snapshot());
   };
+  void Promise.all(state.characters.map(async character=>{
+    try {
+      const response=await fetch(`./characters/${character.id}/character.json`);
+      const {representations}=await response.json();const sprite=representations.sprite;
+      character.animation={fps:sprite.fps,frames:Object.fromEntries(Object.entries(sprite.frames as Record<string,string[]>).map(([action,paths])=>[action,paths.map(path=>`./characters/${character.id}/${path}`)])),timings:sprite.timings,loops:sprite.loops};
+    } catch { /* 离线测试不必请求预览资源，仍可使用首帧。 */ }
+  })).then(()=>{if(!disposed)publish();});
   const later = (fn: () => void, delay: number) => {
     const timer = setTimeout(() => {
       timers.delete(timer);
@@ -237,6 +249,13 @@ export function createPreviewBridge(
   ): Promise<unknown> => {
     if (disposed) throw new MobileBridgeError("UNAVAILABLE", "预览已关闭。");
     switch (method) {
+      case 'life.get':
+      case 'life.act': {
+        const draft=structuredClone(previewLife),now=Date.now();
+        advanceLife(draft,now,true,()=>crypto.randomUUID());
+        if(method==='life.act')applyLifeCommand(draft,input,now,()=>crypto.randomUUID());
+        draft.revision++;Object.assign(previewLife,draft);state.life=lifeSnapshot(draft);publish();return structuredClone(state.life);
+      }
       case "snapshot.get":
         return snapshot();
       case "media.camera":

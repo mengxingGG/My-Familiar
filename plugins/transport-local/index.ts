@@ -3,6 +3,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { definePlugin } from "../../packages/contracts/index.ts";
 import { companionCommands } from "../companion-controls/index.ts";
+import { lifeCommands } from '../../packages/contracts/life.ts';
 import {
   endpoint,
   MAX_PACKET,
@@ -68,6 +69,7 @@ export function transportServer(directory: string) {
             if (
               ![
                 ...companionCommands,
+                ...lifeCommands,
                 "runtime.status",
                 "settings.apply",
                 "provider.test",
@@ -110,6 +112,7 @@ export function transportServer(directory: string) {
                 id,
                 ok: false,
                 error: e instanceof Error ? e.message : "请求失败",
+                code: ['INVALID_INPUT','CONFLICT'].includes((e as any)?.code) ? (e as any).code : undefined,
               }) + "\n",
             );
           }

@@ -3,45 +3,350 @@
   "id": "mori",
   "name": "小森",
   "description": "一只安静陪着你的森林小伙伴。",
-  "license": "Project-original placeholder artwork",
+  "license": "Project-original artwork",
   "actions": [
     "idle",
     "greet",
     "happy",
     "think",
     "sleep",
-    "drag"
+    "drag",
+    "walk",
+    "eat",
+    "full",
+    "play",
+    "drowsy",
+    "hungry",
+    "weak",
+    "dejected",
+    "recover"
   ],
   "representations": {
     "sprite": {
-      "fps": 1,
+      "fps": 6,
       "frames": {
         "idle": [
           "idle-0.svg",
-          "idle-1.svg"
+          "idle-1.svg",
+          "idle-2.svg",
+          "idle-3.svg",
+          "idle-4.svg",
+          "idle-5.svg",
+          "idle-6.svg",
+          "idle-7.svg"
         ],
         "greet": [
           "greet-0.svg",
-          "greet-1.svg"
+          "greet-1.svg",
+          "greet-2.svg",
+          "greet-3.svg",
+          "greet-4.svg",
+          "greet-5.svg",
+          "greet-6.svg",
+          "greet-7.svg"
         ],
         "happy": [
           "happy-0.svg",
-          "happy-1.svg"
+          "happy-1.svg",
+          "happy-2.svg",
+          "happy-3.svg",
+          "happy-4.svg",
+          "happy-5.svg",
+          "happy-6.svg",
+          "happy-7.svg"
         ],
         "think": [
           "think-0.svg",
-          "think-1.svg"
+          "think-1.svg",
+          "think-2.svg",
+          "think-3.svg",
+          "think-4.svg",
+          "think-5.svg"
         ],
         "sleep": [
           "sleep-0.svg",
-          "sleep-1.svg"
+          "sleep-1.svg",
+          "sleep-2.svg",
+          "sleep-3.svg",
+          "sleep-4.svg",
+          "sleep-5.svg"
         ],
         "drag": [
           "drag-0.svg",
-          "drag-1.svg"
+          "drag-1.svg",
+          "drag-2.svg",
+          "drag-3.svg",
+          "drag-4.svg",
+          "drag-5.svg"
+        ],
+        "walk": [
+          "walk-0.svg",
+          "walk-1.svg",
+          "walk-2.svg",
+          "walk-3.svg",
+          "walk-4.svg",
+          "walk-5.svg",
+          "walk-6.svg",
+          "walk-7.svg"
+        ],
+        "eat": [
+          "eat-0.svg",
+          "eat-1.svg",
+          "eat-2.svg",
+          "eat-3.svg",
+          "eat-4.svg",
+          "eat-5.svg",
+          "eat-6.svg",
+          "eat-7.svg",
+          "eat-8.svg",
+          "eat-9.svg",
+          "eat-10.svg",
+          "eat-11.svg"
+        ],
+        "full": [
+          "full-0.svg",
+          "full-1.svg",
+          "full-2.svg",
+          "full-3.svg",
+          "full-4.svg",
+          "full-5.svg",
+          "full-6.svg",
+          "full-7.svg"
+        ],
+        "play": [
+          "play-0.svg",
+          "play-1.svg",
+          "play-2.svg",
+          "play-3.svg",
+          "play-4.svg",
+          "play-5.svg",
+          "play-6.svg",
+          "play-7.svg",
+          "play-8.svg",
+          "play-9.svg",
+          "play-10.svg",
+          "play-11.svg"
+        ],
+        "drowsy": [
+          "drowsy-0.svg",
+          "drowsy-1.svg",
+          "drowsy-2.svg",
+          "drowsy-3.svg",
+          "drowsy-4.svg",
+          "drowsy-5.svg"
+        ],
+        "hungry": [
+          "hungry-0.svg",
+          "hungry-1.svg",
+          "hungry-2.svg",
+          "hungry-3.svg",
+          "hungry-4.svg",
+          "hungry-5.svg"
+        ],
+        "weak": [
+          "weak-0.svg",
+          "weak-1.svg",
+          "weak-2.svg",
+          "weak-3.svg",
+          "weak-4.svg",
+          "weak-5.svg"
+        ],
+        "dejected": [
+          "dejected-0.svg",
+          "dejected-1.svg",
+          "dejected-2.svg",
+          "dejected-3.svg",
+          "dejected-4.svg",
+          "dejected-5.svg"
+        ],
+        "recover": [
+          "recover-0.svg",
+          "recover-1.svg",
+          "recover-2.svg",
+          "recover-3.svg",
+          "recover-4.svg",
+          "recover-5.svg",
+          "recover-6.svg",
+          "recover-7.svg"
         ]
-      }
+      },
+      "timings": {
+        "idle": [
+          1700,
+          420,
+          110,
+          110,
+          850,
+          520,
+          110,
+          950
+        ],
+        "greet": [
+          160,
+          160,
+          220,
+          200,
+          200,
+          260,
+          160,
+          280
+        ],
+        "happy": [
+          140,
+          120,
+          140,
+          180,
+          140,
+          120,
+          140,
+          300
+        ],
+        "think": [
+          450,
+          340,
+          450,
+          600,
+          340,
+          650
+        ],
+        "sleep": [
+          850,
+          850,
+          1000,
+          850,
+          850,
+          1000
+        ],
+        "drag": [
+          150,
+          150,
+          150,
+          150,
+          150,
+          150
+        ],
+        "walk": [
+          120,
+          120,
+          120,
+          120,
+          120,
+          120,
+          120,
+          120
+        ],
+        "eat": [
+          220,
+          220,
+          180,
+          200,
+          240,
+          200,
+          240,
+          200,
+          240,
+          220,
+          220,
+          320
+        ],
+        "full": [
+          200,
+          220,
+          220,
+          240,
+          220,
+          220,
+          240,
+          420
+        ],
+        "play": [
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          150,
+          250
+        ],
+        "drowsy": [
+          500,
+          450,
+          450,
+          650,
+          400,
+          500
+        ],
+        "hungry": [
+          550,
+          300,
+          450,
+          550,
+          300,
+          650
+        ],
+        "weak": [
+          900,
+          650,
+          900,
+          650,
+          850,
+          1050
+        ],
+        "dejected": [
+          1100,
+          900,
+          1100,
+          900,
+          1100,
+          1300
+        ],
+        "recover": [
+          240,
+          200,
+          180,
+          220,
+          220,
+          180,
+          200,
+          350
+        ]
+      },
+      "loops": {
+        "idle": true,
+        "greet": false,
+        "happy": false,
+        "think": true,
+        "sleep": true,
+        "drag": true,
+        "walk": true,
+        "eat": false,
+        "full": false,
+        "play": false,
+        "drowsy": false,
+        "hungry": true,
+        "weak": true,
+        "dejected": true,
+        "recover": false
+      },
+      "size": [
+        220,
+        205
+      ],
+      "anchor": [
+        110,
+        187
+      ]
     }
   },
-  "recommendedPersona": "gentle"
+  "recommendedPersona": "gentle",
+  "artwork": {
+    "version": "2.0.0",
+    "source": "Project-original vector character rigs",
+    "generator": "scripts/build-existing-pet-animations.mjs"
+  }
 }

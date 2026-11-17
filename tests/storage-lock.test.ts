@@ -12,10 +12,10 @@ test('Windows 实际文件锁：短暂占用后完成原子替换，持续占用
   // 锁的路径来自隔离测试目录环境变量，不拼接成 PowerShell 代码。
   await writeFile(script, "$f=[IO.File]::Open($env:FAMILIAR_LOCK_TEST_PATH,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)\ntry { [Console]::WriteLine('READY'); [Console]::Out.Flush(); [Console]::ReadLine() | Out-Null } finally { $f.Dispose() }\n");
   async function lock(){
-    child=spawn('powershell.exe',['-NoProfile','-File',script],{windowsHide:true,env:{...process.env,FAMILIAR_LOCK_TEST_PATH:target},stdio:['pipe','pipe','pipe']});
+    child=spawn('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',script],{windowsHide:true,env:{...process.env,FAMILIAR_LOCK_TEST_PATH:target},stdio:['pipe','pipe','pipe']});
     await new Promise<void>((done,fail)=>{let s='';child!.stdout!.on('data',b=>{s+=String(b);if(s.includes('READY'))done();});child!.once('error',fail);child!.once('exit',code=>{if(!s.includes('READY'))fail(Error(`lock exited ${code}`));});});
   }
-  async function unlock(){if(child){const ended=once(child,'exit');child.stdin!.end('\n');await ended;child=undefined;}}
+  async function unlock(){if(child&&child.exitCode===null&&child.signalCode===null){const ended=once(child,'exit');child.stdin!.end('\n');await ended;}child=undefined;}
   try{
     await writeFile(target,'原文');await writeFile(source,'新内容');await lock();
     const changing=replaceFile(source,target);assert.equal(await readFile(target,'utf8'),'原文');

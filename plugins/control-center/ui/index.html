@@ -37,7 +37,8 @@
       <nav aria-label="设置分区">
         <div class="nav-group">
           <span class="nav-heading">陪伴</span>
-          <button class="selected" data-page="home">形象与桌面</button
+          <button class="selected" data-page="nest">小窝</button
+          ><button data-page="home">形象与桌面</button
           ><button data-page="persona">名字与性格</button
           ><button data-page="voice">图片与语音</button
           ><button data-page="care">主动关怀</button>
@@ -63,7 +64,7 @@
     </aside>
     <main>
       <div id="update-banner" class="banner" role="status">
-        <div><b id="update-title">Familiar 1.1.0</b><p id="update-detail">启动后自动检查 GitHub 正式版。</p></div>
+        <div><b id="update-title">Familiar 2.0.0</b><p id="update-detail">启动后自动检查 GitHub 正式版。</p></div>
         <button id="update-check" class="quiet">检查更新</button>
         <button id="update-action" class="primary" hidden>下载更新</button>
         <button id="update-cancel" class="quiet" hidden>取消下载</button>
@@ -98,15 +99,16 @@
       </div>
       <header class="page-head">
         <div>
-          <h2 id="page-title">形象与桌面</h2>
+          <h2 id="page-title">小窝</h2>
           <p id="page-description">
-            选择角色和大小，调整它在桌面上的样子。修改立即生效。
+            照顾它的吃饭、睡觉和玩耍，签到领灵石，布置房间。
           </p>
         </div>
         <button id="refresh" class="quiet">刷新状态</button>
       </header>
       <div class="pages">
-        <section id="home" class="page">
+        <section id="nest" class="page"></section>
+        <section id="home" class="page" hidden>
           <div class="group">
             <div class="group-head">
               <h3>角色</h3>

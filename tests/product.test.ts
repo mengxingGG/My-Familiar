@@ -153,13 +153,23 @@ test("多屏坐标包含负值，拔屏后宠物回到有效工作区", () => {
     1140,
   );
 });
-test("七个角色包可以通过相同清单加载，不修改内核", async () => {
+test("十个角色包通过相同清单加载，动画时长与全部动作可用", async () => {
   const k = new Kernel({
     grants: { "familiar.character-pack": ["assets.read"] },
   });
   k.install(characterPack(join(process.cwd(), "characters")));
   await k.startAll();
-  assert.equal(k.resolve("character.catalog").list().length, 7);
+  const catalog=k.resolve("character.catalog");
+  assert.equal(catalog.list({metadataOnly:true}).length,10);
+  for(const c of catalog.list()) {
+    const sprite=c.representations.sprite as import('../packages/contracts/index.ts').SpriteRepresentation;
+    for(const action of ['idle','greet','happy','think','sleep','drag','walk','eat','full','play','drowsy','hungry','weak','dejected','recover']) {
+      assert.ok(sprite.frames[action].length>=4,`${c.id}/${action}`);
+      assert.equal(sprite.timings?.[action].length,sprite.frames[action].length);
+      assert.ok(sprite.frames[action].every(frame=>/^data:image\/(svg\+xml|png|webp);base64,/.test(frame)));
+      assert.equal(sprite.files?.[action].length,sprite.frames[action].length);
+    }
+  }
   assert.ok(k.resolve("character.catalog").get("luna").representations.sprite);
   await k.dispose();
 });
@@ -280,6 +290,7 @@ test("响应头返回后 SSE 和 JSON 读取仍响应取消并关闭底层流", 
 });
 test("会话生成互斥、配置快照、清空后无迟到消息，取消部分回复不作为下轮完整上下文", async () => {
   const k = new Kernel();
+  const completed: {id:string;text:string}[] = [];
   let config: Settings = {
       ...structuredClone(defaults),
       provider: { ...defaults.provider, model: "before" },
@@ -294,6 +305,7 @@ test("会话生成互斥、配置快照、清空后无迟到消息，取消部�
       "llm.management",
     ]),
     start(ctx) {
+      ctx.on<{id:string;text:string}>('conversation.completed', event => {completed.push(event);});
       ctx.provide("settings", {
         patchPet: async (patch) => ({
           ...structuredClone(defaults),
@@ -362,5 +374,11 @@ test("会话生成互斥、配置快照、清空后无迟到消息，取消部�
   await service.clear();
   assert.deepEqual(service.state().messages, []);
   assert.deepEqual((persisted as any).messages, []);
+  assert.equal(completed.length,0,'取消和清空的轮次不应产生养成奖励事件');
+  await service.send('完整的一轮');
+  while(service.state().busy) await new Promise(r=>setTimeout(r,10));
+  assert.equal(completed.length,1);
+  assert.equal(completed[0].text,'完整的一轮');
+  assert.equal(completed[0].id,service.state().messages.find(m=>m.role==='user')?.id);
   await k.dispose();
 });

@@ -1,4 +1,4 @@
-export const FAMILIAR_VERSION = "1.1.0";
+export const FAMILIAR_VERSION = "2.0.0";
 export type UpdatePlatform = "android-arm64" | "windows-x64";
 export interface UpdateState {
   currentVersion: string;

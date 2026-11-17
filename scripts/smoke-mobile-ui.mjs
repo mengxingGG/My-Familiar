@@ -132,13 +132,50 @@ try {
     });
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await check("pet touch", async () => {
-    await page.getByRole("button", { name: "摸摸小森" }).click();
-    await visible(page.locator(".pet-bubble"));
+  await check("life checkin, shopping, feeding and room editing", async () => {
+    await page.getByRole("button", { name: "签到", exact: true }).click();
+    await visible(
+      page.getByRole("button", { name: "今日已签到", exact: true }),
+    );
+    assert.equal(await page.locator(".life-stones b").textContent(), "90");
+    await page.getByRole("button", { name: "商店", exact: true }).click();
+    const food = page.locator(".life-card").filter({ hasText: "基础口粮" });
+    await food.getByLabel("基础口粮购买数量").fill("2");
+    await food.getByRole("button", { name: /购买/ }).click();
+    await page.waitForFunction(
+      () => document.querySelector(".life-stones b")?.textContent === "82",
+    );
+    await page.getByRole("button", { name: "背包", exact: true }).click();
+    await page
+      .getByRole("button", { name: "喂它基础口粮", exact: true })
+      .click();
+    await page.waitForFunction(() =>
+      document
+        .querySelector(".life-feedback-text")
+        ?.textContent.includes("它吃了基础口粮"),
+    );
+    await page.getByRole("button", { name: "房间", exact: true }).click();
+    await page.getByRole("button", { name: "休息", exact: true }).click();
+    await visible(page.getByRole("button", { name: "叫醒", exact: true }));
+    await page.getByRole("button", { name: "叫醒", exact: true }).click();
+    await page.getByRole("button", { name: "布置", exact: true }).click();
+    await page.getByRole("button", { name: /.*垫.*可拖动/ }).click();
+    await page.getByRole("button", { name: "向右移动", exact: true }).click();
+    await page.getByRole("button", { name: "保存布置", exact: true }).click();
+    await visible(page.getByRole("button", { name: "布置", exact: true }));
+    await shot("life-room-390");
+  });
+  await check("room pet opens conversation", async () => {
+    await page.getByRole("button", { name: "小森，点一下和它聊天" }).click();
+    await visible(page.locator(".page-chat"));
+    await back();
   });
   await check("provider save and secret never refilled", async () => {
     await page.getByRole("button", { name: "去连接", exact: true }).click();
-    await page.locator('.page:not([hidden])').getByLabel(/服务地址/).fill("https://example.com/v1");
+    await page
+      .locator(".page:not([hidden])")
+      .getByLabel(/服务地址/)
+      .fill("https://example.com/v1");
     await page.getByLabel("模型", { exact: true }).fill("preview-model");
     await page
       .getByLabel("API 密钥", { exact: true })
@@ -173,7 +210,10 @@ try {
         "",
       );
       assert.equal(
-        await page.locator('.page:not([hidden])').getByLabel(/服务地址/).inputValue(),
+        await page
+          .locator(".page:not([hidden])")
+          .getByLabel(/服务地址/)
+          .inputValue(),
         "https://generativelanguage.googleapis.com/v1beta",
       );
       assert.equal(
@@ -195,16 +235,25 @@ try {
       );
       await page.locator('.kind-option[data-kind="compatible"]').click();
       assert.equal(
-        await page.locator('.page:not([hidden])').getByLabel(/服务地址/).inputValue(),
+        await page
+          .locator(".page:not([hidden])")
+          .getByLabel(/服务地址/)
+          .inputValue(),
         "https://example.com/v1",
       );
       assert.equal(
         await page.getByLabel("模型", { exact: true }).inputValue(),
         "preview-model",
       );
-      await page.locator('.page:not([hidden])').getByLabel(/服务地址/).fill("https://another.example/v1");
+      await page
+        .locator(".page:not([hidden])")
+        .getByLabel(/服务地址/)
+        .fill("https://another.example/v1");
       await visible(page.getByText(/换了服务地址，新地址还没有保存过密钥/));
-      await page.locator('.page:not([hidden])').getByLabel(/服务地址/).fill("https://example.com/v1");
+      await page
+        .locator(".page:not([hidden])")
+        .getByLabel(/服务地址/)
+        .fill("https://example.com/v1");
       await page
         .getByRole("button", { name: "保存并改用", exact: true })
         .click();
@@ -217,7 +266,7 @@ try {
   );
   await check("character and companion save", async () => {
     await page.getByRole("button", { name: "换个样子" }).click();
-    assert.equal(await page.locator(".char-option").count(), 7);
+    assert.equal(await page.locator(".char-option").count(), 10);
     await page.locator('.char-option[data-character="mianmian"]').click();
     await page.waitForFunction(() =>
       [...document.querySelectorAll(".char-option img")].every(
@@ -232,7 +281,7 @@ try {
     );
     await responsive("companion");
     await back();
-    await visible(page.getByRole("button", { name: "摸摸柚子" }));
+    await visible(page.getByRole("button", { name: "柚子，点一下和它聊天" }));
   });
   await page.getByRole("button", { name: "说句话" }).click();
   const composer = page.getByLabel("想说的话", { exact: true });
@@ -531,6 +580,13 @@ try {
     await page
       .getByRole("dialog", { name: "聊天记录" })
       .waitFor({ state: "hidden" });
+    // 面板关闭早于下一帧快照渲染；以实际会话标题完成切换为验收条件。
+    await page
+      .getByRole("heading", {
+        name: `测试会话 ${id.toUpperCase()}`,
+        exact: true,
+      })
+      .waitFor({ state: "visible" });
   };
   await check("drafts are isolated per conversation", async () => {
     await composer.fill("会话 A 的草稿");

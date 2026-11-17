@@ -29,7 +29,10 @@ import { FeishuView } from './feishu.ts';
 import { BackupView } from './backup.ts';
 import { PermissionsView } from './permissions.ts';
 import { UpdateView } from './updates.ts';
+import { LifeView } from './life.ts';
+import type { LifeHost } from './life.ts';
 import type { ApprovalChoice } from '../../../packages/mobile-contracts/index.ts';
+import type { PetAction } from '../../../packages/contracts/index.ts';
 
 type Tab = 'home' | 'abilities' | 'settings';
 type PageId = 'chat' | 'companion' | 'model' | 'library' | 'context' | 'mcp' | 'care' | 'feishu' | 'permissions' | 'backup';
@@ -387,6 +390,25 @@ function errorText(error: unknown, action: string): string {
     error && typeof error === 'object' && 'code' in error ? String((error as { code: unknown }).code) : '';
   return `${action}：${ERROR_REASON[code] ?? '出了点小问题，请再试一次。'}`;
 }
+
+/** 悬浮宠物当前动作的中文说明；Record 覆盖全部 PetAction，新增动作时编译期提示补齐。 */
+const PET_ACTION_LABEL: Record<PetAction, string> = {
+  idle: '陪伴中',
+  greet: '打招呼',
+  happy: '开心',
+  think: '思考中',
+  sleep: '休息中',
+  drag: '移动中',
+  eat: '吃东西',
+  full: '吃饱了',
+  play: '玩耍中',
+  drowsy: '有点困',
+  hungry: '饿了',
+  weak: '没精神',
+  dejected: '有点低落',
+  recover: '恢复中',
+  walk: '走动中',
+};
 
 function safeCharacterId(id: string): string {
   return /^[a-z0-9_-]+$/i.test(id) ? id : 'mori';
@@ -822,6 +844,8 @@ class FamiliarApp {
   private announcer!: HTMLElement;
 
   private homeStage!: HTMLElement;
+  /** 2.0 小窝房间；读取不到时隐藏，回到原来的角色小窗，聊天与设置不受影响。 */
+  private lifeView!: LifeView;
   private homePetBtn!: HTMLButtonElement;
   private petBubble!: HTMLElement;
   private homeName!: HTMLElement;
@@ -1009,6 +1033,7 @@ class FamiliarApp {
   destroy(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.lifeView?.dispose();
     this.libraryView?.dispose();
     this.mcpView?.dispose();
     this.careView?.dispose();
@@ -1224,6 +1249,17 @@ class FamiliarApp {
   private buildHome(): HTMLElement {
     this.homeUpdateView = new UpdateView(this.bridge);
     this.homeStage = this.buildStage('home');
+    // 小窝只用 life.get / life.act 两个命令（MobileCommands 已合并 LifeCommands）。
+    const lifeHost: LifeHost = {
+      get: () => this.bridge.request('life.get', undefined),
+      act: (command) => this.bridge.request('life.act', command),
+      assetRoot: './',
+      onPetClick: () => void this.openConversation(null),
+      onAvailability: (ok) => {
+        this.homeStage.hidden = ok;
+      },
+    };
+    this.lifeView = new LifeView(lifeHost);
     this.petBubble = h('p', { class: 'pet-bubble', role: 'status', hidden: true });
     this.homePetBtn = h('button', {
       type: 'button',
@@ -1321,6 +1357,7 @@ class FamiliarApp {
       { class: 'view view-home', 'aria-label': '小窝' },
       top,
       this.homeUpdateView.root,
+      this.lifeView.root,
       h(
         'div',
         { class: 'home-grid' },
@@ -1595,7 +1632,7 @@ class FamiliarApp {
   }
   private renderPet(s: MobileSnapshot): void {
     const pet = s.pet; show(this.petSettings, Boolean(pet)); if (!pet) return;
-    setText(this.petStatus, `当前：${pet.docking?.tucked ? '已收成小脑袋' : ({ idle: '陪伴中', greet: '打招呼', happy: '开心', think: '思考中', sleep: '休息中', drag: '移动中' })[pet.action]}`);
+    setText(this.petStatus, `当前：${pet.docking?.tucked ? '已收成小脑袋' : (PET_ACTION_LABEL[pet.action] ?? '陪伴中')}`);
     if (!this.petDirty) {
       const input = (name: string) => this.petForm.elements.namedItem(name) as HTMLInputElement;
       input('visible').checked = pet.visible; input('quiet').checked = pet.quiet;
@@ -2571,6 +2608,8 @@ class FamiliarApp {
     show(this.scrim, topSheet >= 0);
     this.scrim.style.zIndex = topSheet >= 0 ? String(19 + topSheet * 2) : '';
     this.shell.toggleAttribute('inert', overlays.length > 0);
+    // 小窝被页面盖住或切到其它标签时暂停读取与角色帧，回来时立即对齐。
+    this.lifeView.setActive(tab === 'home' && overlays.length === 0);
     const top = overlays[topIndex];
     this.root.dataset.overlay = top ? (top.kind === 'page' ? top.page : top.kind === 'sheet' ? top.sheet : 'none') : 'none';
   }
@@ -2636,6 +2675,8 @@ class FamiliarApp {
     }
     this.homeStage.dataset.state = replying ? 'think' : 'idle';
     this.chatEmptyStage.dataset.state = replying ? 'think' : 'idle';
+    // 小窝播放角色完整动画；旧宿主没有 animation 时只显示静态形象。
+    this.lifeView.setCharacter({ id: safeCharacterId(id), name: petName(s), image: src, animation: characterOf(s, id)?.animation });
   }
 
   private renderHome(s: MobileSnapshot): void {

@@ -20,7 +20,8 @@ export * from "./feishu-channel.ts";
 export * from "./github-auth.ts";
 export * from "./media.ts";
 export * from "./voice.ts";
-export type PetAction = "idle" | "greet" | "drag" | "think" | "sleep" | "happy";
+export * from "./life.ts";
+export type PetAction = "idle" | "greet" | "drag" | "think" | "sleep" | "happy" | import('./life.ts').LifeAction;
 export interface Character {
   id: string;
   name: string;
@@ -30,8 +31,14 @@ export interface Character {
   representations: Record<string, unknown>;
 }
 export interface SpriteRepresentation {
+  /** 经角色加载器验证的资源相对路径；移动端只投影路径，不传整套图像。 */
+  files?: Record<string, string[]>;
   frames: Record<string, string[]>;
   fps: number;
+  timings?: Record<string, number[]>;
+  loops?: Record<string, boolean>;
+  size?: { width: number; height: number };
+  anchor?: { x: number; y: number };
 }
 export interface Settings {
   version: number;
@@ -121,7 +128,7 @@ declare module "../kernel/index.ts" {
       call(name: string, params?: unknown): Promise<unknown>;
     };
     "platform.surface": Surface;
-    "character.catalog": { list(): Character[]; get(id: string): Character };
+    "character.catalog": { list(options?: {metadataOnly?: boolean}): Character[]; get(id: string): Character };
     "renderer.pet": {
       setCharacter(id: string): Promise<void>;
       act(action: PetAction): void;
@@ -129,7 +136,7 @@ declare module "../kernel/index.ts" {
     };
     "behavior.pet": {
       state(): PetAction;
-      interact(action: "click" | "drag-start" | "drag-end" | "sleep"): void;
+      interact(action: "click" | "drag-start" | "drag-end" | "sleep"): void | Promise<void>;
     };
     "llm.registry": ProviderRegistry;
     "llm.management": {

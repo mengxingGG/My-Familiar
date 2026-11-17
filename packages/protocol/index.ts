@@ -75,7 +75,7 @@ export async function rpc(
           throw new Error("协议响应不匹配");
         value.ok
           ? finish(undefined, value.result)
-          : finish(new Error(value.error ?? "请求失败"));
+          : finish(Object.assign(new Error(value.error ?? "请求失败"), {code: ['INVALID_INPUT','CONFLICT'].includes(value.code)?value.code:undefined}));
       } catch (e) {
         finish(e as Error);
       }

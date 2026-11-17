@@ -1,5 +1,8 @@
 /** Android 前端与 Familiar 核心的版本化边界；不含宿主实现与密钥回填。 */
 import type { MobileLibraryCommands } from "./library.ts";
+import type { LifeCommands, LifeSnapshot } from "../contracts/life.ts";
+import type { PetAction, SpriteRepresentation } from "../contracts/index.ts";
+export * from "../contracts/life.ts";
 import type { MobileMcpCommands } from "./mcp.ts";
 import type { MobileGithubCommands } from "./github.ts";
 import type { MobileBackupCommands } from "./backup.ts";
@@ -28,6 +31,9 @@ export const MOBILE_CHARACTER_IDS = [
   "fangfang",
   "lili",
   "mianmian",
+  "deepseek",
+  "gpt",
+  "claude",
 ] as const;
 export type CharacterId = (typeof MOBILE_CHARACTER_IDS)[number];
 export const MOBILE_PROVIDER_KINDS = [
@@ -45,6 +51,7 @@ export interface MobileCharacter {
   name: string;
   description: string;
   image: string;
+  animation?: SpriteRepresentation;
 }
 export interface MobileMessage {
   id: string;
@@ -170,6 +177,7 @@ export interface MobileApprovalBridge {
   close(): void;
 }
 export interface MobileSnapshot {
+  life?: LifeSnapshot;
   update?: UpdateState;
   protocolVersion: 1;
   revision: number;
@@ -198,7 +206,7 @@ export interface MobileSnapshot {
   media?: { choose: boolean; camera?: boolean; paste?: boolean; documents?: boolean; maxAttachments: number; maxBytes: number; maxTextBytes: number };
   /** 缺少时隐藏语音操作；系统麦克风授权仍由 capabilities 提供。 */
   voice?: MobileVoice;
-  pet?: { scale: number; visible: boolean; quiet: boolean; bubbleSeconds: number; action: "idle" | "greet" | "happy" | "think" | "sleep" | "drag";
+  pet?: { scale: number; visible: boolean; quiet: boolean; bubbleSeconds: number; action: PetAction;
     docking?: { snapToEdge: boolean; hideWhenIdle: boolean; delaySeconds: number; tucked: boolean } };
   /** 可选以兼容前端演示；Android 宿主必须提供实际服务状态。 */
   runtime?: {
@@ -208,7 +216,7 @@ export interface MobileSnapshot {
     detail: string;
   };
 }
-export interface MobileCommands extends MobileLibraryCommands, MobileModelCommands, MobileMcpCommands, MobileCareCommands, MobileFeishuCommands, MobileGithubCommands, MobileBackupCommands {
+export interface MobileCommands extends LifeCommands, MobileLibraryCommands, MobileModelCommands, MobileMcpCommands, MobileCareCommands, MobileFeishuCommands, MobileGithubCommands, MobileBackupCommands {
   "updates.state": {params: undefined; result: UpdateState};
   "updates.check": {params: undefined; result: UpdateState};
   "updates.download": {params: undefined; result: UpdateState};

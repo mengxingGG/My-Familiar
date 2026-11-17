@@ -11,6 +11,7 @@ import {
   type MobileMediaPreview,
 } from "../mobile-contracts/index.ts";
 import { projectBackup } from "./backup.ts";
+import { PET_ACTIONS, validLife, projectLife, validAnimation, projectAnimation } from './life.ts';
 import { validUpdate, projectUpdate } from './updates.ts';
 import { projectPolicy } from "./policy.ts";
 import { projectLibraryResult } from "./library.ts";
@@ -81,6 +82,7 @@ const voiceProfile = (v: unknown, local = false) => object(v) && oneOf(v.kind, l
 
 /** 拒绝不兼容的宿主数据，避免半更新页面和意外原始错误泄露。 */
 export function isMobileSnapshot(v: unknown): v is MobileSnapshot {
+  if (object(v) && v.life !== undefined && !validLife(v.life)) return false;
   if (object(v) && v.update !== undefined && !validUpdate(v.update)) return false;
   if (
     !object(v) ||
@@ -108,7 +110,7 @@ export function isMobileSnapshot(v: unknown): v is MobileSnapshot {
   if (v.backupManagement !== undefined && typeof v.backupManagement !== 'boolean') return false;
   if (v.permissionManagement !== undefined && typeof v.permissionManagement !== 'boolean') return false;
   if (v.startup !== undefined && !validStartup(v.startup)) return false;
-  if (v.pet !== undefined && (!object(v.pet) || typeof v.pet.visible !== "boolean" || typeof v.pet.quiet !== "boolean" || typeof v.pet.scale !== "number" || !Number.isFinite(v.pet.scale) || v.pet.scale < .65 || v.pet.scale > 1.6 || !Number.isInteger(v.pet.bubbleSeconds) || (v.pet.bubbleSeconds as number) < 0 || (v.pet.bubbleSeconds as number) > 300 || !oneOf(v.pet.action, ["idle", "greet", "happy", "think", "sleep", "drag"]))) return false;
+  if (v.pet !== undefined && (!object(v.pet) || typeof v.pet.visible !== "boolean" || typeof v.pet.quiet !== "boolean" || typeof v.pet.scale !== "number" || !Number.isFinite(v.pet.scale) || v.pet.scale < .65 || v.pet.scale > 1.6 || !Number.isInteger(v.pet.bubbleSeconds) || (v.pet.bubbleSeconds as number) < 0 || (v.pet.bubbleSeconds as number) > 300 || !oneOf(v.pet.action, PET_ACTIONS))) return false;
   if (object(v.pet) && v.pet.docking !== undefined) {
     const d = v.pet.docking;
     if (!object(d) || typeof d.snapToEdge !== "boolean" || typeof d.hideWhenIdle !== "boolean" || typeof d.tucked !== "boolean" || !Number.isInteger(d.delaySeconds) || Number(d.delaySeconds) < 10 || Number(d.delaySeconds) > 300) return false;
@@ -162,7 +164,8 @@ export function isMobileSnapshot(v: unknown): v is MobileSnapshot {
         oneOf(c.id, characters) &&
         text(c.name) &&
         text(c.description) &&
-        c.image === `./characters/${c.id}/idle-0.svg`,
+        ['svg','png','webp'].some(ext=>c.image===`./characters/${c.id}/idle-0.${ext}`) &&
+        (c.animation===undefined || validAnimation(c.animation,String(c.id))),
     )
   )
     return false;
@@ -283,6 +286,7 @@ const messages: Record<string, string> = {
 // 只投影协议字段；宿主额外的内部字段不能沿快照进入界面。
 function projectSnapshot(s: MobileSnapshot): MobileSnapshot {
   return {
+    ...(s.life ? {life:projectLife(s.life)} : {}),
     ...(s.update ? {update: projectUpdate(s.update)} : {}),
     protocolVersion: 1,
     ...(s.startup ? { startup: projectStartup(s.startup) } : {}),
@@ -319,11 +323,12 @@ function projectSnapshot(s: MobileSnapshot): MobileSnapshot {
           },
         }
       : {}),
-    characters: s.characters.map(({ id, name, description, image }) => ({
+    characters: s.characters.map(({ id, name, description, image, animation }) => ({
       id,
       name,
       description,
       image,
+      ...(animation ? {animation:projectAnimation(animation,id)} : {}),
     })),
     companion: {
       characterId: s.companion.characterId,
@@ -526,6 +531,7 @@ export function createMobileBridge(
           return { text: c.text } as MobileCommands[K]["result"];
         }
         if (method.startsWith("library.")) return projectLibraryResult(method, response.result, params) as MobileCommands[K]["result"];
+        if (method === 'life.get' || method === 'life.act') return projectLife(response.result) as MobileCommands[K]['result'];
         if (method.startsWith("mcp.")) return projectMcpResult(method, response.result) as MobileCommands[K]["result"];
         if (method.startsWith('github.auth.')) return projectGithubAuth(response.result) as MobileCommands[K]['result'];
         if (method.startsWith('care.')) return projectCareResult(method,response.result) as MobileCommands[K]['result'];

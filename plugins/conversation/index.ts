@@ -364,13 +364,17 @@ export const conversation = definePlugin({
             if (!abort.signal.aborted)
               error = e instanceof Error ? e.message : "模型请求失败";
           } finally {
+            let saved = false;
             try {
               await persist();
+              saved = true;
             } catch {
               error = "对话保存失败，请检查本地存储";
             }
             active = undefined;
             publish();
+            if (saved && assistant.status === "complete" && ctx.active)
+              ctx.emit("conversation.completed", { id: user.id, text: user.text, at: Date.now() });
           }
         });
         active = { abort, task };

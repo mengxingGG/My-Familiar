@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, copyFile, readdir } from "node:fs/promises";
+import { mkdir, copyFile, readdir, cp } from "node:fs/promises";
 import { resolve, join } from "node:path";
 
 export async function buildMobileUi({ preview = false } = {}) {
@@ -27,22 +27,8 @@ export async function buildMobileUi({ preview = false } = {}) {
     }
   };
   await copyStatic("apps/tauri/ui", output);
-  for (const character of [
-    "mori",
-    "youzi",
-    "luna",
-    "diandian",
-    "fangfang",
-    "lili",
-    "mianmian",
-  ]) {
-    const target = join(output, "characters", character);
-    await mkdir(target, { recursive: true });
-    await copyFile(
-      `characters/${character}/idle-0.svg`,
-      join(target, "idle-0.svg"),
-    );
-  }
+  await cp('characters', join(output, 'characters'), {recursive: true});
+  await cp('assets/life', join(output, 'assets/life'), {recursive: true});
   return output;
 }
 if (

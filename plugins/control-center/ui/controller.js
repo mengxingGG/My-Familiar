@@ -3,6 +3,7 @@ import { createVoiceSettings } from "./voice-settings.js";
 import { createIntegrationSettings } from "./integration-settings.js";
 import { createModelSettings } from "./model-settings.js";
 import { createCompanionSettings } from "./companion-settings.js";
+import { createLifeView } from "./life.js";
 const api = window.familiar,
   $ = (id) => document.getElementById(id);
 let snapshot,
@@ -23,6 +24,7 @@ const modelSettings = createModelSettings(
 );
 // 标题说明这一页做什么；导航名称与之保持一致。
 const titles = {
+  nest: ["小窝", "照顾它的吃饭、睡觉和玩耍，签到领灵石，布置房间。"],
   home: ["形象与桌面", "选择角色和大小，调整它在桌面上的样子。修改立即生效。"],
   persona: ["名字与性格", "它怎么称呼自己、用什么语气说话。从下一轮对话开始生效。"],
   voice: [
@@ -62,6 +64,16 @@ const companion = createCompanionSettings(api, toast);
 const experience = createExperienceSettings(api, toast);
 const integrations = createIntegrationSettings(api, toast);
 const voice = createVoiceSettings(api, toast);
+// 小窝只经 life.get / life.act 读写；读取失败只在本页提示，不影响其它页面与审批。
+const life = createLifeView({
+  get: () => api.request("life.get"),
+  act: (command) => api.request("life.act", command),
+  // 打包后控制器位于 dist/ui/control-center，产品资源 assets/life/ 在两级之上。
+  assetRoot: "../../",
+  showRawErrors: true,
+  onPetClick: () => void api.request("chat.open").catch((e) => toast(e.message, true)),
+});
+$("nest").append(life.root);
 let petTimer,
   petPending = {},
   petWriting = false;
@@ -94,11 +106,12 @@ function show(page) {
     .querySelectorAll(".page")
     .forEach((p) => (p.hidden = p.id !== page));
   document
-    .querySelectorAll("nav button")
+    .querySelectorAll(".rail nav button[data-page]")
     .forEach((b) => b.classList.toggle("selected", b.dataset.page === page));
   [$("page-title").textContent, $("page-description").textContent] =
     titles[page];
   window.scrollTo(0, 0);
+  life.setActive(page === "nest");
   if (page === "model") modelSettings.activate();
   companion.activate(page);
   experience.activate(page);
@@ -106,7 +119,7 @@ function show(page) {
   voice.activate(page);
 }
 document
-  .querySelectorAll("nav button")
+  .querySelectorAll(".rail nav button[data-page]")
   .forEach((button) => (button.onclick = () => show(button.dataset.page)));
 function toast(text, error = false) {
   $("toast").textContent = text;
@@ -222,6 +235,13 @@ async function refresh(force = false) {
     $("memory").textContent =
       `主进程内存 ${Math.round(data.metrics.memory / 1024 / 1024)} MB`;
     renderCharacters(data.characters);
+    const current = data.characters.find((c) => c.id === data.settings.pet.character);
+    // animation 提供各动作真实帧；preview 只是首帧，缺少 animation 的旧数据只显示它。
+    life.setCharacter(
+      current && (current.animation || current.preview)
+        ? { id: current.id, name: data.settings.persona.name || current.name, image: current.preview ?? "", animation: current.animation }
+        : null,
+    );
     if ((force || !dirty) && !petWriting && !Object.keys(petPending).length) {
       fill(data.settings);
       dirty = false;
@@ -404,6 +424,7 @@ $("autostart").onchange = async () => {
   autostartEpoch++;
   await refresh();
 };
+life.setActive(true);
 void refresh();
 setInterval(() => {
   if (!document.hidden) void refresh();

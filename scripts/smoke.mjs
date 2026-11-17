@@ -114,6 +114,7 @@ try {
     ...(await request("care.get")).settings,
     enabled: false,
   });
+  await page.locator('[data-page="home"]').click();
   await page.locator("#scale").fill("125");
   await page.locator('#character input[value="luna"]').check();
   await page.waitForFunction(

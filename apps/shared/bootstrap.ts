@@ -2,7 +2,8 @@ import { locationWindows } from "../../plugins/location-windows/index.ts";
 import { amapCare } from "../../plugins/amap-care/index.ts";
 import { companionCare } from "../../plugins/companion-care/index.ts";
 import { experienceControls } from "../../plugins/experience-controls/index.ts";
-import { app, dialog, shell } from "electron";
+import { app, dialog, shell, powerMonitor } from "electron";
+import { createPetLife } from "../../plugins/pet-life/index.ts";
 import { feishuCli } from "../../plugins/feishu-cli/index.ts";
 import { githubIntegration } from "../../plugins/github-integration/index.ts";
 import { channelChat } from "../../plugins/channel-chat/index.ts";
@@ -169,6 +170,7 @@ export async function bootstrap(role: "runtime" | "controller") {
           providerOpenrouter,
           providerLlamacpp,
           storageLocal(join(directory, "data")),
+          createPetLife({ isOnline: () => powerMonitor.getSystemIdleState(1) !== 'locked' }),
           platform,
           appUpdates({currentVersion: FAMILIAR_VERSION, platform: 'windows-x64', directory: join(app.getPath('downloads'), 'Familiar'), open: async path => {shell.showItemInFolder(path);}, notify: state => {kernel.resolve('platform.surface').send('pet', 'familiar:update', state);}}),
           mediaAssets,

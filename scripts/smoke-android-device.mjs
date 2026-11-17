@@ -8,7 +8,8 @@ import { chromium } from "playwright";
 const adbPath = process.env.ADB ?? "C:/AndroidSDK/platform-tools/adb.exe";
 const device = process.env.ANDROID_SERIAL ?? "emulator-5554";
 const app = "app.familiar.mobile.debug";
-const output = ".artifacts/android-device";
+const output =
+  process.env.FAMILIAR_ANDROID_SMOKE_OUTPUT ?? ".artifacts/android-device";
 await mkdir(output, { recursive: true });
 const adb = (...args) =>
   execFileSync(adbPath, ["-s", device, ...args], {
@@ -108,7 +109,9 @@ async function attach() {
         "tcp:9223",
         `localabstract:webview_devtools_remote_${pid}`,
       );
-      browser = await chromium.connectOverCDP("http://127.0.0.1:9223");
+      browser = await chromium.connectOverCDP("http://127.0.0.1:9223", {
+        noDefaults: true,
+      });
       page = browser.contexts()[0].pages()[0];
       await page.waitForFunction(() => !!window.__TAURI_INTERNALS__);
       return;
@@ -173,6 +176,11 @@ try {
   assert(configured.provider.keyConfigured);
   assert(!JSON.stringify(configured).includes("isolated-android-test-key"));
   pass("Android Keystore 写入且快照不回填密钥");
+  await call("life.act", {
+    kind: "sleep",
+    sleeping: true,
+    requestId: crypto.randomUUID(),
+  });
   testConversation = (await call("conversation.create")).id;
   await call("message.send", {
     conversationId: testConversation,
@@ -182,6 +190,13 @@ try {
   assert.equal(last(state).text, "ARM64 核心在设备运行成功");
   assert(authenticated);
   pass("设备网络、真实共享 Provider 和流式完成");
+  await until((s) => s.pet?.action === "sleep");
+  await call("life.act", {
+    kind: "sleep",
+    sleeping: false,
+    requestId: crypto.randomUUID(),
+  });
+  pass("睡眠状态不影响聊天，回复完成后恢复生活动作");
   slow = true;
   await call("message.send", {
     conversationId: testConversation,

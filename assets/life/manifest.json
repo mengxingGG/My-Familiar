@@ -1,0 +1,1552 @@
+{
+  "manifestVersion": 1,
+  "style": "Familiar cozy painted 2.5D",
+  "canvas": {
+    "width": 512,
+    "height": 512
+  },
+  "view": {
+    "name": "front-left",
+    "rotation": 0,
+    "approximateElevationDegrees": 30
+  },
+  "units": "Footprints use logical room cells; anchor and interaction coordinates are normalized to the complete PNG canvas.",
+  "generation": {
+    "method": "built-in imagegen",
+    "date": "2026-11-02",
+    "sources": [
+      {
+        "atlas": "atlas-warmwood.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "sha256": "0394ba54a00b14acb8cfd5538b85ab880a0eea36ba714ab17b277147ff0cdc57"
+      },
+      {
+        "atlas": "atlas-forest.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "sha256": "a0795055d9eb4407461393aff27eed9694c60a9fddcdc7668bd5f2bd2e3b4ac2"
+      },
+      {
+        "atlas": "atlas-ocean.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "sha256": "cd005b4c08aed68dbbc28485929e36d25285d38dc4822f16968bde99fdd5face"
+      },
+      {
+        "atlas": "atlas-star.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "sha256": "1416f0b99779bdc6cfa199c641ef38187c074513a82d4c955fe46e528a5e5c1b"
+      },
+      {
+        "atlas": "atlas-daily.png",
+        "size": [
+          1448,
+          1086
+        ],
+        "sha256": "ba8181b118165cea513f0b59181aa1e3381d794ce2f8980a02a09fa3019c79a0"
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "wood-bed",
+      "name": "暖木矮床",
+      "set": "warmwood",
+      "file": "wood-bed.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 3
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "sleep",
+      "contentBounds": [
+        36,
+        113,
+        476,
+        476
+      ],
+      "sourceAtlas": "atlas-warmwood.png",
+      "sourceBounds": [
+        55,
+        92,
+        545,
+        496
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.63
+      },
+      "foreground": "wood-bed-foreground.png",
+      "foregroundCutY": 0.708984375,
+      "bytes": 166706,
+      "sha256": "012c4a214aff71a133344615d01258919dd6f4d1ba977ffdf3337d5c9105b9fa"
+    },
+    {
+      "id": "wood-table",
+      "name": "小圆桌",
+      "set": "warmwood",
+      "file": "wood-table.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 2
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "surface",
+      "contentBounds": [
+        50,
+        171,
+        461,
+        476
+      ],
+      "sourceAtlas": "atlas-warmwood.png",
+      "sourceBounds": [
+        604,
+        169,
+        1015,
+        474
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "placementSurface": {
+        "x": 0.5,
+        "y": 0.5127,
+        "width": 0.55,
+        "depth": 0.2
+      },
+      "bytes": 121923,
+      "sha256": "fa7f9feba124ad63574732260638e86661400b7de9cb4690fb3228566d39fb57"
+    },
+    {
+      "id": "wood-stool",
+      "name": "圆木凳",
+      "set": "warmwood",
+      "file": "wood-stool.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "sit",
+      "contentBounds": [
+        107,
+        198,
+        404,
+        476
+      ],
+      "sourceAtlas": "atlas-warmwood.png",
+      "sourceBounds": [
+        1158,
+        186,
+        1455,
+        464
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 123515,
+      "sha256": "c7cbccd356af97712634b8fb040933bcd75ab8f8a91e227207934afecdb14566"
+    },
+    {
+      "id": "wood-cabinet",
+      "name": "双门小柜",
+      "set": "warmwood",
+      "file": "wood-cabinet.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "storage",
+      "contentBounds": [
+        36,
+        107,
+        476,
+        476
+      ],
+      "sourceAtlas": "atlas-warmwood.png",
+      "sourceBounds": [
+        63,
+        549,
+        515,
+        928
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "placementSurface": {
+        "x": 0.5,
+        "y": 0.2955,
+        "width": 0.55,
+        "depth": 0.2
+      },
+      "bytes": 183408,
+      "sha256": "81c37a9c1d7df5f6af4128c6ea0098977122eeed8e98cd25b454c961f8a006d3"
+    },
+    {
+      "id": "wood-shelf",
+      "name": "矮书架",
+      "set": "warmwood",
+      "file": "wood-shelf.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "shelf",
+      "contentBounds": [
+        58,
+        91,
+        453,
+        476
+      ],
+      "sourceAtlas": "atlas-warmwood.png",
+      "sourceBounds": [
+        612,
+        547,
+        1007,
+        932
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "placementSurface": {
+        "x": 0.5,
+        "y": 0.268,
+        "width": 0.55,
+        "depth": 0.2
+      },
+      "bytes": 184099,
+      "sha256": "f6312f452961a575540924fb7c69daf35154aee1cad5410e01027cb72aa467a4"
+    },
+    {
+      "id": "wood-rug",
+      "name": "编织地毯",
+      "set": "warmwood",
+      "file": "wood-rug.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 3,
+        "depth": 2
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "rug",
+      "contentBounds": [
+        36,
+        240,
+        476,
+        476
+      ],
+      "sourceAtlas": "atlas-warmwood.png",
+      "sourceBounds": [
+        1060,
+        652,
+        1505,
+        891
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 156266,
+      "sha256": "56eff10d3ee5e16a8ea28939fb4fa31834f89844fdcb7bf35945b42e4e2bf058"
+    },
+    {
+      "id": "forest-bed",
+      "name": "蘑菇软床",
+      "set": "forest",
+      "file": "forest-bed.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 3
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "sleep",
+      "contentBounds": [
+        36,
+        87,
+        477,
+        477
+      ],
+      "sourceAtlas": "atlas-forest.png",
+      "sourceBounds": [
+        60,
+        80,
+        530,
+        496
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.63
+      },
+      "foreground": "forest-bed-foreground.png",
+      "foregroundCutY": 0.6953125,
+      "bytes": 205231,
+      "sha256": "1bd8144bbdcb6233f08179ab580769f840b39399eb236a6acab64f759c0a798b"
+    },
+    {
+      "id": "forest-table",
+      "name": "树桩桌",
+      "set": "forest",
+      "file": "forest-table.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 2
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "surface",
+      "contentBounds": [
+        69,
+        162,
+        442,
+        476
+      ],
+      "sourceAtlas": "atlas-forest.png",
+      "sourceBounds": [
+        615,
+        160,
+        988,
+        474
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "placementSurface": {
+        "x": 0.5,
+        "y": 0.5004,
+        "width": 0.55,
+        "depth": 0.2
+      },
+      "bytes": 164607,
+      "sha256": "4e6b73466a46c86c9562239dd794929203f6b34e13aee7148427ddf71b334f9c"
+    },
+    {
+      "id": "forest-chair",
+      "name": "叶片椅",
+      "set": "forest",
+      "file": "forest-chair.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "sit",
+      "contentBounds": [
+        85,
+        63,
+        427,
+        476
+      ],
+      "sourceAtlas": "atlas-forest.png",
+      "sourceBounds": [
+        1107,
+        76,
+        1449,
+        489
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 163824,
+      "sha256": "3c39d706d9ec6d66674cee1552dac4851c17742f1e08104b9a88ba0ddcda512b"
+    },
+    {
+      "id": "forest-cabinet",
+      "name": "树洞柜",
+      "set": "forest",
+      "file": "forest-cabinet.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "storage",
+      "contentBounds": [
+        84,
+        74,
+        427,
+        476
+      ],
+      "sourceAtlas": "atlas-forest.png",
+      "sourceBounds": [
+        115,
+        547,
+        458,
+        949
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "placementSurface": {
+        "x": 0.5,
+        "y": 0.2387,
+        "width": 0.55,
+        "depth": 0.2
+      },
+      "bytes": 202291,
+      "sha256": "3d873aff90bb3ff5fc04290b2fb70a7bd8a17feb6e565e005f3c7061f676a954"
+    },
+    {
+      "id": "forest-lamp",
+      "name": "萤光灯",
+      "set": "forest",
+      "file": "forest-lamp.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "lamp",
+      "contentBounds": [
+        117,
+        84,
+        395,
+        476
+      ],
+      "sourceAtlas": "atlas-forest.png",
+      "sourceBounds": [
+        651,
+        555,
+        929,
+        947
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 144199,
+      "sha256": "610166037e50273734e856b01f4b4a82e2f28c5705029fc133bdf126ceed904f"
+    },
+    {
+      "id": "forest-rug",
+      "name": "苔藓地毯",
+      "set": "forest",
+      "file": "forest-rug.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 3,
+        "depth": 2
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "rug",
+      "contentBounds": [
+        35,
+        218,
+        477,
+        476
+      ],
+      "sourceAtlas": "atlas-forest.png",
+      "sourceBounds": [
+        1011,
+        633,
+        1504,
+        921
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 159703,
+      "sha256": "59b9099ca305d066295ee8a816957cf3094a493c13f78276977887d4a06e89a2"
+    },
+    {
+      "id": "ocean-bed",
+      "name": "贝壳床",
+      "set": "ocean",
+      "file": "ocean-bed.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 3
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "sleep",
+      "contentBounds": [
+        39,
+        77,
+        473,
+        476
+      ],
+      "sourceAtlas": "atlas-ocean.png",
+      "sourceBounds": [
+        59,
+        83,
+        493,
+        482
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.63
+      },
+      "foreground": "ocean-bed-foreground.png",
+      "foregroundCutY": 0.6875,
+      "bytes": 181448,
+      "sha256": "6629069992535a6c702ffcd65f4ad372f8a6919933897089e765b17aa6deccfb"
+    },
+    {
+      "id": "ocean-table",
+      "name": "潮汐桌",
+      "set": "ocean",
+      "file": "ocean-table.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 2
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "surface",
+      "contentBounds": [
+        38,
+        193,
+        473,
+        476
+      ],
+      "sourceAtlas": "atlas-ocean.png",
+      "sourceBounds": [
+        558,
+        192,
+        993,
+        475
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "placementSurface": {
+        "x": 0.5,
+        "y": 0.5428,
+        "width": 0.55,
+        "depth": 0.2
+      },
+      "bytes": 113749,
+      "sha256": "a9d7461f2a12940f2cac0229772f30196e7a86017046763fa56c25f39a581d8b"
+    },
+    {
+      "id": "ocean-stool",
+      "name": "泡泡凳",
+      "set": "ocean",
+      "file": "ocean-stool.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "sit",
+      "contentBounds": [
+        91,
+        169,
+        421,
+        476
+      ],
+      "sourceAtlas": "atlas-ocean.png",
+      "sourceBounds": [
+        1112,
+        159,
+        1442,
+        466
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 132275,
+      "sha256": "c76173621870ab992dc1528c28cb18916d55eaa8e455d109164e10ad28b04967"
+    },
+    {
+      "id": "ocean-cabinet",
+      "name": "漂流小柜",
+      "set": "ocean",
+      "file": "ocean-cabinet.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "storage",
+      "contentBounds": [
+        42,
+        84,
+        469,
+        476
+      ],
+      "sourceAtlas": "atlas-ocean.png",
+      "sourceBounds": [
+        64,
+        550,
+        491,
+        942
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "placementSurface": {
+        "x": 0.5,
+        "y": 0.2559,
+        "width": 0.55,
+        "depth": 0.2
+      },
+      "bytes": 184680,
+      "sha256": "de0d943d2989908f44207f5ec0545f9c306f456a05fc32f59bf52e7f5d3d0ba2"
+    },
+    {
+      "id": "ocean-lamp",
+      "name": "水母灯",
+      "set": "ocean",
+      "file": "ocean-lamp.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "lamp",
+      "contentBounds": [
+        108,
+        83,
+        404,
+        476
+      ],
+      "sourceAtlas": "atlas-ocean.png",
+      "sourceBounds": [
+        619,
+        543,
+        915,
+        936
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 142932,
+      "sha256": "e7003c13426994cd0cfc7e5853e256c7b4bf8717e7f7e9dca3bd6c7472b270bd"
+    },
+    {
+      "id": "ocean-rug",
+      "name": "浪纹地毯",
+      "set": "ocean",
+      "file": "ocean-rug.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 3,
+        "depth": 2
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "rug",
+      "contentBounds": [
+        36,
+        245,
+        476,
+        476
+      ],
+      "sourceAtlas": "atlas-ocean.png",
+      "sourceBounds": [
+        1038,
+        653,
+        1516,
+        904
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 153045,
+      "sha256": "4e6b10bf508d4d0b29fb25fbcdd24396c8b8fdc44ac5ca6f16cc0685e142ca19"
+    },
+    {
+      "id": "star-bed",
+      "name": "星月小床",
+      "set": "star",
+      "file": "star-bed.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 3
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "sleep",
+      "contentBounds": [
+        36,
+        74,
+        477,
+        476
+      ],
+      "sourceAtlas": "atlas-star.png",
+      "sourceBounds": [
+        43,
+        69,
+        524,
+        508
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.63
+      },
+      "foreground": "star-bed-foreground.png",
+      "foregroundCutY": 0.685546875,
+      "bytes": 189333,
+      "sha256": "333922546a68b2b38ccd7d5f6d35974bdddf0a8f384e753e8fbaf4ab115a54b5"
+    },
+    {
+      "id": "star-desk",
+      "name": "阅读书桌",
+      "set": "star",
+      "file": "star-desk.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 2
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "surface",
+      "contentBounds": [
+        53,
+        81,
+        459,
+        476
+      ],
+      "sourceAtlas": "atlas-star.png",
+      "sourceBounds": [
+        580,
+        92,
+        986,
+        487
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "placementSurface": {
+        "x": 0.5,
+        "y": 0.3896,
+        "width": 0.55,
+        "depth": 0.2
+      },
+      "bytes": 155742,
+      "sha256": "235131c3dc56ba137ab6f4878f2a3e9fdd3bebf566f7a5bfd2c6305615680e80"
+    },
+    {
+      "id": "star-chair",
+      "name": "绒面软椅",
+      "set": "star",
+      "file": "star-chair.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "sit",
+      "contentBounds": [
+        36,
+        55,
+        476,
+        476
+      ],
+      "sourceAtlas": "atlas-star.png",
+      "sourceBounds": [
+        1041,
+        80,
+        1484,
+        504
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 220232,
+      "sha256": "41da216d365e85a0a1ca0631c4ad0b084571b53b139f1ba4f06fd2691a7d4fe0"
+    },
+    {
+      "id": "star-shelf",
+      "name": "星空书柜",
+      "set": "star",
+      "file": "star-shelf.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "shelf",
+      "contentBounds": [
+        95,
+        52,
+        415,
+        477
+      ],
+      "sourceAtlas": "atlas-star.png",
+      "sourceBounds": [
+        117,
+        532,
+        447,
+        971
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "placementSurface": {
+        "x": 0.5,
+        "y": 0.2012,
+        "width": 0.55,
+        "depth": 0.2
+      },
+      "bytes": 184089,
+      "sha256": "f1585aab76a62c02894cd359377e1458158724496ca9caf8becae993969e9ed4"
+    },
+    {
+      "id": "star-lamp",
+      "name": "星灯",
+      "set": "star",
+      "file": "star-lamp.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "lamp",
+      "contentBounds": [
+        130,
+        54,
+        382,
+        476
+      ],
+      "sourceAtlas": "atlas-star.png",
+      "sourceBounds": [
+        639,
+        533,
+        891,
+        955
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 100236,
+      "sha256": "1cc2f0a14e83c33f87c50672425f70d8770b5e143bc13d3389e0d5bb88c428dd"
+    },
+    {
+      "id": "star-rug",
+      "name": "星轨地毯",
+      "set": "star",
+      "file": "star-rug.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 3,
+        "depth": 2
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "rug",
+      "contentBounds": [
+        35,
+        243,
+        477,
+        477
+      ],
+      "sourceAtlas": "atlas-star.png",
+      "sourceBounds": [
+        999,
+        640,
+        1510,
+        910
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 152670,
+      "sha256": "efc7b48698a54f374dfd6baf9461bd2e8e08c3b205fd0c6fc038b838c3b7104d"
+    },
+    {
+      "id": "food-basic",
+      "name": "基础口粮",
+      "set": "daily",
+      "file": "food-basic.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "food",
+      "contentBounds": [
+        117,
+        243,
+        394,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        53,
+        93,
+        330,
+        326
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 89970,
+      "sha256": "a881dba96c0ce42c2ef1265653879e631f25afdcfc08e1a77494e8aa3bd405ad"
+    },
+    {
+      "id": "food-fruit",
+      "name": "果盘",
+      "set": "daily",
+      "file": "food-fruit.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "food",
+      "contentBounds": [
+        96,
+        276,
+        416,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        389,
+        123,
+        709,
+        323
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 98185,
+      "sha256": "72580bc12522c5326fb74aaf1bbcf79191f88fb0e2924365eb850aa1f8db6cbb"
+    },
+    {
+      "id": "food-bento",
+      "name": "便当",
+      "set": "daily",
+      "file": "food-bento.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "food",
+      "contentBounds": [
+        98,
+        230,
+        413,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        752,
+        86,
+        1067,
+        332
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 124385,
+      "sha256": "17d1abbab18d26ae8de72692e8b5ccb5c9266af81b5d1a38ead0eabc67542d37"
+    },
+    {
+      "id": "food-dessert",
+      "name": "精致甜点",
+      "set": "daily",
+      "file": "food-dessert.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "food",
+      "contentBounds": [
+        112,
+        234,
+        399,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        1123,
+        85,
+        1410,
+        327
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 85773,
+      "sha256": "e5911facf025b3a927817773c66e783ab2c3e64e639ccd1e7358ac5002fef279"
+    },
+    {
+      "id": "toy-ball",
+      "name": "小球",
+      "set": "daily",
+      "file": "toy-ball.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "toy",
+      "contentBounds": [
+        123,
+        213,
+        389,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        68,
+        437,
+        334,
+        700
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 99730,
+      "sha256": "17fd0b3d651caf9499926889fc20d7562327a7adbf21a69ba2dd98db62284b5d"
+    },
+    {
+      "id": "toy-pinwheel",
+      "name": "纸风车",
+      "set": "daily",
+      "file": "toy-pinwheel.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "toy",
+      "contentBounds": [
+        129,
+        152,
+        383,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        439,
+        386,
+        693,
+        710
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 81298,
+      "sha256": "a44432d46e10b527e1de6eb387ee1908104c03948aa2a4ba4a712f2d95858870"
+    },
+    {
+      "id": "toy-blocks",
+      "name": "小积木",
+      "set": "daily",
+      "file": "toy-blocks.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "toy",
+      "contentBounds": [
+        142,
+        163,
+        370,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        795,
+        406,
+        1023,
+        719
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 89216,
+      "sha256": "ae28b0a1a9c4021e2ac18534250ef05aa0c69520df2f62aefda95287087b978c"
+    },
+    {
+      "id": "starter-bowl",
+      "name": "初始食盆",
+      "set": "daily",
+      "file": "starter-bowl.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "feed",
+      "contentBounds": [
+        102,
+        259,
+        409,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        1110,
+        477,
+        1417,
+        694
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 84019,
+      "sha256": "285ab2e6717febee6563c7b3dddfa44488387b8038933830a196537ee78e90ae"
+    },
+    {
+      "id": "starter-mat",
+      "name": "初始软垫",
+      "set": "daily",
+      "file": "starter-mat.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 2
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "sleep",
+      "contentBounds": [
+        73,
+        266,
+        438,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        33,
+        803,
+        398,
+        1013
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.63
+      },
+      "bytes": 106718,
+      "sha256": "da59298381519e652cd2f286136909b39ee0d31be823eca766d781a77c7cc319"
+    },
+    {
+      "id": "memorial-trophy",
+      "name": "成长纪念摆件",
+      "set": "daily",
+      "file": "memorial-trophy.png",
+      "size": [
+        512,
+        512
+      ],
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9375
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "rotations": [
+        0
+      ],
+      "view": "front-left",
+      "behavior": "decor",
+      "contentBounds": [
+        141,
+        218,
+        370,
+        476
+      ],
+      "sourceAtlas": "atlas-daily.png",
+      "sourceBounds": [
+        454,
+        761,
+        683,
+        1019
+      ],
+      "interaction": {
+        "x": 0.5,
+        "y": 0.7
+      },
+      "bytes": 86187,
+      "sha256": "1731176fb44ad212409363b19fa2b8cc16929bedce76e44f1af1d97a2c6882ad"
+    }
+  ]
+}

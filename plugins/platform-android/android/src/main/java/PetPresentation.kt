@@ -11,8 +11,8 @@ import java.util.concurrent.TimeUnit
 /** 运行进程的表现缓存，不保存会话或复制行为决策。所有写入在主线程完成。 */
 object PetPresentation {
     val main = Handler(Looper.getMainLooper())
-    private val characters = setOf("mori", "youzi", "luna", "diandian", "fangfang", "lili", "mianmian")
-    private val actions = setOf("idle", "greet", "happy", "think", "sleep", "drag")
+    private val characters = setOf("mori", "youzi", "luna", "diandian", "fangfang", "lili", "mianmian", "deepseek", "gpt", "claude")
+    private val actions = setOf("idle", "greet", "happy", "think", "sleep", "drag", "walk", "eat", "full", "play", "drowsy", "hungry", "weak", "dejected", "recover")
     var character = "mori"; private set
     var action = "idle"; private set
     var scale = 1.0; private set

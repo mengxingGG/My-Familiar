@@ -104,6 +104,7 @@ object NativeCapabilities {
             "location.status" -> NativeLocation.status(context)
             "location.settings" -> { check(NativeLocation.interactive(context)) { "UNAVAILABLE" }; context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); JSONObject.NULL }
             "care.available" -> (PetService.running && PetService.overlayVisible && NativeLocation.interactive(context))
+            "life.online" -> NativeLocation.interactive(context)
             "runtime.status" -> runtimeStatus()
             "runtime.startup.get" -> NativeStartup.snapshot(context)
             "runtime.startup.save" -> NativeStartup.save(context, params)

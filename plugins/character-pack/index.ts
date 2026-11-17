@@ -40,11 +40,22 @@ export function characterPack(directory: string) {
           )
             throw new Error("精灵资源无效");
           const frames: Record<string, string[]> = {};
+          const files: Record<string, string[]> = {};
+          const timings: Record<string, number[]> = {};
+          const loops: Record<string, boolean> = {};
           for (const [action, paths] of Object.entries(sprite.frames)) {
-            if (!Array.isArray(paths) || paths.length > 60)
+            if (!/^[a-z][a-z-]{0,31}$/.test(action) || !Array.isArray(paths) || !paths.length || paths.length > 60)
               throw new Error("帧列表无效");
+            const timing = sprite.timings?.[action];
+            if (timing && (!Array.isArray(timing) || timing.length !== paths.length || timing.some(ms => !Number.isFinite(ms) || ms < 33 || ms > 10000))) throw new Error('动画时长无效');
+            if (timing) timings[action] = timing;
+            const loop = sprite.loops?.[action];
+            if (loop !== undefined && typeof loop !== 'boolean') throw new Error('动画循环无效');
+            loops[action] = loop ?? true;
+            files[action] = [];
             frames[action] = [];
             for (const path of paths) {
+              if (typeof path !== 'string') throw new Error('角色资源路径无效');
               const root = resolve(directory, name),
                 target = resolve(root, path),
                 delta = relative(root, target);
@@ -64,6 +75,7 @@ export function characterPack(directory: string) {
               frames[action].push(
                 `data:${mime};base64,${data.toString("base64")}`,
               );
+              files[action].push(path.replaceAll('\\', '/'));
             }
           }
           entries.push({
@@ -75,7 +87,10 @@ export function characterPack(directory: string) {
                 ? pack.recommendedPersona
                 : "gentle",
             actions: pack.actions,
-            representations: { sprite: { fps: sprite.fps, frames } },
+            representations: { sprite: { fps: sprite.fps, frames, files, timings, loops,
+              ...(sprite.size && Number.isFinite(sprite.size.width) && Number.isFinite(sprite.size.height) && sprite.size.width > 0 && sprite.size.height > 0 ? {size: sprite.size} : {}),
+              ...(sprite.anchor && Number.isFinite(sprite.anchor.x) && Number.isFinite(sprite.anchor.y) ? {anchor: sprite.anchor} : {}),
+            } },
           });
         } catch (e) {
           ctx.report(
@@ -87,7 +102,10 @@ export function characterPack(directory: string) {
       }
       if (!entries.length) throw new Error("没有可用角色");
       ctx.provide("character.catalog", {
-        list: () => structuredClone(entries),
+        list: (options) => structuredClone(options?.metadataOnly ? entries.map(entry => {
+          const sprite = entry.representations.sprite as SpriteRepresentation;
+          return {...entry, representations:{sprite:{...sprite, frames:{idle:[sprite.frames.idle[0]]}}}};
+        }) : entries),
         get(id) {
           const c = entries.find((c) => c.id === id);
           if (!c) throw new Error("角色不可用");

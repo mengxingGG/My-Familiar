@@ -1,5 +1,6 @@
 import { definePlugin } from "../../packages/contracts/index.ts";
 import { companionCommands } from "../companion-controls/index.ts";
+import { lifeCommands } from "../../packages/contracts/life.ts";
 export function controlCenter(launch: () => void) {
   return definePlugin({
     manifest: {
@@ -15,6 +16,7 @@ export function controlCenter(launch: () => void) {
         surface = ctx.use("platform.surface");
       for (const name of [
         ...companionCommands,
+        ...lifeCommands,
         "runtime.status",
         "settings.apply",
         "secret.set",

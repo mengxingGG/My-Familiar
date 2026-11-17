@@ -28,7 +28,8 @@ test("Android 宠物复用行为与气泡，停靠独立持久化，错误配置
     await good("pet.interact", { action: "sleep" }); await flush(); assert.equal((await snapshot()).pet?.action, "sleep");
     assert(presentations.some(p => p.type === "action" && p.action === "sleep"));
     await good("pet.host", { action: "drag-start" }); assert.equal((await snapshot()).pet?.action, "drag");
-    await good("pet.host", { action: "drag-end" }); assert.equal((await snapshot()).pet?.action, "idle");
+    await good("pet.host", { action: "drag-end" }); assert.equal((await snapshot()).pet?.action, "sleep");
+    assert.equal((await snapshot()).life?.needs.sleeping,true,'拖动结束回到持久化的生活状态');
     await good("pet.interact", { action: "click" }); await flush(); assert.equal((await snapshot()).pet?.action, "happy");
     assert(presentations.some(p => p.type === "speech" && p.text === "我在这里。"));
     await good("pet.host", { action: "close" }); await flush(); assert.equal(presentations.filter(p => p.type === "speech-visible").at(-1)?.visible, false);

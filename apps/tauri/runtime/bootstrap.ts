@@ -3,6 +3,7 @@ import { writeFile, rm } from "node:fs/promises";
 import { Kernel } from "../../../packages/kernel/index.ts";
 import { commands } from "../../../plugins/commands/index.ts";
 import { storageLocal } from "../../../plugins/storage-local/index.ts";
+import { createPetLife } from "../../../plugins/pet-life/index.ts";
 import { characterPack } from "../../../plugins/character-pack/index.ts";
 import { createSettings } from "../../../plugins/settings/index.ts";
 import { petConfig } from "../../../plugins/pet-config/index.ts";
@@ -104,6 +105,7 @@ export async function bootstrapAndroid(
   const plugins = [
     commands,
     storageLocal(join(root, "data")),
+    createPetLife({ isOnline: async () => await native.call<boolean>('life.online') === true }),
     appUpdates({currentVersion: FAMILIAR_VERSION, platform: 'android-arm64', directory: join(root, 'updates'), open: async (_path, asset) => {await native.call('updates.open', {name: asset.name});}, notify: state => native.call('updates.present', {...state}).then(() => {})}),
     characterPack(join(assets, "characters")),
     petConfig,
