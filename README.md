@@ -8,7 +8,7 @@
 
 > 图片是真实应用窗口，使用演示数据；外围背景和标题是展示排版。
 
-当前源码已进入 **2.0.0**：新增吃饭、睡觉、玩耍、灵石、背包、每日签到、成长等级和可布置的小窝；十个形象共享一份养成进度，新增 DeepSeek 鲸鱼娘、GPT 与 Claude Q 版动画。基础口粮可从背包自动取用，长期缺粮只影响外观，不限制聊天或工具。四套家具按单品购买，升级逐步解锁物品。详见 [实施与验收](docs/25_Familiar_2.0.0实施与验收.md)。2.0.0 目前为本地开发交付，下方仍保留已发布的 1.1.0 下载入口。
+**2.0.0** 新增吃饭、睡觉、玩耍、灵石、背包、每日签到、成长等级和可布置的小窝；十个形象共享一份养成进度，新增 DeepSeek 鲸鱼娘、GPT 与 Claude Q 版动画。基础口粮可从背包自动取用，长期缺粮只影响外观，不限制聊天或工具。四套家具按单品购买，升级逐步解锁物品。详见 [实施与验收](docs/25_Familiar_2.0.0实施与验收.md)。
 
 ![2.0.0 小窝：鲸鱼娘在暖木床上休息，界面显示灵石、成长、背包和需求状态；使用隔离验收数据](docs/images/life-room.png)
 
@@ -27,18 +27,17 @@
 
 ## 下载使用
 
-**v1.1.0 修复 Android 后台手机操作，新增 GitHub 更新提醒。** 从 [GitHub Releases](https://github.com/mengxingGG/My-Familiar/releases/tag/v1.1.0) 下载对应平台：
+**v2.0.0 新增养成系统、可布置的小窝和三个新形象。** 从 [GitHub Releases](https://github.com/mengxingGG/My-Familiar/releases/tag/v2.0.0) 下载对应平台：
 
-- [Windows x64 安装程序](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-Setup-x64.exe)：安装后从开始菜单启动 Familiar。
-- [Windows x64 免安装版](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-win-x64.zip)：解压后运行 `Familiar.exe`，保留整个文件夹。
-- [Android ARM64 APK](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-arm64.apk)：支持 Android 9 及以上的 ARM64 设备，安装后打开 Familiar 配置模型。
-- [SHA-256 校验和](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/SHA256SUMS.txt)。
+- [Android ARM64 APK](https://github.com/mengxingGG/My-Familiar/releases/download/v2.0.0/Familiar-2.0.0-arm64.apk)：支持 Android 9 及以上的 ARM64 设备，安装后打开 Familiar 配置模型。
+- [SHA-256 校验和](https://github.com/mengxingGG/My-Familiar/releases/download/v2.0.0/SHA256SUMS.txt)。
+- Windows 2.0.0 安装包稍后补充上传；在此之前请使用 [1.1.0 安装程序](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-Setup-x64.exe) 或 [1.1.0 免安装版](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-win-x64.zip)。
 
 发行包已包含运行环境，使用时不需要安装 Node.js 或开发 SDK。首次打开后在“模型连接”配置自己的模型和 API Key。Windows 双击宠物输入，Android 轻点完整宠物即可打开原生气泡输入。
 
-Android 正式包使用独立发行签名，关闭调试；Windows 暂无 Authenticode 签名。完整变更、升级方法与验证范围见 [v1.1.0 发行说明](docs/releases/v1.1.0.md)。旧版本继续保留在 Releases。
+Android 正式包使用独立发行签名，关闭调试；Windows 暂无 Authenticode 签名。完整变更、升级方法与验证范围见 [v2.0.0 发行说明](docs/releases/v2.0.0.md)。旧版本继续保留在 Releases。
 
-1.0.0 请先手动安装本次更新。自 1.1.0 起，宠物和控制器会提醒 GitHub 新正式版，点击自动下载本机安装包，并验证完整性。Android 安装由系统确认；Windows 点击打开安装包所在位置。
+Android 1.1.0 用户会收到本次更新提醒；1.0.0 请先手动安装。宠物和控制器会提醒 GitHub 新正式版，点击自动下载本机安装包，并验证完整性。Android 安装由系统确认；Windows 点击打开安装包所在位置。
 
 ## Android
 

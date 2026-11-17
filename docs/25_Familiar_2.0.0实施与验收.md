@@ -1,12 +1,10 @@
 # Familiar 2.0.0 实施与验收
 
-日期：2026-11-02。本地开发交付，未提交、推送或发布 GitHub Release。本文记录实际实现；产品和美术设计基线分别见文档 23、24。
+日期：2026-11-02 实施，2026-11-17 发布 [v2.0.0](releases/v2.0.0.md)。本文记录实际实现；产品和美术设计基线分别见文档 23、24。
 
 ## 实施范围
 
 共享核心新增 `familiar.pet-life` 插件，提供吃饭、睡眠、玩耍、长期缺粮表现、灵石、签到、背包、商店、等级奖励和房间布置。Windows 和 Android 使用同一业务规则，通过 `life.get` / `life.act` 接口操作，UI 不直接修改存档。
-
-主代理完成逻辑、协议、平台接线、构建和验收；系统 Claude Code 使用官方 Claude Pro 账户完成两端前端，三名素材子代理分别完成旧角色动画、新角色和房间资源。前端委托使用隔离副本，只包含 UI、必要接口和开发文档。
 
 | 内容 | 实际交付 |
 | --- | --- |
@@ -85,7 +83,7 @@ node --experimental-transform-types --disable-warning=ExperimentalWarning script
 
 ## 本地交付与边界
 
-Windows 安装包与免安装包：`release/Familiar-2.0.0-Setup-x64.exe`、`release/Familiar-2.0.0-win-x64.zip`。使用本机 Electron 运行时完成打包，未上传。
+Windows 安装包与免安装包：`release/Familiar-2.0.0-Setup-x64.exe`、`release/Familiar-2.0.0-win-x64.zip`。使用本机 Electron 运行时打包。
 
 Android 正式包：`release/android/Familiar-2.0.0-arm64.apk`，108,380,226 字节，包名 `app.familiar.mobile`，versionCode `2000000`，minSdk 28 / targetSdk 36，关闭调试。v2 / v3 签名通过，证书 SHA-256 与已有 1.1.0 APK 一致：`384610206b0ccad204d0572604d213d3a82cd0a0d356f3faaa398afc213989e0`。三个安装产物的摘要见 `release/SHA256SUMS-2.0.0.txt`。
 
@@ -93,8 +91,3 @@ Android 正式包：`release/android/Familiar-2.0.0-arm64.apk`，108,380,226 字
 
 尚未覆盖：物理 ARM 手机、厂商后台回收策略、长时间功耗、真实麦克风/云模型账号；模拟器与 HTTP 模型夹具结果不能代替这些检查。雷电 Android 14 实例启动问题仍待定位，不能据此概括全部 Android 14 设备。无跨设备实时同步。家具目前单朝向，不含旋转素材、桌面挂载、柜门/灯光动画或障碍物寻路。
 
-## 本机 Claude Code 配置修复
-
-已清除 Codex 全局配置中的旧第三方 `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` 注入及四个对应 MCP 注册；Claude 用户设置强制使用 `claudeai` 登录，屏蔽旧 API Key / Token，并指向 Anthropic 官方服务。官方 Pro 登录和实际前端任务均已成功验证。
-
-当前已启动的 Codex 进程仍可能缓存旧工具和环境，重新启动后才会完全卸载；本轮后续 Claude 调用均先移除进程级旧变量。没有注销用户官方账户、改动其他服务配置或将凭据写入项目。
