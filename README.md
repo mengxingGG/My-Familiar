@@ -29,15 +29,16 @@
 
 **v2.0.0 新增养成系统、可布置的小窝和三个新形象。** 从 [GitHub Releases](https://github.com/mengxingGG/My-Familiar/releases/tag/v2.0.0) 下载对应平台：
 
+- [Windows x64 安装程序](https://github.com/mengxingGG/My-Familiar/releases/download/v2.0.0/Familiar-2.0.0-Setup-x64.exe)：安装后从开始菜单启动 Familiar。
+- [Windows x64 免安装版](https://github.com/mengxingGG/My-Familiar/releases/download/v2.0.0/Familiar-2.0.0-win-x64.zip)：解压后运行 `Familiar.exe`，保留整个文件夹。
 - [Android ARM64 APK](https://github.com/mengxingGG/My-Familiar/releases/download/v2.0.0/Familiar-2.0.0-arm64.apk)：支持 Android 9 及以上的 ARM64 设备，安装后打开 Familiar 配置模型。
 - [SHA-256 校验和](https://github.com/mengxingGG/My-Familiar/releases/download/v2.0.0/SHA256SUMS.txt)。
-- Windows 2.0.0 安装包稍后补充上传；在此之前请使用 [1.1.0 安装程序](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-Setup-x64.exe) 或 [1.1.0 免安装版](https://github.com/mengxingGG/My-Familiar/releases/download/v1.1.0/Familiar-1.1.0-win-x64.zip)。
 
 发行包已包含运行环境，使用时不需要安装 Node.js 或开发 SDK。首次打开后在“模型连接”配置自己的模型和 API Key。Windows 双击宠物输入，Android 轻点完整宠物即可打开原生气泡输入。
 
 Android 正式包使用独立发行签名，关闭调试；Windows 暂无 Authenticode 签名。完整变更、升级方法与验证范围见 [v2.0.0 发行说明](docs/releases/v2.0.0.md)。旧版本继续保留在 Releases。
 
-Android 1.1.0 用户会收到本次更新提醒；1.0.0 请先手动安装。宠物和控制器会提醒 GitHub 新正式版，点击自动下载本机安装包，并验证完整性。Android 安装由系统确认；Windows 点击打开安装包所在位置。
+1.1.0 用户会收到本次更新提醒；1.0.0 请先手动安装。宠物和控制器会提醒 GitHub 新正式版，点击自动下载本机安装包，并验证完整性。Android 安装由系统确认；Windows 点击打开安装包所在位置。
 
 ## Android
 
